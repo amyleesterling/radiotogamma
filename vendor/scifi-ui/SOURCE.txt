@@ -1,0 +1,6 @@
+hologram.css and panel-surface.css are copied unmodified from
+https://github.com/amyleesterling/scifi-ui at commit 2b17596, taken 2026-08-27.
+Live demo: https://amyleesterling.github.io/scifi-ui
+
+Nothing in this folder is edited. If a component needs a change, change it
+upstream and copy it down again, so the library stays the single source.
