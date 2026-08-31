@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Light Lab</title>
+<link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
+<link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #04070a; color: #cfe6e6;
+         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .gamebar { display: flex; align-items: baseline; gap: 18px; padding: 11px 18px;
+             border-radius: 0; border-left: 0; border-right: 0; border-top: 0;
+             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .gamebar a { text-decoration: none; }
+  .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
+                  border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
+                  padding: 7px 12px; align-self: center; white-space: nowrap; }
+  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
+  .gamebar-name { font-size: 19px; font-weight: 600; letter-spacing: .06em;
+                  color: rgb(var(--bar-accent)); white-space: nowrap; }
+  @media (max-width: 700px) { .gamebar { flex-wrap: wrap; gap: 10px; } }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
+  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
+  .sub { font-size: 14.5px; color: #9aa2b1; margin: 0 0 20px; line-height: 1.55; max-width: 66ch; }
+
+  /* the strip that never leaves: every experiment lights it up */
+  .stripdock { position: sticky; top: 0; z-index: 20; background: #04070a;
+               padding: 8px 0 6px; border-bottom: 1px solid rgba(196,228,255,.1); }
+  .striplabel { font-size: 10.5px; letter-spacing: .12em; color: #6c7c8c; text-transform: uppercase;
+                margin: 0 0 4px; }
+  #labStrip { display: block; width: 100%; height: 26px; border: 1px solid rgba(196,228,255,.2); }
+
+  .exp { border: 1px solid rgba(196,228,255,.14); margin: 26px 0; padding: 16px 18px; }
+  .exp h2 { font-size: 14px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 4px; font-weight: 600; }
+  .exp .goal { font-size: 15px; color: #eff4fb; font-weight: 600; margin: 0 0 12px; }
+  .question { border-left: 3px solid #a07cff; background: rgba(160,124,255,.06);
+              padding: 10px 14px; margin: 0 0 14px; }
+  .question .q { font-size: 14px; color: #eff4fb; margin: 0 0 9px; }
+  .question .choices { display: flex; flex-wrap: wrap; gap: 7px; }
+  .question .choices button { font: inherit; font-size: 12.5px; cursor: pointer; background: none;
+    color: #9aa2b1; border: 1px solid rgba(196,228,255,.16); padding: 7px 11px; min-height: 36px; }
+  .question .choices button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
+  .question .choices button.picked { color: #a07cff; border-color: rgba(160,124,255,.7); }
+  .question .status { font-size: 12px; color: #6c7c8c; margin: 8px 0 0; }
+  .question .reveal { font-size: 13px; color: #cfe6e6; margin: 8px 0 0; line-height: 1.55; display: none; }
+  .question.solved .reveal { display: block; }
+  .question.solved .status { display: none; }
+
+  .stage { position: relative; }
+  .exp canvas { display: block; width: 100%; touch-action: none;
+                border: 1px solid rgba(196,228,255,.16); background: #05070c; }
+  .exp .hint { font-size: 12px; color: #5c6b7a; margin: 8px 0 0; line-height: 1.5; }
+  .exp .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 10px 0 0;
+                   font-size: 12.5px; color: #8b98a8; }
+  .exp .controls label { display: flex; gap: 8px; align-items: center; }
+  .exp .controls input[type=range] { width: 150px; accent-color: #7ee0ff; }
+  .exp .controls button, .exp .controls .tog { font: inherit; font-size: 12px; cursor: pointer;
+    background: none; color: #9aa2b1; border: 1px solid rgba(196,228,255,.16); padding: 7px 11px; }
+  .exp .controls button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
+  .exp .controls button[aria-pressed="true"] { color: #7ee0ff; border-color: rgba(126,224,255,.6);
+    background: rgba(126,224,255,.08); }
+  .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 26px; max-width: 70ch; }
+</style>
+</head>
+<body>
+<header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
+  <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
+  <span class="gamebar-name">THE LIGHT LAB</span>
+  <span style="flex:1"></span>
+  <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
+  <a class="gamebar-back" href="gamma.html">GAMMA ATTIC</a>
+</header>
+<div class="wrap">
+  <h1>Reach in and mess with it.</h1>
+  <p class="sub">Four little instruments, one octave of spectrum. Each one starts with a question:
+     make your guess, then run the experiment yourself. The strip below stays lit the whole time,
+     showing which wavelengths each experiment is touching. Four manipulations of the same thing.</p>
+
+  <div class="stripdock">
+    <p class="striplabel">The visible octave · 750 nm — 380 nm</p>
+    <canvas id="labStrip" aria-label="Visible spectrum strip; lights up with the wavelengths each experiment affects"></canvas>
+  </div>
+
+  <div id="labMount"></div>
+
+  <p class="foot">Everything here runs on the real physics in miniature: dispersion in glass,
+     interference from a CD's 1.6 µm track spacing, the 42° water-droplet cone, and Rayleigh's
+     1/λ⁴ scattering. Illustrative in scale, honest in mechanism.</p>
+</div>
+
+<script>
+// The shared machinery: a registry the four experiments plug into, and the
+// persistent spectrum strip they all light up.
+window.LAB = (() => {
+  'use strict';
+  // wavelength (nm, 380-750) to display rgb, decent approximation
+  function wavelengthRGB(nm) {
+    let r = 0, g = 0, b = 0, t;
+    if (nm < 440) { t = (nm - 380) / 60; r = 0.35 * (1 - t); b = 1; }
+    else if (nm < 490) { t = (nm - 440) / 50; g = t; b = 1; }
+    else if (nm < 510) { t = (nm - 490) / 20; g = 1; b = 1 - t; }
+    else if (nm < 580) { t = (nm - 510) / 70; r = t; g = 1; }
+    else if (nm < 645) { t = (nm - 580) / 65; r = 1; g = 1 - t; }
+    else { r = 1; }
+    let f = 1;
+    if (nm < 420) f = 0.4 + 0.6 * (nm - 380) / 40;
+    if (nm > 700) f = 0.4 + 0.6 * (750 - nm) / 50;
+    return [r * f, g * f, b * f];
+  }
+
+  const strip = document.getElementById('labStrip');
+  const sctx = strip.getContext('2d');
+  let weight = () => 0.15;                 // per-nm glow, 0..1
+  function drawStrip() {
+    const r = strip.getBoundingClientRect();
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    strip.width = Math.round(r.width * dpr); strip.height = Math.round(r.height * dpr);
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (let x = 0; x < r.width; x++) {
+      const nm = 750 - (x / r.width) * 370;   // red on the left, like the big pages
+      const [cr, cg, cb] = wavelengthRGB(nm);
+      const w = Math.max(0.06, Math.min(1, weight(nm)));
+      sctx.fillStyle = 'rgb(' + Math.round(cr * 255 * w) + ',' + Math.round(cg * 255 * w) + ',' + Math.round(cb * 255 * w) + ')';
+      sctx.fillRect(x, 0, 1, r.height);
+    }
+  }
+  const api = {
+    wavelengthRGB,
+    // experiments call this with fn(nm)->0..1; the strip glows accordingly
+    light(fn) { weight = fn || (() => 0.15); drawStrip(); },
+    reset() { weight = () => 0.15; drawStrip(); },
+  };
+  addEventListener('resize', drawStrip);
+  drawStrip();
+
+  const mount = document.getElementById('labMount');
+  const registry = [];
+  function register(exp) {
+    registry.push(exp);
+    const sec = document.createElement('section');
+    sec.className = 'exp'; sec.id = 'exp-' + exp.id;
+    let qhtml = '';
+    if (exp.question) {
+      qhtml = '<div class="question"><p class="q">' + exp.question.text + '</p>' +
+        '<div class="choices">' + exp.question.choices.map((c, i) =>
+          '<button type="button" data-i="' + i + '">' + c + '</button>').join('') + '</div>' +
+        '<p class="status">Pick a hypothesis, then run the experiment.</p>' +
+        '<p class="reveal"></p></div>';
+    }
+    sec.innerHTML = '<h2>' + exp.title + '</h2>' +
+      (exp.goal ? '<p class="goal">' + exp.goal + '</p>' : '') + qhtml +
+      '<div class="stage"></div>' +
+      (exp.hint ? '<p class="hint">' + exp.hint + '</p>' : '');
+    mount.appendChild(sec);
+    const qEl = sec.querySelector('.question');
+    if (qEl) qEl.querySelectorAll('.choices button').forEach(b =>
+      b.addEventListener('click', () => {
+        qEl.querySelectorAll('.choices button').forEach(x => x.classList.remove('picked'));
+        b.classList.add('picked');
+      }));
+    const expApi = {
+      strip: api,
+      // the experiment calls this when the visitor has made the phenomenon
+      // happen; the question resolves with its reveal text
+      solved() {
+        if (!qEl || qEl.classList.contains('solved')) return;
+        qEl.classList.add('solved');
+        qEl.querySelector('.reveal').textContent = exp.question.reveal;
+      },
+      reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+    };
+    try { exp.init(sec.querySelector('.stage'), expApi); }
+    catch (e) { console.error('experiment ' + exp.id + ' failed:', e); }
+  }
+  return { register, strip: api };
+})();
+</script>
+<script src="lab/prism.js"></script>
+<script src="lab/cd.js"></script>
+<script src="lab/hose.js"></script>
+<script src="lab/sky.js"></script>
+</body>
+</html>
