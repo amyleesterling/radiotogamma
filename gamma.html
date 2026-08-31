@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Gamma Attic</title>
+<link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
+<link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #04070a; color: #cfe6e6;
+         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .num, svg text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .gamebar { display: flex; align-items: baseline; gap: 18px; padding: 11px 18px;
+             border-radius: 0; border-left: 0; border-right: 0; border-top: 0;
+             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .gamebar a { text-decoration: none; }
+  .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
+                  border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
+                  padding: 7px 12px; align-self: center; white-space: nowrap; }
+  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
+  .gamebar-name { font-size: 19px; font-weight: 600; letter-spacing: .06em;
+                  color: rgb(var(--bar-accent)); white-space: nowrap; }
+  @media (max-width: 700px) { .gamebar { flex-wrap: wrap; gap: 10px; } }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
+  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
+  h1 .num { color: #e278b4; }
+  .sub { font-size: 14.5px; color: #9aa2b1; margin: 0 0 24px; line-height: 1.55; max-width: 68ch; }
+  .sub b { color: #eff4fb; }
+
+  /* how wide the attic is, in octaves, against the whole downstairs */
+  .octcompare { margin: 0 0 26px; }
+  .octrow { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px;
+            align-items: center; font-size: 12.5px; color: #8b98a8; }
+  .octrow .lbl { text-align: right; }
+  .octbar { height: 14px; border: 1px solid rgba(196,228,255,.2); position: relative; }
+  .octbar i { position: absolute; inset: 0; font-style: normal; font-size: 10.5px;
+              color: #eff4fb; padding: 0 6px; line-height: 14px; white-space: nowrap; }
+  .octbar.all { background: linear-gradient(90deg, rgba(74,150,224,.35), rgba(226,120,180,.35)); }
+  .octbar.gam { background: rgba(226,120,180,.3); }
+
+  .cap { font-size: 12px; letter-spacing: .1em; color: #6c7c8c; text-transform: uppercase; margin: 0 0 6px; }
+  svg.attic { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16);
+              background: #05070c; touch-action: none; cursor: crosshair; }
+  .atticnote { font-size: 12px; color: #5c6b7a; margin: 6px 0 22px; line-height: 1.5; }
+
+  .readout { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+             margin: 0 0 24px; }
+  .rcard { border: 1px solid rgba(196,228,255,.14); border-left: 3px solid #e8a93a; padding: 10px 13px; }
+  .rcard .l { font-size: 11px; letter-spacing: .1em; color: #6c7c8c; text-transform: uppercase; }
+  .rcard .v { font-size: 19px; color: #eff4fb; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .rcard .m { font-size: 12px; color: #9aa2b1; margin-top: 3px; }
+
+  .lmcard { border: 1px solid rgba(226,120,180,.3); border-left: 3px solid #e278b4;
+            background: rgba(226,120,180,.05); padding: 13px 16px; margin: 0 0 26px; }
+  .lmcard h3 { margin: 0 0 5px; font-size: 15px; color: #eff4fb; }
+  .lmcard .e { font-size: 12.5px; color: #e278b4; margin: 0 0 7px; }
+  .lmcard p { margin: 0; font-size: 13.5px; color: #9aa2b1; line-height: 1.6; }
+
+  .dark { border: 1px solid rgba(196,228,255,.14); padding: 15px 18px; margin: 0 0 22px; }
+  .dark h2 { font-size: 13px; letter-spacing: .12em; color: #e278b4; margin: 0 0 9px; font-weight: 600; }
+  .dark p { font-size: 13.5px; color: #9aa2b1; line-height: 1.6; margin: 0 0 8px; }
+  .dark p:last-child { margin: 0; }
+  .dark b { color: #cfe6e6; }
+</style>
+</head>
+<body>
+<header class="gamebar holopanel" style="--bar-accent: 226 120 180;">
+  <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
+  <span class="gamebar-name">THE GAMMA ATTIC</span>
+  <span style="flex:1"></span>
+  <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
+</header>
+<div class="wrap">
+  <h1>The top floor is <span class="num">35 octaves</span> tall.</h1>
+  <p class="sub"><b>Gamma ray is not a band with two edges. It is the open-ended top of the spectrum:</b>
+     everything above the x-rays, however high. From its doorstep near 100 keV to the most energetic
+     photon ever caught, the gamma "band" spans about ten orders of magnitude, wider than every other
+     named band combined. Drag the marker; tap a landmark.</p>
+
+  <div class="octcompare">
+    <div class="octrow">
+      <span class="lbl">the whole main view</span>
+      <div class="octbar all" style="width: 100%"><i>radio → gamma · 53 octaves</i></div>
+      <span class="lbl">the gamma attic alone</span>
+      <div class="octbar gam" style="width: 66%"><i>100 keV → 1.4 PeV · 35 octaves</i></div>
+    </div>
+  </div>
+
+  <p class="cap">Photon energy, 100 keV to 3 PeV</p>
+  <svg class="attic" id="atticSvg" role="application"
+       aria-label="Gamma-ray energy ruler from 100 kiloelectronvolts to 3 petaelectronvolts. Drag the marker; select a landmark."></svg>
+  <p class="atticnote">The hatched right end is where the extragalactic sky goes dark: a photon above
+     ~100 TeV crossing intergalactic space collides with background starlight and becomes an
+     electron–positron pair before it can arrive. And the attic does not stop at the record:
+     between 1.4 PeV and the Planck energy lie thirteen more orders of magnitude in which
+     no photon has ever been seen.</p>
+
+  <div class="readout">
+    <div class="rcard"><div class="l">Photon energy</div><div class="v num" id="rE"></div><div class="m" id="rEm"></div></div>
+    <div class="rcard"><div class="l">Frequency</div><div class="v num" id="rF"></div><div class="m">oscillations per second</div></div>
+    <div class="rcard"><div class="l">Wavelength</div><div class="v num" id="rL"></div><div class="m" id="rLm"></div></div>
+  </div>
+
+  <div class="lmcard" id="lmCard" hidden>
+    <h3 id="lmName"></h3><div class="e num" id="lmE"></div><p id="lmWhy"></p>
+  </div>
+
+  <div class="dark">
+    <h2>✦ WHY THE ATTIC LOOKS EMPTY</h2>
+    <p>Nature's known accelerators, pulsar winds, supernova remnants, and the jets of feeding black
+       holes, seem to top out near PeV photon energies. Above ~100 TeV the universe itself censors
+       the view: over intergalactic distances, gamma rays annihilate against the cosmic background
+       light. So the highest floors are structurally sound but unvisited: allowed by the physics,
+       unreached by the sources, and hidden by the sky.</p>
+    <p>One PeV photon carries about the kinetic energy of a thrown ping-pong ball,
+       packed into a single quantum of light.</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const C = 299792458, EV_PER_HZ = 4.135667696e-15;
+  const E0 = 5, E1 = Math.log10(3e15);       // log10 eV range: 1e5 .. 3e15
+  const DARK = 1e14;                          // extragalactic opacity begins
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const log = Math.log10;
+
+  const EU = [[1e15,'PeV'],[1e12,'TeV'],[1e9,'GeV'],[1e6,'MeV'],[1e3,'keV'],[1,'eV']];
+  const num = v => v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : String(Math.round(v));
+  const SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+                '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+  const sup = n => String(n).split('').map(c => SUP[c]).join('');
+  const sci = (v, unit) => {
+    const e = Math.floor(Math.log10(v));
+    return (v / Math.pow(10, e)).toFixed(2) + ' × 10' + sup(e) + ' ' + unit;
+  };
+  const human = v => v < 1000 ? num(v)
+    : (Math.round(v / Math.pow(10, Math.floor(log(v)) - 2)) * Math.pow(10, Math.floor(log(v)) - 2)).toLocaleString('en-US');
+  const fmtE = e => { for (const [d,u] of EU) if (e >= d) return num(e/d) + ' ' + u; return num(e) + ' eV'; };
+  const fmtF = f => f >= 1e21 ? sci(f, 'Hz') : num(f / 1e18) + ' EHz';
+  const fmtL = l => l >= 1e-12 ? num(l / 1e-12) + ' pm'
+    : l >= 1e-16 ? num(l / 1e-15) + ' fm' : sci(l, 'm');
+
+  // energy in eV; each landmark is a real thing that emits there
+  const LM = [
+    { e: 1.4e5, name: 'Tc-99m, nuclear medicine', why: 'The workhorse tracer of nuclear medicine: injected, it lets a gamma camera watch organs work, then decays away within a day.' },
+    { e: 5.11e5, name: 'Positron annihilation (PET)', why: 'When a positron meets an electron, both vanish into a back-to-back pair of 511 keV photons. A PET scanner catches the pair and draws the line between them: imaging with antimatter.' },
+    { e: 6.62e5, name: 'Cs-137', why: 'The signature line of cesium-137, the fingerprint by which fallout and orphaned medical sources are recognized.' },
+    { e: 1.33e6, name: 'Co-60 sterilization', why: 'Cobalt-60’s gammas sterilize medical instruments and food by the pallet: intensity doing useful work.' },
+    { e: 2.61e6, name: 'Tl-208, nature’s loudest line', why: 'The highest-energy gamma line common in nature, from thorium’s decay chain: it is in the background hum of every rock.' },
+    { e: 6.7e7, name: 'Pion bump, cosmic rays', why: 'Cosmic rays striking interstellar gas make neutral pions, which decay to gamma rays peaking near 70 MeV: the glow of the Milky Way’s disk.' },
+    { e: 1e9, name: 'The Fermi sky', why: 'At GeV energies the Fermi telescope maps thousands of pulsars and blazars: black-hole jets pointed straight at us.' },
+    { e: 1e12, name: 'Crab Nebula at 1 TeV', why: 'Too energetic to catch directly, TeV photons are seen by the blue flash they make striking the atmosphere. The Crab Nebula is the standard candle.' },
+    { e: 1e14, name: '100 TeV: the sky goes dark', why: 'Above here, extragalactic gamma rays annihilate against background starlight en route. Only sources inside our galaxy can still be seen.' },
+    { e: 1.4e15, name: 'LHAASO record, 1.4 PeV', why: 'The most energetic photon ever detected, caught in 2021 from within the Milky Way: a single quantum with the energy of a thrown ping-pong ball.' },
+  ];
+
+  const svg = document.getElementById('atticSvg');
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function el(t, a, p, txt) { const e = document.createElementNS(SVGNS, t);
+    for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt;
+    if (p) p.appendChild(e); return e; }
+
+  let OW = 1000, marker = 5.11e5, sel = LM[1];
+  const X = e => (log(e) - E0) / (E1 - E0) * OW;
+  const E = x => Math.pow(10, E0 + clamp(x / OW, 0, 1) * (E1 - E0));
+
+  function draw() {
+    const w = Math.round(svg.getBoundingClientRect().width);
+    if (w > 0) OW = Math.max(300, w);
+    svg.setAttribute('viewBox', '0 0 ' + OW + ' 150');
+    svg.textContent = '';
+    const defs = el('defs', {}, svg);
+    const grad = el('linearGradient', { id: 'gat', x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#7ee0ff', 'stop-opacity': .18 }, grad);
+    el('stop', { offset: '100%', 'stop-color': '#e278b4', 'stop-opacity': .3 }, grad);
+    const hat = el('pattern', { id: 'hatch', width: 7, height: 7, patternUnits: 'userSpaceOnUse',
+                                patternTransform: 'rotate(45)' }, defs);
+    el('rect', { width: 7, height: 7, fill: 'rgba(226,120,180,.08)' }, hat);
+    el('rect', { width: 2, height: 7, fill: 'rgba(226,120,180,.35)' }, hat);
+
+    el('rect', { x: 0, y: 52, width: OW, height: 40, fill: 'url(#gat)' }, svg);
+    el('rect', { x: X(DARK), y: 52, width: OW - X(DARK), height: 40, fill: 'url(#hatch)' }, svg);
+    el('rect', { x: 0, y: 52, width: OW, height: 40, fill: 'none', stroke: 'rgba(196,228,255,.2)' }, svg);
+
+    // decade ticks, labeled where there is room
+    let last = -1e9;
+    for (let d = E0; d <= Math.floor(E1); d++) {
+      const x = X(Math.pow(10, d));
+      el('line', { x1: x, x2: x, y1: 92, y2: 100, stroke: '#3a4756' }, svg);
+      if (x - last > 64 && x > 24 && x < OW - 30) {
+        el('text', { x, y: 114, 'font-size': 10, fill: '#6c7c8c', 'text-anchor': 'middle' }, svg, fmtE(Math.pow(10, d)));
+        last = x;
+      }
+    }
+    // landmarks with finger-sized targets, labels on two collision rows
+    const rows = [-1e9, -1e9];
+    for (const l of LM) {
+      const x = X(l.e);
+      el('line', { x1: x, x2: x, y1: 42, y2: 52, stroke: '#8b98a8' }, svg);
+      el('circle', { cx: x, cy: 39, r: sel === l ? 3.4 : 2.4,
+                     fill: sel === l ? '#e278b4' : '#eff4fb', 'pointer-events': 'none' }, svg);
+      el('circle', { cx: x, cy: 39, r: 16, fill: 'transparent', 'data-e': l.e, style: 'cursor:pointer' }, svg);
+      const short = l.name.split(',')[0];
+      const wpx = short.length * 5.6;
+      let row = -1;
+      if (rows[0] + 8 < x - wpx / 2) row = 0; else if (rows[1] + 8 < x - wpx / 2) row = 1;
+      if (row >= 0) {
+        const lx = clamp(x, wpx / 2 + 2, OW - wpx / 2 - 2);
+        el('text', { x: lx, y: row === 0 ? 12 : 26, 'font-size': 10, fill: sel === l ? '#e278b4' : '#9aa2b1',
+                     'text-anchor': 'middle', 'data-e': l.e, style: 'cursor:pointer' }, svg, short);
+        rows[row] = lx + wpx / 2;
+      }
+    }
+    // the marker
+    const mx = X(marker);
+    el('rect', { x: mx - 22, y: 30, width: 44, height: 110, fill: 'transparent', id: 'atticHandle',
+                 tabindex: 0, role: 'slider', 'aria-label': 'Gamma photon energy',
+                 'aria-valuemin': E0, 'aria-valuemax': E1, 'aria-valuenow': log(marker).toFixed(2),
+                 'aria-valuetext': fmtE(marker), style: 'cursor:grab' }, svg);
+    el('line', { x1: mx, x2: mx, y1: 44, y2: 100, stroke: '#e8a93a', 'stroke-width': 2.5, 'pointer-events': 'none' }, svg);
+    el('circle', { cx: mx, cy: 44, r: 5, fill: '#e8a93a', 'pointer-events': 'none' }, svg);
+    el('text', { x: clamp(mx, 40, OW - 40), y: 140, 'font-size': 11.5, fill: '#e8a93a',
+                 'text-anchor': 'middle', 'font-weight': 600, 'pointer-events': 'none' }, svg, fmtE(marker));
+  }
+
+  function readout() {
+    const f = marker / EV_PER_HZ, lam = C / f;
+    document.getElementById('rE').textContent = fmtE(marker);
+    const er = marker / 5.11e5;
+    document.getElementById('rEm').textContent = 'one photon, ' + (er < 1.5 && er > 0.67
+      ? 'about an electron’s rest energy'
+      : er >= 1 ? human(er) + '× an electron’s rest energy'
+      : '1/' + human(1 / er) + ' of an electron’s rest energy');
+    document.getElementById('rF').textContent = fmtF(f);
+    document.getElementById('rL').textContent = fmtL(lam);
+    const nuc = lam / 1e-14;
+    document.getElementById('rLm').textContent = nuc > 1.5 ? human(nuc) + '× an atomic nucleus' : nuc > 0.67 ? 'about the size of an atomic nucleus' : '1/' + human(1 / nuc) + ' of an atomic nucleus';
+    const card = document.getElementById('lmCard');
+    if (sel) {
+      card.hidden = false;
+      document.getElementById('lmName').textContent = sel.name;
+      document.getElementById('lmE').textContent = fmtE(sel.e);
+      document.getElementById('lmWhy').textContent = sel.why;
+    } else card.hidden = true;
+  }
+
+  function render() { draw(); readout(); }
+
+  let dragging = false;
+  const svgX = e => { const r = svg.getBoundingClientRect(); return (e.clientX - r.left) / r.width * OW; };
+  svg.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const de = e.target.getAttribute && e.target.getAttribute('data-e');
+    if (de) { sel = LM.find(l => l.e === +de); marker = +de; render(); return; }
+    dragging = true; svg.setPointerCapture(e.pointerId);
+    marker = E(svgX(e)); sel = null; render();
+  });
+  svg.addEventListener('pointermove', e => { if (dragging) { marker = E(svgX(e)); sel = null; render(); } });
+  svg.addEventListener('pointerup', () => { dragging = false; });
+  svg.addEventListener('keydown', e => {
+    if (e.target.id !== 'atticHandle') return;
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    marker = Math.pow(10, clamp(log(marker) + (e.shiftKey ? 0.5 : 0.1) * (e.key === 'ArrowRight' ? 1 : -1), E0, E1));
+    sel = null; render();
+    document.getElementById('atticHandle').focus();
+  });
+
+  addEventListener('resize', render);
+  render();
+})();
+</script>
+</body>
+</html>

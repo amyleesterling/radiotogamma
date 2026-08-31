@@ -251,6 +251,8 @@
 <header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
   <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
   <span class="gamebar-name">OBSERVATORY</span>
+  <span style="flex:1"></span>
+  <a class="gamebar-back" href="gamma.html">GAMMA ATTIC →</a>
 </header>
 <div class="wrap">
   <h1>One phenomenon. <span class="mono">Sixteen orders of magnitude.</span></h1>
@@ -341,6 +343,7 @@ beam power      P = photons per second × energy per photon</pre>
   <div class="layers" role="group" aria-label="Optional layers">
     <button class="ctl" data-layer="matter" type="button" aria-pressed="false">Matter</button>
     <button class="ctl" data-layer="wave" type="button" aria-pressed="false">Wave view</button>
+    <button class="ctl" data-layer="senses" type="button" aria-pressed="false">Senses</button>
     <button class="ctl" data-layer="stories" type="button" aria-pressed="false">Stories</button>
   </div>
 
@@ -372,6 +375,17 @@ beam power      P = photons per second × energy per photon</pre>
     <p class="note">Speeds are compressed into a watchable range and cycle counts are mapped logarithmically —
        no screen or clock can literally display both ends of a sixteen-decade range at once. Waves too dense
        to resolve dissolve into a smear, which is the honest picture: too fast to see is a blur, not a strobe.</p>
+  </div>
+
+  <div class="panel" id="panelSenses" hidden>
+    <h3>Who senses what</h3>
+    <svg class="spec" id="sensesSvg" viewBox="0 0 1000 170" role="img"
+         aria-label="Ranges of the spectrum sensed by different animals"></svg>
+    <p class="note">Suggested by a reader: different animals are issued different slices. Bees and birds
+       see into the ultraviolet; pit vipers image the world in the infrared glow of their prey; your own
+       skin senses radiant warmth far below what your eyes catch. And one correction to a common mix-up:
+       no ear hears radio. Sound is pressure waves in air, not electromagnetic radiation — different
+       physics that borrowed the same vocabulary.</p>
   </div>
 
   <div class="panel stories" id="panelStories" hidden>
@@ -535,7 +549,7 @@ beam power      P = photons per second × energy per photon</pre>
     if (f.length === 2 && isFinite(f[0]) && isFinite(f[1]) && f[1] - f[0] > 0.01)
       { S.focLo = clamp(f[0], F0, F1); S.focHi = clamp(f[1], F0, F1); }
     const layer = p.get('layer');
-    if (['matter','wave','stories'].includes(layer)) S.layer = layer;
+    if (['matter','wave','stories','senses'].includes(layer)) S.layer = layer;
   }
 
   // ---- svg helpers --------------------------------------------------------
@@ -557,6 +571,7 @@ beam power      P = photons per second × energy per photon</pre>
     ovSvg.setAttribute('viewBox', '0 0 ' + OW + ' 96');
     focSvg.setAttribute('viewBox', '0 0 ' + OW + ' 150');
     matterSvg.setAttribute('viewBox', '0 0 ' + OW + ' 190');
+    sensesSvg.setAttribute('viewBox', '0 0 ' + OW + ' 170');
   }
   const ovX  = f => S.linear ? (f / FMAX) * OW : (log(f) - F0) / (F1 - F0) * OW;
   const focX = f => (log(f) - S.focLo) / (S.focHi - S.focLo) * OW;
@@ -565,7 +580,7 @@ beam power      P = photons per second × energy per photon</pre>
 
   // ---- dom refs -----------------------------------------------------------
   const $ = id => document.getElementById(id);
-  const ovSvg = $('ovSvg'), focSvg = $('focSvg'), matterSvg = $('matterSvg');
+  const ovSvg = $('ovSvg'), focSvg = $('focSvg'), matterSvg = $('matterSvg'), sensesSvg = $('sensesSvg');
   const chA = $('chA'), chB = $('chB');
 
   // ---- overview -----------------------------------------------------------
@@ -814,6 +829,31 @@ beam power      P = photons per second × energy per photon</pre>
     });
   }
 
+  const SENSES = [
+    { lo: C / 750e-9, hi: C / 380e-9, name: 'your eye' },
+    { lo: 3e12,       hi: 4e14,       name: 'your skin, radiant warmth' },
+    { lo: C / 650e-9, hi: C / 300e-9, name: 'honeybee, into the UV' },
+    { lo: C / 700e-9, hi: C / 350e-9, name: 'songbird, four cone types' },
+    { lo: C / 720e-9, hi: C / 300e-9, name: 'mantis shrimp, twelve' },
+    { lo: C / 30e-6,  hi: C / 5e-6,   name: 'pit viper heat pits' },
+  ];
+  function renderSenses() {
+    if (S.layer !== 'senses') return;
+    sensesSvg.textContent = '';
+    BANDS.forEach(b => {
+      const x0 = ovX(b.lo), x1 = ovX(b.hi);
+      el('rect', { x: x0, y: 0, width: x1 - x0, height: 14, fill: `rgb(${b.col})`, opacity: .25 }, sensesSvg);
+    });
+    SENSES.forEach((r, i) => {
+      const y = 22 + i * 24;
+      const x0 = ovX(r.lo), x1 = ovX(r.hi);
+      el('rect', { x: x0, y, width: Math.max(x1 - x0, 3), height: 12, rx: 6, fill: 'rgba(232,169,58,.16)',
+                   stroke: 'rgba(232,169,58,.4)' }, sensesSvg);
+      el('text', { x: clamp(x0 + 8, 4, OW - r.name.length * 6 - 4), y: y + 10,
+                   'font-size': 10.5, fill: '#9aa2b1' }, sensesSvg, r.name);
+    });
+  }
+
   // ---- readouts -----------------------------------------------------------
   function renderComposer() {
     for (const [ch, m] of [[chA, 'a'], [chB, 'b']]) {
@@ -1032,7 +1072,7 @@ beam power      P = photons per second × energy per photon</pre>
   function render() {
     syncWidth();
     renderComposer(); renderSentence(); renderTable(); renderScale(); renderPower();
-    renderOverview(); renderFocus(); renderMatter(); renderWaveText();
+    renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderWaveText();
     encodeState();
     pokeWave();
   }
@@ -1230,6 +1270,7 @@ beam power      P = photons per second × energy per photon</pre>
   function applyLayer() {
     layerBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.layer === S.layer)));
     $('panelMatter').hidden = S.layer !== 'matter';
+    $('panelSenses').hidden = S.layer !== 'senses';
     $('panelWave').hidden = S.layer !== 'wave';
     $('panelStories').hidden = S.layer !== 'stories';
   }
@@ -1293,7 +1334,7 @@ beam power      P = photons per second × energy per photon</pre>
   applyLayer();
   render();
   if (wantTest) selfTest();
-  addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); });
+  addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); });
 })();
 </script>
 </body>

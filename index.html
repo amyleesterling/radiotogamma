@@ -107,6 +107,14 @@
   .specvisbar.off { filter: grayscale(1) brightness(.42); }
   .specvisbar .specmark { top: -5px; bottom: -5px; }
 
+  /* the sunset lab: one slider, real 1/lambda^4 scattering behind the colors */
+  .sunsetlab { margin: 10px 0 2px; }
+  .sunsetscene { position: relative; height: 110px; border: 1px solid rgba(196,228,255,.18); overflow: hidden; }
+  .sunsetsun { position: absolute; left: 50%; width: 34px; height: 34px; border-radius: 50%;
+               transform: translateX(-50%); }
+  .sunsetlab input[type=range] { width: 100%; margin: 8px 0 4px; accent-color: #e8a93a; height: 28px; }
+  .sunsetnote { font-size: 12px; color: #8b98a8; margin: 0; line-height: 1.5; }
+
   .specread { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
   .specread .r { grid-column: 1 / -1; }
   @media (min-width: 560px) { .specread { grid-template-columns: 1fr 1fr 1fr; }
@@ -133,6 +141,9 @@
   /* The rainbow button: a small arc of the actual band, tappable. It only
      exists while marker B sits inside visible light, so finding it is part of
      the toy. The arc is a top-half ring wearing the spectrum as a gradient. */
+  .barwrap { position: relative; }
+  .rainbow-flag { position: absolute; top: -21px; transform: translateX(-50%); z-index: 3;
+                  padding: 2px 6px 0; background: #04070a; }
   .rainbow {
     display: inline-block; vertical-align: middle; margin-left: 10px;
     padding: 3px 9px 1px; cursor: pointer;
@@ -199,6 +210,7 @@
   <span class="gamebar-name">RADIO TO GAMMA</span>
   <span style="flex:1"></span>
   <a class="gamebar-back" href="observatory.html">OBSERVATORY →</a>
+  <a class="gamebar-back" href="gamma.html">GAMMA ATTIC →</a>
 </header>
 <div class="wrap">
   <h1 id="specHead">Radio to gamma</h1>
@@ -211,12 +223,18 @@
   </div>
   <p class="specwavenote" id="waveNote"></p>
 
+  <div class="barwrap">
+  <button class="rainbow rainbow-flag" id="rainbowFlag" type="button"
+          aria-label="Open the color play zone" title="Open the color play zone">
+    <span class="rainbow-arc" aria-hidden="true"></span>
+  </button>
   <div class="specscroll">
     <div class="specbar" id="specBar">
       <div class="specmark a" id="markA" tabindex="0" role="slider" aria-label="Marker A frequency"></div>
       <div class="specmark b" id="markB" tabindex="0" role="slider" aria-label="Marker B frequency"></div>
     </div>
     <div class="specticks" id="specTicks"></div>
+  </div>
   </div>
 
   <p class="cap">Visible light, magnified:
@@ -264,7 +282,13 @@
       strongly as the red end. Look anywhere but at the sun and scattered
       blue is what reaches you. At sunset the light crosses so much air that
       the blue has been scattered away en route, and what survives the trip
-      is the red.</p>
+      is the red. Try it: drag the sun down.</p>
+      <div class="sunsetlab">
+        <div class="sunsetscene" id="sunsetScene" aria-hidden="true"><div class="sunsetsun" id="sunsetSun"></div></div>
+        <input type="range" id="sunsetRange" min="0" max="1000" value="0"
+               aria-label="How much air the sunlight crosses, from noon overhead to setting on the horizon">
+        <p class="sunsetnote" id="sunsetNote"></p>
+      </div>
     </details>
   </div>
 
@@ -561,6 +585,16 @@
     rainbowBtn.setAttribute('aria-expanded', String(open));
   });
 
+  // the rainbow flag pinned over the visible band on the full bar: a second
+  // always-lit doorway to the play zone
+  const rainbowFlag = document.getElementById('rainbowFlag');
+  rainbowFlag.style.left = (toX(Math.sqrt(VIS_LO * VIS_HI)) * 100) + '%';
+  rainbowFlag.addEventListener('click', () => {
+    visFun.hidden = false;
+    rainbowBtn.setAttribute('aria-expanded', 'true');
+    visFun.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+  });
+
   // the rainbow sliver on the main bar is a doorway too: clicking it opens
   // the play zone instead of moving a marker
   const visBand = Array.from(bar.querySelectorAll('.specband')).find(e => e.dataset.band === 'visible');
@@ -801,6 +835,44 @@
 
   renderApple();
   requestAnimationFrame(appleFrame);
+
+  // ---- the sunset lab ----------------------------------------------------
+  // One slider: how many atmospheres of air the light crosses (1 at noon,
+  // ~38 at the horizon). Rayleigh scattering removes light in proportion to
+  // 1/lambda^4; everything drawn below follows from that one law.
+  (() => {
+    const range = document.getElementById('sunsetRange');
+    if (!range) return;
+    const scene = document.getElementById('sunsetScene');
+    const sun = document.getElementById('sunsetSun');
+    const note = document.getElementById('sunsetNote');
+    const LAM = [620, 545, 460];                    // r, g, b sample wavelengths, nm
+    const K = 0.20;                                  // scattering depth for blue at 1 air mass
+    const tau = (lam, m) => K * Math.pow(460 / lam, 4) * m;
+    const T = (lam, m) => Math.exp(-tau(lam, m));
+    const rgb = a => 'rgb(' + a.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255)).join(',') + ')';
+    function upd() {
+      const t = range.value / 1000;
+      const m = 1 * Math.pow(38, t);                 // air masses, log ramp noon -> horizon
+      const trans = LAM.map(l => T(l, m));           // what survives the trip: the sun's color
+      sun.style.background = rgb(trans.map(v => 0.15 + 0.85 * v));
+      sun.style.boxShadow = '0 0 24px 6px ' + rgb(trans.map(v => v * 0.8));
+      sun.style.top = (8 + t * 72) + 'px';
+      // the sky near you: what got scattered out of sunlight that already
+      // crossed some air, so it reddens near the horizon too
+      const sky = LAM.map(l => (1 - T(l, m * 0.45)) * T(l, m * 0.35) * 3.2);
+      const zen = LAM.map(l => (1 - T(l, 1)) * 2.6); // overhead stays bluer
+      scene.style.background = 'linear-gradient(180deg, ' + rgb(zen.map(v => v * (1 - t * 0.75))) + ', ' + rgb(sky) + ')';
+      note.textContent = 'Light is crossing ' + (m < 10 ? m.toFixed(1) : Math.round(m)) +
+        ' atmosphere' + (m < 1.05 ? '' : 's') + ' of air. Blue at 460 nm scatters ' +
+        (Math.pow(620 / 460, 4)).toFixed(1) + 'x more than red at 620 nm, so ' +
+        (t < 0.3 ? 'the sky fills with scattered blue while the sun barely notices.'
+         : t < 0.7 ? 'the long slant is stripping blue from the direct beam.'
+         : 'almost all the blue is gone before the light arrives: only the red survives the trip.');
+    }
+    range.addEventListener('input', upd);
+    upd();
+  })();
 })();
 </script>
 </body>
