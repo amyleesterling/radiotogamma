@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Observatory · Radio to Gamma</title>
+<link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
+<link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #04070a; color: #cfe6e6;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono, .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .gamebar {
+    display: flex; align-items: baseline; gap: 18px;
+    padding: 11px 18px; border-radius: 0;
+    border-left: 0; border-right: 0; border-top: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .gamebar a { text-decoration: none; }
+  .gamebar-back {
+    font-size: 13px; letter-spacing: .12em;
+    color: rgb(var(--holo-dim, 154 162 177));
+    border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
+    padding: 7px 12px; align-self: center; white-space: nowrap;
+  }
+  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
+  .gamebar-name {
+    font-size: 19px; font-weight: 600; letter-spacing: .06em;
+    color: rgb(var(--bar-accent)); white-space: nowrap;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 30px 20px 70px; }
+  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; letter-spacing: .02em; }
+  h1 .mono { color: #7ee0ff; }
+  .sub { font-size: 14.5px; color: #9aa2b1; margin: 0 0 26px; line-height: 1.5; max-width: 62ch; }
+
+  /* ---- comparison composer ------------------------------------------- */
+  .composer { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; margin-bottom: 12px; }
+  .chooser {
+    flex: 1 1 300px; position: relative; text-align: left;
+  }
+  .chooser > button {
+    width: 100%; font: inherit; cursor: pointer; text-align: left;
+    background: rgba(8,14,22,.7); color: #cfe6e6;
+    border: 1px solid rgba(196,228,255,.16); padding: 10px 14px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .chooser.a > button { border-left: 3px solid #7ee0ff; }
+  .chooser.b > button { border-left: 3px solid #e8a93a; }
+  .chooser.active > button { border-color: rgba(196,228,255,.55); background: rgba(14,22,34,.9); }
+  .chooser .tag { font-size: 12px; letter-spacing: .12em; font-weight: 700; }
+  .chooser.a .tag { color: #7ee0ff; } .chooser.b .tag { color: #e8a93a; }
+  .chooser .lname { font-size: 15px; color: #eff4fb; }
+  .chooser .lval { margin-left: auto; font-size: 13px; color: #9aa2b1; }
+  .chooser .caret { color: #6c7c8c; font-size: 11px; }
+  .swap {
+    align-self: center; font: inherit; font-size: 17px; cursor: pointer;
+    background: none; color: #a07cff; border: 1px solid rgba(160,124,255,.35);
+    padding: 8px 13px; min-width: 44px; min-height: 44px;
+  }
+  .swap:hover { border-color: #a07cff; }
+
+  .picker {
+    position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px);
+    background: #070c14; border: 1px solid rgba(196,228,255,.28);
+    box-shadow: 0 12px 40px rgba(0,0,0,.6); padding: 10px;
+  }
+  .picker input {
+    width: 100%; box-sizing: border-box; font: inherit; font-size: 14px;
+    background: #04070a; color: #eff4fb; border: 1px solid rgba(196,228,255,.2);
+    padding: 9px 10px; margin-bottom: 8px;
+  }
+  .picker .hint { font-size: 11.5px; color: #5c6b7a; margin: 0 0 8px; }
+  .picker ul { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; }
+  .picker li button {
+    width: 100%; text-align: left; font: inherit; font-size: 13.5px; cursor: pointer;
+    background: none; border: 0; color: #cfe6e6; padding: 8px 8px;
+    display: flex; gap: 10px; align-items: baseline;
+  }
+  .picker li button:hover, .picker li button:focus-visible { background: rgba(126,224,255,.09); }
+  .picker li.sel button { background: rgba(126,224,255,.1); border-left: 2px solid #7ee0ff; color: #eff4fb; }
+  .picker li.sel .val::after { content: " ✓"; color: #7ee0ff; }
+  .picker li .cat { font-size: 10.5px; letter-spacing: .08em; color: #5c6b7a; text-transform: uppercase; }
+  .picker li .val { margin-left: auto; color: #8b98a8; font-size: 12px; }
+  .picker li.custom button { color: #a07cff; }
+
+  .sentence {
+    font-size: 16.5px; line-height: 1.55; color: #eff4fb;
+    border: 1px solid rgba(160,124,255,.25); border-left: 3px solid #a07cff;
+    background: rgba(160,124,255,.05); padding: 14px 18px; margin: 0 0 8px;
+  }
+  .sentence b { color: #fff; }
+  .rellabel { font-size: 11px; letter-spacing: .12em; color: #6c7c8c; text-transform: uppercase; margin-bottom: 3px; }
+  .relratio { font-size: 30px; font-weight: 650; color: #fff; letter-spacing: .01em; }
+  .relratio.long { font-size: 21px; }
+  .relratio .x { color: #a07cff; font-weight: 400; }
+  .reldir { margin: 5px 0 9px; font-size: 15px; color: #cfe6e6; }
+  .reldir b.a { color: #7ee0ff; } .reldir b.b { color: #e8a93a; }
+  .reldir .relarrow { color: #a07cff; padding: 0 8px; font-size: 30px; line-height: 0; vertical-align: -5px; }
+  .relnote { font-size: 13.5px; color: #9aa2b1; line-height: 1.55; }
+  .relnote b { color: #cfe6e6; font-weight: 600; }
+
+  /* the lockstep explorer: drag between A and B and watch all four quantities
+     move by the same factor */
+  .lockstep { margin-top: 14px; border-top: 1px solid rgba(160,124,255,.2); padding-top: 12px; }
+  .lockstep input[type=range] { width: 100%; accent-color: #a07cff; height: 30px; margin: 0 0 4px; cursor: ew-resize; }
+  #lockSvg { display: block; width: 100%; height: 54px; }
+  .lockchips { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+  .lockchip { border: 1px solid rgba(196,228,255,.14); padding: 7px 10px; font-size: 12px;
+              display: flex; flex-direction: column; gap: 2px; }
+  .lockchip .lcn { color: #8b98a8; letter-spacing: .04em; }
+  .lockchip.up .lcn { color: #cfe6e6; }
+  .lockchip .lcv { color: #eff4fb; font-size: 14.5px; }
+  .lockchip .lcf { color: #a07cff; }
+  .locknote { font-size: 11.5px; color: #5c6b7a; margin-top: 9px; line-height: 1.5; }
+  .locknote b.a { color: #7ee0ff; } .locknote b.b { color: #e8a93a; }
+  .insight { font-size: 13.5px; color: #9aa2b1; line-height: 1.55; margin: 0 0 26px; padding: 0 2px; }
+  .insight::before { content: "✦ "; color: #a07cff; }
+
+  /* ---- overview + focus ----------------------------------------------- */
+  .rowhead { display: flex; align-items: baseline; gap: 14px; margin: 0 0 6px; flex-wrap: wrap; }
+  .rowhead .cap { font-size: 12px; letter-spacing: .1em; color: #6c7c8c; text-transform: uppercase; }
+  .rowhead .crumbs { font-size: 12px; color: #7ee0ff; letter-spacing: .06em; }
+  .rowhead .spacer { flex: 1; }
+  .ctl {
+    font: inherit; font-size: 12px; cursor: pointer; background: none; color: #9aa2b1;
+    border: 1px solid rgba(196,228,255,.16); padding: 6px 10px; min-height: 32px;
+  }
+  .ctl:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
+  .ctl[aria-pressed="true"] { color: #7ee0ff; border-color: rgba(126,224,255,.6); background: rgba(126,224,255,.08); }
+
+  svg.spec { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16); background: #05070c; touch-action: none; }
+  #ovSvg { margin-bottom: 4px; }
+  .ovnote { font-size: 12px; color: #5c6b7a; margin: 6px 0 18px; line-height: 1.5; }
+  .ovnote.linear { color: #e8a93a; }
+  #focSvg { cursor: crosshair; }
+  .focnote { font-size: 12px; color: #5c6b7a; margin: 6px 0 26px; }
+  svg text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .handlehit { cursor: grab; }
+  .handlehit:focus { outline: none; }
+  .handlehit:focus-visible + .handleline { stroke-width: 4; }
+
+  /* ---- table ----------------------------------------------------------- */
+  /* the table scrolls inside its own container if it must; the page never
+     scrolls sideways, whatever gets picked as A and B */
+  .tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 0 28px; }
+  .qtable { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .qtable th, .qtable td { text-align: left; padding: 9px 12px; border: 1px solid rgba(196,228,255,.12); }
+  .qtable th { font-size: 11.5px; letter-spacing: .1em; color: #6c7c8c; font-weight: 600; text-transform: uppercase; }
+  .qtable td { color: #eff4fb; font-variant-numeric: tabular-nums; }
+  .qtable td.q { color: #9aa2b1; font-family: inherit; }
+  .qtable th.a, .qtable td.a { border-bottom-color: rgba(126,224,255,.35); }
+  .qtable th.b, .qtable td.b { border-bottom-color: rgba(232,169,58,.35); }
+  .qtable td.rel { color: #a07cff; white-space: nowrap; }
+  .qtable .u { color: #8b98a8; }
+
+  /* ---- wavelength scale ladder ------------------------------------------ */
+  .scalecap { font-size: 12px; letter-spacing: .1em; color: #6c7c8c; text-transform: uppercase; margin: 14px 0 8px; }
+  .scalerow { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 28px; }
+  .scalecard {
+    flex: 1 1 320px; display: flex; gap: 14px; align-items: center;
+    border: 1px solid rgba(196,228,255,.14); padding: 12px 14px; background: rgba(8,14,22,.4);
+  }
+  .scalecard.a { border-left: 3px solid #7ee0ff; }
+  .scalecard.b { border-left: 3px solid #e8a93a; }
+  .scalecard img { width: 76px; height: 76px; object-fit: contain; flex: 0 0 auto; }
+  .scalecard .who { font-size: 13.5px; font-weight: 700; letter-spacing: .07em; color: #eff4fb; margin-bottom: 4px; }
+  .scalecard.a .who b { color: #7ee0ff; } .scalecard.b .who b { color: #e8a93a; }
+  .scalecard .what { font-size: 14px; color: #eff4fb; line-height: 1.5; }
+  .scalecard .what .num { color: #cfe6e6; }
+  .scalecard .desc { font-size: 12.5px; color: #8b98a8; line-height: 1.55; margin-top: 7px; }
+  .scalecard .desc[hidden] { display: none; }
+
+  /* ---- same power ------------------------------------------------------- */
+  .power { border: 1px solid rgba(196,228,255,.14); padding: 16px 18px; margin: 0 0 26px; }
+  .power h2 { font-size: 13px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 10px; font-weight: 600; }
+  .power .modes { display: flex; gap: 8px; margin: 0 0 12px; flex-wrap: wrap; }
+  .power .modes label {
+    font-size: 13px; cursor: pointer; border: 1px solid rgba(196,228,255,.16);
+    padding: 8px 12px; color: #9aa2b1; display: flex; gap: 7px; align-items: center; min-height: 27px;
+  }
+  .power .modes label:has(input:checked) { color: #eff4fb; border-color: rgba(126,224,255,.55); background: rgba(126,224,255,.07); }
+  .power p { font-size: 14.5px; line-height: 1.6; color: #cfe6e6; margin: 0 0 8px; }
+  .power p b { color: #fff; }
+  .power details { font-size: 13px; color: #8b98a8; }
+  .power details pre { font-size: 12.5px; color: #7ee0ff; background: #04070a; border: 1px solid rgba(196,228,255,.12); padding: 10px 12px; overflow-x: auto; }
+
+  .distinction { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px;
+    font-size: 13px; margin: 0 0 30px; padding: 13px 16px;
+    border: 1px solid rgba(196,228,255,.14); background: rgba(8,14,22,.5); }
+  .distinction dt { color: #7ee0ff; letter-spacing: .1em; font-size: 11.5px; align-self: baseline; padding-top: 1px; }
+  .distinction dd { margin: 0; color: #9aa2b1; }
+  .distinction dd b { color: #cfe6e6; font-weight: 600; }
+
+  /* ---- layers ----------------------------------------------------------- */
+  .layers { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .panel { border: 1px solid rgba(196,228,255,.14); padding: 14px 16px; margin: 0 0 22px; }
+  .panel[hidden] { display: none; }
+  .panel h3 { font-size: 12px; letter-spacing: .12em; color: #6c7c8c; margin: 0 0 10px; font-weight: 600; text-transform: uppercase; }
+  .panel .note { font-size: 12px; color: #5c6b7a; margin: 8px 0 0; line-height: 1.5; }
+
+  .wavebox { position: relative; height: 150px; border: 1px solid rgba(196,228,255,.16); background: #05070c; }
+  .wavebox canvas { display: block; width: 100%; height: 100%; }
+  .wavebox .lane-tag { position: absolute; left: 8px; top: 8px; font-size: 11px; letter-spacing: .06em; color: #7ee0ff; }
+  .wavebox .lane-tag.b { top: auto; bottom: 8px; color: #e8a93a; }
+  .wavebox .badge { position: absolute; right: 8px; top: 8px; font-size: 10.5px; letter-spacing: .08em;
+    color: #e8a93a; border: 1px solid rgba(232,169,58,.4); padding: 3px 7px; background: rgba(4,7,10,.7); }
+  .wavectl { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; flex-wrap: wrap; font-size: 12.5px; color: #8b98a8; }
+  .wavectl select { font: inherit; font-size: 12.5px; background: #04070a; color: #cfe6e6; border: 1px solid rgba(196,228,255,.2); padding: 6px 8px; }
+
+  .stories li { margin: 0 0 6px; } .stories ul { list-style: none; margin: 0 0 10px; padding: 0; }
+  .stories button { font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; background: none; color: #cfe6e6;
+    border: 1px solid rgba(196,228,255,.14); padding: 9px 12px; width: 100%; }
+  .stories button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
+
+  .stepladder { display: grid; grid-template-columns: max-content max-content 1fr; gap: 7px 18px;
+                margin: 14px 0; font-size: 13px; }
+  .stepladder span:nth-child(3n+1) { color: #a07cff; text-align: right; }
+  .stepladder span:nth-child(3n+2) { color: #eff4fb; }
+  .stepladder span:nth-child(3n)   { color: #8b98a8; font-family: "Segoe UI", system-ui, sans-serif; }
+
+  .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 8px; max-width: 70ch; }
+  .coda { margin-top: 34px; font-size: 13px; color: #6c7c8c; line-height: 1.7; max-width: 66ch; }
+  .coda .stride {
+    font-weight: 700;
+    background: linear-gradient(90deg, #ff2d2d, #ff7b00, #ffd400, #7bff2d, #00e5ff, #2b5cff, #7a2bff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  @media (max-width: 700px) {
+    .gamebar { flex-wrap: wrap; gap: 10px; }
+    .composer { flex-direction: column; }
+    .chooser { flex: none; }
+    .swap { align-self: stretch; }
+    .qtable { font-size: 12.5px; }
+    .qtable th, .qtable td { padding: 7px 8px; }
+    .qtable td.rel { white-space: normal; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .chooser > button, .ctl, .swap, .picker li button { transition: border-color .15s, color .15s, background .15s; }
+  }
+</style>
+</head>
+<body>
+<header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
+  <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
+  <span class="gamebar-name">OBSERVATORY</span>
+</header>
+<div class="wrap">
+  <h1>One phenomenon. <span class="mono">Sixteen orders of magnitude.</span></h1>
+  <p class="sub"><b>The electromagnetic spectrum is one family of waves: electric and magnetic
+     fields rippling through spacetime, carrying energy.</b> Radio, microwaves, infrared, light, UV,
+     x-rays and gamma rays are all the same phenomenon. This view spans all known types of
+     electromagnetic radiation, sixteen orders of magnitude, from radio waves that pass through you
+     unfelt to gamma rays that can snap your molecules apart and, at the intensity of a nuclear
+     fireball, vaporize you outright. Below, explore. Choose two signals. Compare their frequency,
+     wavelength, photon energy, and how matter responds.</p>
+
+  <div class="composer">
+    <div class="chooser a" id="chA">
+      <button type="button" aria-haspopup="listbox" aria-expanded="false">
+        <span class="tag">A</span><span class="lname"></span><span class="lval num"></span><span class="caret">▾</span>
+      </button>
+    </div>
+    <button class="swap" id="swapBtn" type="button" title="Swap A and B" aria-label="Swap A and B">⇄</button>
+    <div class="chooser b" id="chB">
+      <button type="button" aria-haspopup="listbox" aria-expanded="false">
+        <span class="tag">B</span><span class="lname"></span><span class="lval num"></span><span class="caret">▾</span>
+      </button>
+    </div>
+  </div>
+
+  <p class="scalecap">Wavelength, for scale</p>
+  <div class="scalerow">
+    <div class="scalecard a"><img id="scaleImgA" alt=""><div>
+      <div class="who" id="scaleWhoA"></div><div class="what" id="scaleWhatA"></div>
+      <div class="desc" id="scaleDescA"></div></div></div>
+    <div class="scalecard b"><img id="scaleImgB" alt=""><div>
+      <div class="who" id="scaleWhoB"></div><div class="what" id="scaleWhatB"></div>
+      <div class="desc" id="scaleDescB"></div></div></div>
+  </div>
+
+  <p class="sentence" id="sentence" aria-live="polite"></p>
+  <p class="insight" id="insight"></p>
+
+  <div class="rowhead">
+    <span class="cap">Overview</span>
+    <span class="spacer"></span>
+    <button class="ctl" id="scaleBtn" type="button" aria-pressed="false">Linear scale</button>
+  </div>
+  <svg class="spec" id="ovSvg" viewBox="0 0 1000 96" role="img" aria-label="Full electromagnetic spectrum overview with markers A and B and a draggable focus window"></svg>
+  <p class="ovnote" id="ovNote">This view spans 10 kHz to 100 EHz — sixteen orders of magnitude of one phenomenon,
+     not the physical beginning or end of the spectrum. Click a region to focus on it, or drag the bright window.</p>
+
+  <div class="rowhead">
+    <span class="cap">Focus</span>
+    <span class="crumbs num" id="crumbs"></span>
+    <span class="spacer"></span>
+    <button class="ctl" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+    <button class="ctl" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+    <button class="ctl" id="zoomFull" type="button">Full view</button>
+  </div>
+  <svg class="spec" id="focSvg" viewBox="0 0 1000 150" role="application"
+       aria-label="Magnified spectrum ruler. Drag the A and B handles, click to move the active marker, scroll to zoom."></svg>
+  <p class="focnote">Click moves the <b id="activeNote"></b> marker · drag a handle · scroll or pinch to zoom · double-click a landmark to center it.</p>
+
+  <div class="tscroll">
+  <table class="qtable">
+    <thead><tr><th></th><th class="a" id="thA"></th><th class="b" id="thB"></th><th>Relationship (B vs A)</th></tr></thead>
+    <tbody id="qBody"></tbody>
+  </table>
+  </div>
+
+  <div class="power">
+    <h2>✦ SAME POWER, DIFFERENT PHOTONS</h2>
+    <div class="modes" role="radiogroup" aria-label="Comparison basis">
+      <label><input type="radio" name="pmode" value="power" checked> Equal power</label>
+      <label><input type="radio" name="pmode" value="count"> Equal photon count</label>
+    </div>
+    <p id="powerText"></p>
+    <details><summary>The formula drawer</summary>
+      <pre>photon energy   E = hν        (h = 6.626×10⁻³⁴ J·s)
+beam power      P = photons per second × energy per photon</pre>
+      <p>Frequency fixes the energy of each photon. It does not fix how many photons
+         a source emits — that is power, and power belongs to the source, not to the spectrum.</p>
+    </details>
+  </div>
+
+  <dl class="distinction mono">
+    <dt>PHOTON ENERGY</dt><dd><b>always increases with frequency →</b></dd>
+    <dt>BEAM POWER</dt><dd>depends on the source</dd>
+    <dt>HAZARD</dt><dd>depends on power, exposure, absorption, and biology</dd>
+  </dl>
+
+  <div class="layers" role="group" aria-label="Optional layers">
+    <button class="ctl" data-layer="matter" type="button" aria-pressed="false">Matter</button>
+    <button class="ctl" data-layer="wave" type="button" aria-pressed="false">Wave view</button>
+    <button class="ctl" data-layer="stories" type="button" aria-pressed="false">Stories</button>
+  </div>
+
+  <div class="panel" id="panelMatter" hidden>
+    <h3>How matter commonly responds</h3>
+    <svg class="spec" id="matterSvg" viewBox="0 0 1000 190" role="img"
+         aria-label="Overlapping ranges of common light–matter interaction regimes across the spectrum"></svg>
+    <p class="note">These regimes overlap and depend on the material — they are common mechanisms, not walls.
+       The named spectrum bands themselves are conventions with soft edges, not laws of nature.</p>
+  </div>
+
+  <div class="panel" id="panelWave" hidden>
+    <h3>Wave view</h3>
+    <div class="wavebox">
+      <span class="lane-tag a" id="waveTagA">A</span>
+      <span class="lane-tag b" id="waveTagB">B</span>
+      <span class="badge">COMPRESSED ILLUSTRATION — NOT TO SCALE</span>
+      <canvas id="waveCanvas"></canvas>
+    </div>
+    <div class="wavectl">
+      <label for="obsWin">Observation window:</label>
+      <select id="obsWin">
+        <option value="1">1 s</option><option value="1e-3">1 ms</option>
+        <option value="1e-6">1 µs</option><option value="1e-9" selected>1 ns</option>
+        <option value="1e-12">1 ps</option><option value="1e-15">1 fs</option>
+      </select>
+      <span id="obsText" class="num"></span>
+    </div>
+    <p class="note">Speeds are compressed into a watchable range and cycle counts are mapped logarithmically —
+       no screen or clock can literally display both ends of a sixteen-decade range at once. Waves too dense
+       to resolve dissolve into a smear, which is the honest picture: too fast to see is a blur, not a strobe.</p>
+  </div>
+
+  <div class="panel stories" id="panelStories" hidden>
+    <h3>Stories</h3>
+    <ul id="storyList"></ul>
+    <button class="ctl" id="surprise" type="button">Surprise me</button>
+  </div>
+
+  <div class="power steps">
+    <h2>✦ HOW FAR IS 53 OCTAVES?</h2>
+    <p>This view spans 53 doublings of frequency. To feel what that means, take one walking
+       step — <b>0.75 m</b> — and double it once for every octave:</p>
+    <div class="stepladder num">
+      <span>0</span><span>0.75 m</span><span>one step</span>
+      <span>10</span><span>768 m</span><span>the corner store</span>
+      <span>20</span><span>786 km</span><span>San Francisco to San Diego</span>
+      <span>30</span><span>805,000 km</span><span>past the Moon, twice over</span>
+      <span>40</span><span>5.5 AU</span><span>past Jupiter</span>
+      <span>46</span><span>353 AU</span><span>past Voyager 1, out of the heliosphere</span>
+      <span>53</span><span>0.7 light-years</span><span>deep in the Oort cloud</span>
+    </div>
+    <p>One step becomes seven-tenths of a light-year — most of the way through the comet halo at
+       the solar system's edge, a sixth of the distance to the nearest star. Radio to gamma is the
+       gap between a footstep and the Oort cloud, and the entire visible rainbow is
+       <b>a single stride</b> somewhere along the way.</p>
+  </div>
+
+  <p class="foot" id="shareNote">The address bar tracks this comparison — copy the URL to share exactly this view.
+     Band boundaries are drawn softly on purpose: the named regions are human conventions laid over one continuous spectrum.</p>
+
+  <p class="coda">You are reading this page by catching a hail of half-quadrillion-hertz photons that left
+     a glowing rectangle nanoseconds ago — light your eyes were built for. Of the fifty-three octaves
+     above, you were issued <span class="stride">one</span>. Spend it well.</p>
+</div>
+
+<script src="spectrum-data.js"></script>
+<script>
+(() => {
+  'use strict';
+  // ---- constants and conversions ----------------------------------------
+  const C = 299792458;
+  const H_J = 6.62607015e-34;
+  const EV_PER_HZ = 4.135667696e-15;      // h/e: E[eV] = f * this
+  const F0 = 4, F1 = 20;                  // displayed window, log10 Hz
+  const FMIN = 1e4, FMAX = 1e20;
+  const VIS_LO = C / 750e-9, VIS_HI = C / 380e-9;
+  const TAU = Math.PI * 2;
+  const { LANDMARKS, STORIES, SCALE_OBJECTS } = window.SPECTRUM_DATA;
+  const byId = Object.fromEntries(LANDMARKS.map(l => [l.id, l]));
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const log = Math.log10;
+
+  // ---- formatters (unit tables carried over from the wave instrument) ----
+  const FU = [[1e18,'EHz'],[1e15,'PHz'],[1e12,'THz'],[1e9,'GHz'],[1e6,'MHz'],[1e3,'kHz'],[1,'Hz']];
+  const WU = [[1e3,'km'],[1,'m'],[1e-2,'cm'],[1e-3,'mm'],[1e-6,'µm'],[1e-9,'nm'],[1e-12,'pm']];
+  const TU = [[1,'s'],[1e-3,'ms'],[1e-6,'µs'],[1e-9,'ns'],[1e-12,'ps'],[1e-15,'fs'],[1e-18,'as']];
+  const EU = [[1e9,'GeV'],[1e6,'MeV'],[1e3,'keV'],[1,'eV'],[1e-3,'meV'],[1e-6,'µeV'],[1e-9,'neV']];
+  const num = v => v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : String(Math.round(v));
+  const num5 = v => String(parseFloat(v.toPrecision(5)));   // 563.52, not 564
+  function unit(x, table, fb, html) {
+    const fmt = html === 'precise' ? num5 : num;
+    for (const [d, u] of table) if (x >= d)
+      return html ? fmt(x / d) + ' <span class="u">' + u + '</span>' : fmt(x / d) + ' ' + u;
+    return x.toExponential(2) + (html ? ' <span class="u">' + fb + '</span>' : ' ' + fb);
+  }
+  const freq   = (f, h) => unit(f, FU, 'Hz', h);
+  const wave   = (f, h) => unit(C / f, WU, 'm', h);
+  const period = (f, h) => unit(1 / f, TU, 's', h);
+  const energy = (f, h) => unit(f * EV_PER_HZ, EU, 'eV', h);
+
+  const BIG = [[1e15,'quadrillion'],[1e12,'trillion'],[1e9,'billion'],[1e6,'million'],[1e3,'thousand']];
+  function ratioWord(r) {
+    if (r < 1000) return r < 10 ? r.toFixed(2) : String(Math.round(r));
+    if (r < 1e15) {
+      // written out the way humans write numbers: 168,000, not 168 thousand
+      const e = Math.floor(log(r)) - 2;              // keep 3 significant figures
+      return (Math.round(r / Math.pow(10, e)) * Math.pow(10, e)).toLocaleString('en-US');
+    }
+    for (const [d, w] of BIG) if (r >= d) { const v = r / d; return (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : String(Math.round(v))) + ' ' + w; }
+    return r.toExponential(2);
+  }
+  const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  function bigCount(x) {  // photons per second etc.
+    if (x < 1e3) return num(x);
+    if (x >= 1e18) {      // beyond named words: 1.51 × 10²⁵
+      const e = Math.floor(log(x));
+      return (x / Math.pow(10, e)).toFixed(2) + ' × 10' + String(e).split('').map(c => SUP[+c]).join('');
+    }
+    for (const [d, w] of BIG) if (x >= d) { const v = x / d; return (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : String(Math.round(v))) + ' ' + w; }
+    return x.toExponential(2);
+  }
+
+  // ---- bands (soft-edged conventions) and matter regimes ------------------
+  const BANDS = [
+    { lo: 1e4,    hi: 3e8,    name: 'radio',     short: 'RADIO', col: '74,150,224' },
+    { lo: 3e8,    hi: 3e11,   name: 'microwave', short: 'MW',    col: '74,200,224' },
+    { lo: 3e11,   hi: VIS_LO, name: 'infrared',  short: 'IR',    col: '196,96,64' },
+    { lo: VIS_LO, hi: VIS_HI, name: 'visible',   short: 'VIS',   col: '255,255,255' },
+    { lo: VIS_HI, hi: 3e16,   name: 'UV',        short: 'UV',    col: '138,96,230' },
+    { lo: 3e16,   hi: 3e19,   name: 'x-ray',     short: 'X-RAY', col: '126,224,255' },
+    { lo: 3e19,   hi: 1e20,   name: 'gamma',     short: 'GAMMA', col: '226,120,180' },
+  ];
+  const REGIMES = [
+    { lo: 1e4,  hi: 1e11,  name: 'collective currents / antennas' },
+    { lo: 1e8,  hi: 1e11,  name: 'spin transitions' },
+    { lo: 1e9,  hi: 1e12,  name: 'molecular rotation' },
+    { lo: 1e12, hi: 1.5e14,name: 'molecular vibration' },
+    { lo: 3e14, hi: 3e16,  name: 'electronic excitation' },
+    { lo: 7e14, hi: 3e16,  name: 'photochemistry' },
+    { lo: 3e15, hi: 1e20,  name: 'ionization' },
+    { lo: 1e19, hi: 1e20,  name: 'nuclear & particle interactions' },
+  ];
+  const VIS_COLORS = [
+    [750, '#ff2d2d', 'red'], [620, '#ff7b00', 'amber'], [580, '#ffd400', 'yellow'],
+    [530, '#7bff2d', 'green'], [480, '#00e5ff', 'cyan'], [450, '#2b5cff', 'blue'], [380, '#7a2bff', 'violet'],
+  ];
+
+  // ---- canonical state ----------------------------------------------------
+  const S = {
+    aHz: 100e6, aId: 'fm-radio',
+    bHz: C / 532e-9, bId: 'dust-off',
+    active: 'b',
+    focLo: F0, focHi: F1,     // log10 Hz
+    layer: null, linear: false, pmode: 'power',
+  };
+  const nameOf = m => {
+    const id = m === 'a' ? S.aId : S.bId;
+    return id && byId[id] ? byId[id].name : 'Custom frequency';
+  };
+  const hzOf = m => m === 'a' ? S.aHz : S.bHz;
+
+  function setMarker(m, hz, id) {
+    hz = clamp(hz, FMIN, FMAX);
+    if (id === undefined) {  // dragged/typed: keep a landmark name only if we still sit on a line
+      id = null;
+      for (const l of LANDMARKS) if (l.type === 'line' && Math.abs(log(hz / l.hz)) < 0.004) { id = l.id; break; }
+    }
+    if (m === 'a') { S.aHz = hz; S.aId = id; } else { S.bHz = hz; S.bId = id; }
+  }
+
+  // ---- URL state ----------------------------------------------------------
+  function encodeState() {
+    const p = new URLSearchParams();
+    p.set('a', S.aId || S.aHz.toExponential(6));
+    p.set('b', S.bId || S.bHz.toExponential(6));
+    if (S.focLo > F0 + 1e-6 || S.focHi < F1 - 1e-6) p.set('focus', S.focLo.toFixed(3) + '_' + S.focHi.toFixed(3));
+    if (S.layer) p.set('layer', S.layer);
+    history.replaceState(null, '', '?' + p.toString());
+  }
+  function decodeState() {
+    const p = new URLSearchParams(location.search);
+    const parse = (v, m) => {
+      if (!v) return;
+      if (byId[v]) setMarker(m, byId[v].hz, v);
+      else if (isFinite(+v)) setMarker(m, +v);
+    };
+    parse(p.get('a'), 'a'); parse(p.get('b'), 'b');
+    const f = (p.get('focus') || '').split('_').map(Number);
+    if (f.length === 2 && isFinite(f[0]) && isFinite(f[1]) && f[1] - f[0] > 0.01)
+      { S.focLo = clamp(f[0], F0, F1); S.focHi = clamp(f[1], F0, F1); }
+    const layer = p.get('layer');
+    if (['matter','wave','stories'].includes(layer)) S.layer = layer;
+  }
+
+  // ---- svg helpers --------------------------------------------------------
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent, text) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  // The svg coordinate width tracks the element's real CSS width, so one svg
+  // unit is one pixel and text renders at its nominal size on every screen —
+  // a fixed 1000-unit ruler squeezed into a phone made every label microscopic.
+  let OW = 1000;
+  function syncWidth() {
+    const w = Math.round(ovSvg.getBoundingClientRect().width);
+    if (w > 0) OW = Math.max(300, w);
+    ovSvg.setAttribute('viewBox', '0 0 ' + OW + ' 96');
+    focSvg.setAttribute('viewBox', '0 0 ' + OW + ' 150');
+    matterSvg.setAttribute('viewBox', '0 0 ' + OW + ' 190');
+  }
+  const ovX  = f => S.linear ? (f / FMAX) * OW : (log(f) - F0) / (F1 - F0) * OW;
+  const focX = f => (log(f) - S.focLo) / (S.focHi - S.focLo) * OW;
+  const focF = x => Math.pow(10, S.focLo + clamp(x / OW, 0, 1) * (S.focHi - S.focLo));
+  const span = () => S.focHi - S.focLo;
+
+  // ---- dom refs -----------------------------------------------------------
+  const $ = id => document.getElementById(id);
+  const ovSvg = $('ovSvg'), focSvg = $('focSvg'), matterSvg = $('matterSvg');
+  const chA = $('chA'), chB = $('chB');
+
+  // ---- overview -----------------------------------------------------------
+  function renderOverview() {
+    ovSvg.textContent = '';
+    const defs = el('defs', {}, ovSvg);
+    // soft band edges: each band fades in/out over a few px
+    BANDS.forEach((b, i) => {
+      const g = el('linearGradient', { id: 'bg' + i, x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
+      if (b.name === 'visible') {
+        // the visible sliver is the actual rainbow, even at this tiny width
+        el('stop', { offset: '0%', 'stop-color': '#ff2d2d', 'stop-opacity': 0 }, g);
+        VIS_COLORS.forEach(([nmv, c]) => {
+          const p = clamp((log(C / (nmv * 1e-9)) - log(VIS_LO)) / (log(VIS_HI) - log(VIS_LO)), 0, 1);
+          el('stop', { offset: (4 + p * 92) + '%', 'stop-color': c, 'stop-opacity': .85 }, g);
+        });
+        el('stop', { offset: '100%', 'stop-color': '#7a2bff', 'stop-opacity': 0 }, g);
+        return;
+      }
+      el('stop', { offset: '0%',  'stop-color': `rgb(${b.col})`, 'stop-opacity': 0 }, g);
+      el('stop', { offset: '6%',  'stop-color': `rgb(${b.col})`, 'stop-opacity': .22 }, g);
+      el('stop', { offset: '94%', 'stop-color': `rgb(${b.col})`, 'stop-opacity': .22 }, g);
+      el('stop', { offset: '100%','stop-color': `rgb(${b.col})`, 'stop-opacity': 0 }, g);
+    });
+    const bandsG = el('g', {}, ovSvg);
+    BANDS.forEach((b, i) => {
+      const x0 = ovX(b.lo), x1 = ovX(b.hi), w = x1 - x0;
+      el('rect', { x: x0, y: 30, width: Math.max(w, .5), height: 34, fill: 'url(#bg' + i + ')',
+                   'data-band': b.name, style: 'cursor:pointer' }, bandsG);
+      if (w > 46) el('text', { x: x0 + 6, y: 51, 'font-size': 11, fill: 'rgba(239,244,251,.75)',
+                               'pointer-events': 'none' }, bandsG, b.short);
+    });
+    // window edge ticks
+    for (let d = F0; d <= F1; d += 4) {
+      const x = S.linear ? ovX(Math.pow(10, d)) : (d - F0) / (F1 - F0) * OW;
+      el('text', { x: clamp(x, 2, OW - 2), y: 78, 'font-size': 10, fill: '#6c7c8c',
+                   'text-anchor': d === F0 ? 'start' : d === F1 ? 'end' : 'middle' },
+         ovSvg, freq(Math.pow(10, d)));
+    }
+    // focus window
+    if (!S.linear) {
+      const fx0 = (S.focLo - F0) / (F1 - F0) * OW, fx1 = (S.focHi - F0) / (F1 - F0) * OW;
+      el('rect', { x: fx0, y: 24, width: Math.max(fx1 - fx0, 4), height: 46, fill: 'rgba(126,224,255,.08)',
+                   stroke: 'rgba(126,224,255,.7)', 'stroke-width': 1.2, id: 'focWin', 'pointer-events': 'none' }, ovSvg);
+    }
+    // markers: A and B, named, collision-nudged
+    const marks = [['a', S.aHz, '#7ee0ff'], ['b', S.bHz, '#e8a93a']]
+      .sort((p, q) => ovX(p[1]) - ovX(q[1]));
+    let lastEnd = -1e9;
+    for (const [m, f, col] of marks) {
+      const x = ovX(f);
+      el('line', { x1: x, x2: x, y1: 18, y2: 70, stroke: col, 'stroke-width': 2, 'pointer-events': 'none' }, ovSvg);
+      let label = m.toUpperCase() + ' · ' + nameOf(m).toUpperCase();
+      let wpx = label.length * 6.4;
+      // a long name on a narrow screen falls back to the bare tag rather
+      // than clipping off the edge or shoving its neighbor out of view
+      if (wpx > OW * 0.46) { label = m.toUpperCase(); wpx = 10; }
+      let lx = clamp(x - wpx / 2, 2, OW - wpx - 2);
+      if (lx < lastEnd + 8) lx = lastEnd + 8;
+      if (lx + wpx > OW - 2) { label = m.toUpperCase(); wpx = 10; lx = clamp(x - 5, lastEnd + 8, OW - 12); }
+      el('text', { x: lx, y: 12, 'font-size': 10.5, fill: col, 'pointer-events': 'none' }, ovSvg, label);
+      lastEnd = lx + wpx;
+    }
+    $('ovNote').textContent = S.linear
+      ? 'Same window, linear scale: every tenfold step no longer gets equal room, so nearly the entire ' +
+        'lower-frequency universe — radio through ultraviolet — collapses into the left sliver. ' +
+        'A logarithmic scale gives every tenfold increase equal room. Switch back to breathe again.'
+      : 'This view spans 10 kHz to 100 EHz — sixteen orders of magnitude of one phenomenon, not the physical ' +
+        'beginning or end of the spectrum. Click a region to focus on it, or drag the bright window.';
+    $('ovNote').classList.toggle('linear', S.linear);
+  }
+
+  // ---- focus lens ---------------------------------------------------------
+  function crumbs() {
+    if (span() >= (F1 - F0) - 0.01) return 'FULL VIEW';
+    const cHz = Math.pow(10, (S.focLo + S.focHi) / 2);
+    const band = BANDS.find(b => cHz >= b.lo && cHz < b.hi);
+    let path = 'FULL VIEW › ' + (band ? band.name.toUpperCase() : '…');
+    if (band && band.name === 'visible' && span() < 0.06) {
+      const nmv = C / cHz * 1e9;
+      let best = VIS_COLORS[0];
+      for (const c of VIS_COLORS) if (Math.abs(c[0] - nmv) < Math.abs(best[0] - nmv)) best = c;
+      path += ' › ' + best[2].toUpperCase();
+    }
+    return path;
+  }
+
+  function focusTicks(g) {
+    const sp = span();
+    const inVisible = S.focLo >= log(VIS_LO) - 0.4 && S.focHi <= log(VIS_HI) + 0.4;
+    if (inVisible && sp < 1) {
+      // wavelength ruler: nm ticks are the natural unit at this scale
+      const nmLo = C / Math.pow(10, S.focHi) * 1e9, nmHi = C / Math.pow(10, S.focLo) * 1e9;
+      const step = (nmHi - nmLo) > 150 ? 50 : (nmHi - nmLo) > 40 ? 10 : (nmHi - nmLo) > 12 ? 5 : 1;
+      let lastX = 1e9;   // labels march right-to-left in nm; keep them apart and off the edges
+      for (let n = Math.ceil(nmLo / step) * step; n <= nmHi; n += step) {
+        const x = focX(C / (n * 1e-9));
+        if (x < 4 || x > OW - 4) continue;
+        el('line', { x1: x, x2: x, y1: 96, y2: 104, stroke: '#3a4756' }, g);
+        if (x > 30 && x < OW - 30 && lastX - x > 54) {
+          el('text', { x, y: 118, 'font-size': 10, fill: '#6c7c8c', 'text-anchor': 'middle' }, g, n + ' nm');
+          lastX = x;
+        }
+      }
+      return;
+    }
+    // a label only lands where it has ~70px of room; ticks stay denser
+    let lastLbl = -1e9;
+    const tick = f => {
+      const x = focX(f);
+      el('line', { x1: x, x2: x, y1: 96, y2: 104, stroke: '#3a4756' }, g);
+      if (x - lastLbl > 70 && x > 26 && x < OW - 26) {
+        el('text', { x, y: 118, 'font-size': 10, fill: '#6c7c8c', 'text-anchor': 'middle' }, g, freq(f));
+        lastLbl = x;
+      }
+    };
+    if (sp > 2.5) {                       // decade ticks
+      const step = Math.max(1, Math.ceil(sp / (OW / 70)));
+      for (let d = Math.ceil(S.focLo); d <= Math.floor(S.focHi); d += step) tick(Math.pow(10, d));
+    } else {                              // 1-2-5 mantissa ticks
+      for (let d = Math.floor(S.focLo) - 1; d <= Math.ceil(S.focHi); d++) {
+        for (const m of (sp < 0.7 ? [1,1.5,2,3,4,5,6,7,8,9] : [1,2,5])) {
+          const f = m * Math.pow(10, d);
+          if (log(f) >= S.focLo && log(f) <= S.focHi) tick(f);
+        }
+      }
+    }
+  }
+
+  function renderFocus() {
+    focSvg.textContent = '';
+    const defs = el('defs', {}, focSvg);
+    const g = el('g', {}, focSvg);
+    const sp = span();
+    const lo = Math.pow(10, S.focLo), hi = Math.pow(10, S.focHi);
+
+    // strip: soft band colors, real rainbow across the visible region
+    BANDS.forEach((b, i) => {
+      if (b.hi < lo || b.lo > hi) return;
+      const x0 = clamp(focX(b.lo), 0, OW), x1 = clamp(focX(b.hi), 0, OW);
+      if (b.name === 'visible') {
+        const gr = el('linearGradient', { id: 'fvis', x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
+        VIS_COLORS.forEach(([nmv, c]) => {
+          const p = clamp((log(C / (nmv * 1e-9)) - log(VIS_LO)) / (log(VIS_HI) - log(VIS_LO)), 0, 1);
+          el('stop', { offset: (p * 100) + '%', 'stop-color': c, 'stop-opacity': .85 }, gr);
+        });
+        el('rect', { x: x0, y: 44, width: x1 - x0, height: 40, fill: 'url(#fvis)' }, g);
+      } else {
+        el('rect', { x: x0, y: 44, width: x1 - x0, height: 40, fill: `rgb(${b.col})`, opacity: .18 }, g);
+      }
+      if (sp > 6 && x1 - x0 > 44)
+        el('text', { x: (x0 + x1) / 2, y: 68, 'font-size': 11, fill: 'rgba(239,244,251,.7)',
+                     'text-anchor': 'middle', 'pointer-events': 'none' }, g, b.short);
+    });
+    el('rect', { x: 0, y: 44, width: OW, height: 40, fill: 'none', stroke: 'rgba(196,228,255,.2)' }, g);
+    focusTicks(g);
+
+    // landmarks — semantic zoom: dots always, shapes and labels as you get closer
+    const visLm = LANDMARKS
+      .map(l => ({ ...l, x: focX(l.hz) }))
+      .filter(l => {
+        const llo = l.lo || l.hz, lhi = l.hi || l.hz;
+        return lhi >= lo && llo <= hi;
+      })
+      .sort((p, q) => p.x - q.x);
+    for (const l of visLm) {
+      if (l.type === 'band' && sp < 12) {
+        const x0 = clamp(focX(Math.min(l.lo, l.hi)), 0, OW), x1 = clamp(focX(Math.max(l.lo, l.hi)), 0, OW);
+        el('rect', { x: x0, y: 44, width: Math.max(x1 - x0, 1), height: 40, fill: 'rgba(126,224,255,.13)' }, g);
+      }
+      if (l.type === 'spectrum' && sp < 12) {
+        const x0 = clamp(focX(l.lo), -40, OW + 40), x1 = clamp(focX(l.hi), -40, OW + 40);
+        const gr = el('linearGradient', { id: 'sp-' + l.id, x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
+        el('stop', { offset: '0%', 'stop-color': '#a07cff', 'stop-opacity': 0 }, gr);
+        el('stop', { offset: ((clamp(l.x, x0, x1) - x0) / Math.max(x1 - x0, 1) * 100) + '%',
+                     'stop-color': '#a07cff', 'stop-opacity': .28 }, gr);
+        el('stop', { offset: '100%', 'stop-color': '#a07cff', 'stop-opacity': 0 }, gr);
+        el('rect', { x: x0, y: 48, width: Math.max(x1 - x0, 1), height: 32, fill: 'url(#sp-' + l.id + ')' }, g);
+      }
+    }
+    // label pass with two-row collision handling
+    if (sp <= 8) {
+      const rows = [-1e9, -1e9];
+      for (const l of visLm) {
+        if (l.x < 0 || l.x > OW) continue;
+        el('line', { x1: l.x, x2: l.x, y1: 36, y2: 44, stroke: '#8b98a8', 'stroke-width': 1 }, g);
+        el('circle', { cx: l.x, cy: 33, r: 2.4, fill: l.type === 'line' ? '#eff4fb' : '#8b98a8',
+                       'pointer-events': 'none' }, g);
+        // the dot people actually hit: an invisible finger-sized target
+        el('circle', { cx: l.x, cy: 33, r: 16, fill: 'transparent',
+                       'data-lm': l.id, style: 'cursor:pointer' }, g);
+        const wpx = l.name.length * 5.6;
+        let row = -1;
+        if (rows[0] + 6 < l.x - wpx / 2) row = 0; else if (rows[1] + 6 < l.x - wpx / 2) row = 1;
+        if (row >= 0) {
+          const lx = clamp(l.x, wpx / 2 + 2, OW - wpx / 2 - 2);
+          el('text', { x: lx, y: row === 0 ? 12 : 26, 'font-size': 10, fill: '#9aa2b1',
+                       'text-anchor': 'middle', 'data-lm': l.id, style: 'cursor:pointer' }, g, l.name);
+          rows[row] = lx + wpx / 2;
+        }
+      }
+    } else {
+      for (const l of visLm) if (l.x >= 0 && l.x <= OW) {
+        el('circle', { cx: l.x, cy: 40, r: 2, fill: '#5c6b7a', 'pointer-events': 'none' }, g);
+        el('circle', { cx: l.x, cy: 40, r: 14, fill: 'transparent',
+                       'data-lm': l.id, style: 'cursor:pointer' }, g);
+      }
+    }
+
+    // A and B handles — both live here, named, with 44px-wide hit targets
+    for (const [m, f, col] of [['a', S.aHz, '#7ee0ff'], ['b', S.bHz, '#e8a93a']]) {
+      if (log(f) < S.focLo - 0.02 || log(f) > S.focHi + 0.02) continue;
+      const x = focX(f);
+      const hg = el('g', {}, focSvg);
+      el('rect', { x: x - 22, y: 30, width: 44, height: 100, fill: 'transparent', class: 'handlehit',
+                   'data-handle': m, tabindex: 0, role: 'slider',
+                   'aria-label': 'Marker ' + m.toUpperCase() + ' — ' + nameOf(m),
+                   'aria-valuemin': F0, 'aria-valuemax': F1, 'aria-valuenow': log(f).toFixed(2),
+                   'aria-valuetext': freq(f) + ', ' + nameOf(m) }, hg);
+      el('line', { x1: x, x2: x, y1: 34, y2: 94, stroke: col, 'stroke-width': 2.5,
+                   class: 'handleline', 'pointer-events': 'none' }, hg);
+      el('circle', { cx: x, cy: 34, r: 5, fill: col, 'pointer-events': 'none' }, hg);
+      const tag = m.toUpperCase() + (sp < 8 ? ' · ' + nameOf(m) : '');
+      const wpx = tag.length * 6; const lx = clamp(x, wpx / 2 + 2, OW - wpx / 2 - 2);
+      el('text', { x: lx, y: 143, 'font-size': 11, fill: col, 'text-anchor': 'middle',
+                   'pointer-events': 'none', 'font-weight': 600 }, hg, tag);
+    }
+    $('crumbs').textContent = crumbs();
+  }
+
+  function renderMatter() {
+    if (S.layer !== 'matter') return;
+    matterSvg.textContent = '';
+    // the same overview scale, one translucent row per regime, overlaps intact
+    BANDS.forEach(b => {
+      const x0 = ovX(b.lo), x1 = ovX(b.hi);
+      el('rect', { x: x0, y: 0, width: x1 - x0, height: 14, fill: `rgb(${b.col})`, opacity: .25 }, matterSvg);
+    });
+    REGIMES.forEach((r, i) => {
+      const y = 22 + i * 20;
+      const x0 = ovX(r.lo), x1 = ovX(r.hi);
+      el('rect', { x: x0, y, width: x1 - x0, height: 12, rx: 6, fill: 'rgba(126,224,255,.14)',
+                   stroke: 'rgba(126,224,255,.3)' }, matterSvg);
+      el('text', { x: clamp(x0 + 8, 4, OW - r.name.length * 6 - 4), y: y + 10,
+                   'font-size': 10.5, fill: '#9aa2b1' }, matterSvg, r.name);
+    });
+  }
+
+  // ---- readouts -----------------------------------------------------------
+  function renderComposer() {
+    for (const [ch, m] of [[chA, 'a'], [chB, 'b']]) {
+      ch.querySelector('.lname').textContent = nameOf(m);
+      ch.querySelector('.lval').innerHTML = freq(hzOf(m), true);
+      ch.classList.toggle('active', S.active === m);
+    }
+    $('activeNote').textContent = S.active.toUpperCase() + ' · ' + nameOf(S.active);
+  }
+
+  function renderSentence() {
+    const r = Math.max(S.aHz, S.bHz) / Math.min(S.aHz, S.bHz);
+    const hiM = S.bHz >= S.aHz ? 'b' : 'a', loM = hiM === 'b' ? 'a' : 'b';
+    if (r < 1.05) {
+      $('sentence').innerHTML = '<b>' + nameOf('a') + '</b> (A) and <b>' + nameOf('b') +
+        '</b> (B) sit at almost the same frequency — within ' + ((r - 1) * 100).toFixed(1) +
+        '%. Whatever separates them in daily life, it is not their place on the spectrum.';
+    } else {
+      // the factor is stated once, big; the prose only says what it moves
+      const w = ratioWord(r);
+      const tag = m => '<b class="' + m + '">' + nameOf(m) + ' (' + m.toUpperCase() + ')</b>';
+      $('sentence').innerHTML =
+        '<div class="rellabel">frequency of ' + nameOf(hiM) + ' \u00f7 frequency of ' + nameOf(loM) + '</div>' +
+        '<div class="relratio num' + (w.length > 12 ? ' long' : '') + '"><span class="x">×</span>' + w + '</div>' +
+        '<div class="reldir">' + tag(loM) + '<span class="relarrow">⟶</span>' + tag(hiM) + '</div>' +
+        '<div class="relnote">Along the arrow, <b>frequency</b> and <b>energy per photon</b> climb by ' +
+        'exactly this factor — <b>wavelength</b> and <b>period</b> shrink by it. Try it:</div>' +
+        '<div class="lockstep">' +
+          '<input type="range" id="lockRange" min="0" max="1000" value="0" ' +
+            'aria-label="Slide from ' + nameOf(loM) + ' to ' + nameOf(hiM) + '">' +
+          '<svg id="lockSvg" viewBox="0 0 600 64" preserveAspectRatio="none" aria-hidden="true"></svg>' +
+          '<div class="lockchips" id="lockChips" aria-live="off"></div>' +
+          '<div class="locknote">Drag from ' + tag(loM) + ' toward ' + tag(hiM) +
+          '. The wave is compressed for display; the numbers are exact.</div>' +
+        '</div>';
+      initLockstep(loM, hiM);
+    }
+    // pair-specific insight, else a generic but true one
+    const pair = [S.aId, S.bId];
+    const story = STORIES.find(s => (s.a === pair[0] && s.b === pair[1]) || (s.a === pair[1] && s.b === pair[0]));
+    if (story) $('insight').textContent = story.insight;
+    else {
+      const oom = Math.abs(log(S.bHz / S.aHz));
+      $('insight').textContent = oom < 0.01
+        ? 'Zero distance on a ruler that spans 53 octaves end to end.'
+        : 'These sit ' + oom.toFixed(2) + ' orders of magnitude — ' + (oom / Math.LOG10E / Math.LN2).toFixed(1) +
+          ' doublings — apart, on a view that spans 53 octaves. Human vision occupies roughly one of them.';
+    }
+  }
+
+  function initLockstep(loM, hiM) {
+    const range = $('lockRange'); if (!range) return;
+    const fLo = hzOf(loM), R = hzOf(hiM) / fLo;
+    const colLo = loM === 'a' ? [126,224,255] : [232,169,58];
+    const colHi = hiM === 'a' ? [126,224,255] : [232,169,58];
+    const svg = $('lockSvg'), chips = $('lockChips');
+    function upd() {
+      const t = range.value / 1000;
+      const f = fLo * Math.pow(R, t);
+      const k = ratioWord(f / fLo);
+      const cyc = 2.5 * Math.pow(28 / 2.5, t);   // visual only; numbers are exact
+      let d = '';
+      for (let x = 0; x <= 600; x += 2)
+        d += (x ? 'L' : 'M') + x + ' ' + (32 - Math.sin(x / 600 * cyc * TAU) * 24).toFixed(1);
+      const col = colLo.map((v, i) => Math.round(v + (colHi[i] - v) * t));
+      svg.innerHTML = '<path d="' + d + '" fill="none" stroke="rgb(' + col.join(',') + ')" stroke-width="2"/>';
+      chips.innerHTML = [
+        ['Frequency', freq(f, true), '×' + k, 1],
+        ['Energy per photon', energy(f, true), '×' + k, 1],
+        ['Wavelength', wave(f, true), '÷' + k, 0],
+        ['Period', period(f, true), '÷' + k, 0],
+      ].map(([n, v, kk, up]) =>
+        '<div class="lockchip ' + (up ? 'up' : 'dn') + '"><span class="lcn">' + (up ? '↑ ' : '↓ ') + n +
+        '</span><span class="lcv num">' + v + '</span><span class="lcf num">' + kk + '</span></div>').join('');
+    }
+    range.addEventListener('input', upd);
+    upd();
+  }
+
+  function renderTable() {
+    $('thA').innerHTML = 'A · ' + nameOf('a');
+    $('thB').innerHTML = 'B · ' + nameOf('b');
+    const r = S.bHz / S.aHz;
+    const w = ratioWord(Math.max(r, 1 / r));
+    const up = (r >= 1 ? '×' : '÷') + w, down = (r >= 1 ? '÷' : '×') + w;
+    const P = 'precise';
+    $('qBody').innerHTML = [
+      ['Frequency',     freq(S.aHz, P),   freq(S.bHz, P),   up],
+      ['Wavelength',    wave(S.aHz, P),   wave(S.bHz, P),   down],
+      ['Period',        period(S.aHz, P), period(S.bHz, P), down],
+      ['Photon energy', energy(S.aHz, P), energy(S.bHz, P), up],
+    ].map(([q, a, b, rel]) =>
+      '<tr><td class="q">' + q + '</td><td class="a num">' + a + '</td><td class="b num">' + b +
+      '</td><td class="rel num">' + rel + '</td></tr>').join('');
+  }
+
+  function renderScale() {
+    for (const m of ['a', 'b']) {
+      const lam = C / hzOf(m);
+      let best = SCALE_OBJECTS[0];
+      for (const o of SCALE_OBJECTS)
+        if (Math.abs(log(lam / o.size)) < Math.abs(log(lam / best.size))) best = o;
+      const r = lam / best.size;
+      const M = m.toUpperCase();
+      let phrase;
+      if (r >= 0.6 && r <= 1.6) phrase = 'about the size of <b>' + best.name + '</b>';
+      else if (r > 1) phrase = 'about <b>' + ratioWord(r) + '×</b> the size of <b>' + best.name + '</b>';
+      else phrase = 'about <b>1/' + ratioWord(1 / r) + '</b> the size of <b>' + best.name + '</b>';
+      $('scaleWho' + M).innerHTML = '<b>' + M + '</b> · ' + nameOf(m).toUpperCase();
+      $('scaleWhat' + M).innerHTML = 'One wavelength — <span class="num">' + wave(hzOf(m), true) + '</span> — is ' + phrase + '.';
+      const lm = byId[m === 'a' ? S.aId : S.bId];
+      const desc = $('scaleDesc' + M);
+      desc.textContent = lm ? (lm.how || lm.why) : '';
+      desc.hidden = !lm;
+      const img = $('scaleImg' + M);
+      img.src = best.img;
+      img.alt = best.name;
+    }
+  }
+
+  function renderPower() {
+    const r = Math.max(S.aHz, S.bHz) / Math.min(S.aHz, S.bHz);
+    const hiM = S.bHz >= S.aHz ? 'b' : 'a', loM = hiM === 'b' ? 'a' : 'b';
+    const perA = 1 / (H_J * S.aHz), perB = 1 / (H_J * S.bHz);  // photons/s at 1 W
+    const w = ratioWord(r);
+    if (S.pmode === 'power') {
+      $('powerText').innerHTML =
+        'Both beams carry <b>1 joule each second</b>. ' + nameOf(hiM) + '’s photons are individually ' + w +
+        '× more energetic, so there are <b>' + w + '× fewer of them</b>: at 1 W, ' +
+        nameOf('a') + ' delivers <b>' + bigCount(perA) + '</b> photons per second and ' +
+        nameOf('b') + ' delivers <b>' + bigCount(perB) + '</b>.';
+    } else {
+      $('powerText').innerHTML =
+        'Both beams deliver <b>the same number of photons</b> each second. Because each of ' + nameOf(hiM) +
+        '’s photons carries ' + w + '× more energy, that beam carries <b>' + w +
+        '× more total power</b> than ' + nameOf(loM) + '.';
+    }
+  }
+
+  // ---- wave view (the safe renderer, moved here as an optional layer) ------
+  const waveCanvas = $('waveCanvas');
+  const waveCtx = waveCanvas.getContext('2d');
+  let waveW = 0, waveH = 0, waveDpr = 1, waveRAF = 0, waveOnScreen = false;
+  const WAVE_HZ_MIN = 0.2, WAVE_HZ_MAX = 6;
+  const visualHz = f => WAVE_HZ_MIN + (log(f) - F0) / (F1 - F0) * (WAVE_HZ_MAX - WAVE_HZ_MIN);
+  const CYC_LO = 1.2, CYC_HI = 240, RES_LO = 3.2, RES_HI = 7;
+  const cyclesAt = f => CYC_LO * Math.pow(CYC_HI / CYC_LO, (log(f) - F0) / (F1 - F0));
+  const SMEAR_STOPS = [0, .08, .2, .35, .5, .65, .8, .92, 1];
+  function smear(mid, amp, color, alpha) {
+    const g = waveCtx.createLinearGradient(0, mid - amp, 0, mid + amp);
+    for (const p of SMEAR_STOPS) {
+      const y = (p - 0.5) * 2;
+      const d = 1 / Math.sqrt(Math.max(0.02, 1 - y * y));
+      g.addColorStop(p, color + Math.min(1, alpha * d * 0.42).toFixed(3) + ')');
+    }
+    waveCtx.fillStyle = g;
+    waveCtx.fillRect(0, mid - amp, waveW, amp * 2);
+  }
+  function drawLane(y0, laneH, rgb, hz, t, cycles) {
+    const amp = laneH * 0.34, mid = y0 + laneH / 2;
+    const res = Math.max(0, Math.min(1, (waveW / cycles - RES_LO) / (RES_HI - RES_LO)));
+    const head = 'rgba(' + rgb + ',';
+    if (res < 0.999) smear(mid, amp, head, 1 - res * 0.75);
+    if (res <= 0.01) return;
+    const step = Math.max(0.3, Math.min(2, waveW / (cycles * 26)));
+    waveCtx.beginPath();
+    for (let px = 0; px <= waveW; px += step) {
+      const yy = mid - Math.sin((px / waveW) * cycles * TAU - t * hz * TAU) * amp;
+      if (px === 0) waveCtx.moveTo(px, yy); else waveCtx.lineTo(px, yy);
+    }
+    waveCtx.strokeStyle = head + res.toFixed(3) + ')';
+    waveCtx.lineWidth = 2;
+    waveCtx.stroke();
+  }
+  function sizeWave() {
+    const r = waveCanvas.getBoundingClientRect();
+    if (!r.width) return;
+    waveDpr = Math.min(2, devicePixelRatio || 1);
+    waveCanvas.width = Math.round(r.width * waveDpr);
+    waveCanvas.height = Math.round(r.height * waveDpr);
+    waveW = r.width; waveH = r.height;
+  }
+  const waveStart = performance.now();
+  function drawWave(t) {
+    if (!waveW) sizeWave();
+    if (!waveW) return;
+    waveCtx.setTransform(waveDpr, 0, 0, waveDpr, 0, 0);
+    waveCtx.clearRect(0, 0, waveW, waveH);
+    drawLane(0, waveH / 2, '126,224,255', visualHz(S.aHz), t, cyclesAt(S.aHz));
+    drawLane(waveH / 2, waveH / 2, '232,169,58', visualHz(S.bHz), t, cyclesAt(S.bHz));
+  }
+  function waveFrame(now) {
+    waveRAF = 0;
+    if (!waveActive()) return;
+    drawWave((now - waveStart) / 1000);
+    waveRAF = requestAnimationFrame(waveFrame);
+  }
+  const waveActive = () => S.layer === 'wave' && waveOnScreen && !document.hidden && !reduced.matches;
+  function pokeWave() {
+    if (waveActive()) { if (!waveRAF) waveRAF = requestAnimationFrame(waveFrame); }
+    else if (S.layer === 'wave' && reduced.matches) { sizeWave(); drawWave(0); }  // calm: one static frame
+  }
+  new ResizeObserver(() => { sizeWave(); pokeWave(); }).observe(waveCanvas);
+  new IntersectionObserver(en => { waveOnScreen = en[0].isIntersecting; pokeWave(); }).observe(waveCanvas);
+  document.addEventListener('visibilitychange', pokeWave);
+  reduced.addEventListener('change', pokeWave);
+  function renderWaveText() {
+    $('waveTagA').textContent = 'A · ' + nameOf('a');
+    $('waveTagB').textContent = 'B · ' + nameOf('b');
+    const win = +$('obsWin').value;
+    const cyc = f => { const n = f * win; return n >= 1000 ? bigCount(n) : n >= 1 ? num(n) : n.toExponential(2); };
+    $('obsText').textContent = 'in that window: A completes ' + cyc(S.aHz) + ' cycles, B completes ' + cyc(S.bHz) + '.';
+  }
+
+  // ---- master render -------------------------------------------------------
+  function render() {
+    syncWidth();
+    renderComposer(); renderSentence(); renderTable(); renderScale(); renderPower();
+    renderOverview(); renderFocus(); renderMatter(); renderWaveText();
+    encodeState();
+    pokeWave();
+  }
+
+  // ---- choosers ------------------------------------------------------------
+  function parseValue(str) {
+    const m = str.trim().match(/^([\d.]+)\s*(hz|khz|mhz|ghz|thz|phz|ehz|nm|µm|um|mm|cm|km|m|ev|kev|mev|µev|uev|gev)$/i);
+    if (!m) return null;
+    const v = parseFloat(m[1]); if (!isFinite(v) || v <= 0) return null;
+    const u = m[2].toLowerCase();
+    const F = { hz: 1, khz: 1e3, mhz: 1e6, ghz: 1e9, thz: 1e12, phz: 1e15, ehz: 1e18 };
+    const W = { km: 1e3, m: 1, cm: 1e-2, mm: 1e-3, 'µm': 1e-6, um: 1e-6, nm: 1e-9 };
+    const E = { 'µev': 1e-6, uev: 1e-6, ev: 1, kev: 1e3, mev: 1e6, gev: 1e9 };
+    if (u in F) return v * F[u];
+    if (u in W) return C / (v * W[u]);
+    if (u in E) return v * E[u] / EV_PER_HZ;
+    return null;
+  }
+  let openPicker = null;
+  function closePicker() {
+    if (!openPicker) return;
+    openPicker.querySelector('.picker')?.remove();
+    openPicker.querySelector('button').setAttribute('aria-expanded', 'false');
+    openPicker = null;
+  }
+  function buildPicker(ch, m) {
+    closePicker();
+    openPicker = ch;
+    ch.querySelector('button').setAttribute('aria-expanded', 'true');
+    const pk = document.createElement('div');
+    pk.className = 'picker';
+    pk.innerHTML = '<input type="search" placeholder="Search, or type a value…" aria-label="Search landmarks or enter a value">' +
+      '<p class="hint">Names work, and so do values: 532 nm · 2.4 GHz · 30 keV</p><ul role="listbox"></ul>';
+    ch.appendChild(pk);
+    const input = pk.querySelector('input'), list = pk.querySelector('ul');
+    function fill(q) {
+      list.textContent = '';
+      const parsed = parseValue(q);
+      if (parsed) {
+        const li = document.createElement('li'); li.className = 'custom';
+        li.innerHTML = '<button type="button">Use custom value<span class="val num">' + freq(parsed) + '</span></button>';
+        li.querySelector('button').addEventListener('click', () => { setMarker(m, parsed); closePicker(); render(); });
+        list.appendChild(li);
+      }
+      const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const ql = norm(q);
+      const curId = m === 'a' ? S.aId : S.bId;
+      for (const l of LANDMARKS) {
+        if (ql && !(norm(l.name).includes(ql) || norm(l.cat).includes(ql))) continue;
+        const li = document.createElement('li');
+        if (l.id === curId) li.className = 'sel';
+        const b = document.createElement('button'); b.type = 'button'; b.title = l.why;
+        if (l.id === curId) b.setAttribute('aria-current', 'true');
+        b.innerHTML = '<span class="cat">' + l.cat + '</span>' + l.name +
+          '<span class="val num">' + (l.type === 'band' ? 'band · ' : l.type === 'spectrum' ? 'peak ' : '') + freq(l.hz) + '</span>';
+        b.addEventListener('click', () => { setMarker(m, l.hz, l.id); closePicker(); render(); });
+        li.appendChild(b); list.appendChild(li);
+      }
+    }
+    fill('');
+    // reopen where you left off: the current selection arrives centered
+    const sel = list.querySelector('li.sel');
+    if (sel) list.scrollTop = Math.max(0,
+      sel.offsetTop - list.offsetTop - list.clientHeight / 2 + sel.clientHeight / 2);
+    input.addEventListener('input', () => fill(input.value));
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closePicker(); ch.querySelector('button').focus(); }
+      if (e.key === 'Enter') { const first = list.querySelector('button'); if (first) first.click(); }
+    });
+    // autofocus only where a keyboard is already at hand; on a touch screen
+    // focusing here would throw the on-screen keyboard over the list, so the
+    // search box waits to be tapped
+    if (matchMedia('(pointer: fine)').matches) input.focus();
+  }
+  for (const [ch, m] of [[chA, 'a'], [chB, 'b']]) {
+    ch.querySelector('button').addEventListener('click', () => {
+      S.active = m;
+      if (openPicker === ch) closePicker(); else buildPicker(ch, m);
+      render();
+    });
+  }
+  document.addEventListener('pointerdown', e => { if (openPicker && !openPicker.contains(e.target)) closePicker(); });
+  $('swapBtn').addEventListener('click', () => {
+    [S.aHz, S.bHz] = [S.bHz, S.aHz]; [S.aId, S.bId] = [S.bId, S.aId]; render();
+  });
+
+  // ---- overview interactions ------------------------------------------------
+  function svgX(svg, e) {
+    const r = svg.getBoundingClientRect();
+    return (e.clientX - r.left) / r.width * OW;
+  }
+  function setFocus(loD, hiD) {
+    const sp = clamp(hiD - loD, 0.02, F1 - F0);
+    loD = clamp(loD, F0, F1 - sp);
+    S.focLo = loD; S.focHi = loD + sp;
+  }
+  ovSvg.addEventListener('pointerdown', e => {
+    if (S.linear) return;
+    const x = svgX(ovSvg, e);
+    const fx0 = (S.focLo - F0) / (F1 - F0) * OW, fx1 = (S.focHi - F0) / (F1 - F0) * OW;
+    if (x >= fx0 && x <= fx1 && span() < (F1 - F0) - 0.01) {
+      // drag the focus window
+      e.preventDefault(); ovSvg.setPointerCapture(e.pointerId);
+      const off = x - fx0, sp = span();
+      const move = ev => {
+        const nx = svgX(ovSvg, ev) - off;
+        setFocus(F0 + nx / OW * (F1 - F0), F0 + nx / OW * (F1 - F0) + sp);
+        render();
+      };
+      ovSvg.addEventListener('pointermove', move);
+      ovSvg.addEventListener('pointerup', () => ovSvg.removeEventListener('pointermove', move), { once: true });
+      return;
+    }
+    const f = Math.pow(10, F0 + clamp(x / OW, 0, 1) * (F1 - F0));
+    const b = BANDS.find(q => f >= q.lo && f < q.hi);
+    if (b) { setFocus(log(b.lo) - 0.15, log(b.hi) + 0.15); render(); }
+  });
+
+  // ---- focus interactions ----------------------------------------------------
+  let dragHandle = null;
+  focSvg.addEventListener('pointerdown', e => {
+    const h = e.target.getAttribute && e.target.getAttribute('data-handle');
+    e.preventDefault();
+    if (h) {
+      dragHandle = h; S.active = h;
+      focSvg.setPointerCapture(e.pointerId);
+    } else if (e.target.getAttribute && e.target.getAttribute('data-lm')) {
+      return;   // landmark clicks handled on click/dblclick
+    } else {
+      setMarker(S.active, focF(svgX(focSvg, e)));
+      render();
+      return;
+    }
+    render();
+  });
+  focSvg.addEventListener('pointermove', e => {
+    if (!dragHandle) return;
+    setMarker(dragHandle, focF(svgX(focSvg, e)));
+    render();
+  });
+  const endDrag = () => { dragHandle = null; };
+  focSvg.addEventListener('pointerup', endDrag);
+  focSvg.addEventListener('pointercancel', endDrag);
+  focSvg.addEventListener('click', e => {
+    const id = e.target.getAttribute && e.target.getAttribute('data-lm');
+    if (id) { setMarker(S.active, byId[id].hz, id); render(); }
+  });
+  focSvg.addEventListener('dblclick', e => {
+    const id = e.target.getAttribute && e.target.getAttribute('data-lm');
+    if (!id) return;
+    const d = log(byId[id].hz);
+    setFocus(d - 0.5, d + 0.5);
+    render();
+  });
+  focSvg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const cx = S.focLo + svgX(focSvg, e) / OW * span();
+    const k = Math.pow(1.2, e.deltaY > 0 ? 1 : -1);
+    const nsp = clamp(span() * k, 0.02, F1 - F0);
+    setFocus(cx - (cx - S.focLo) * nsp / span(), cx + (S.focHi - cx) * nsp / span());
+    render();
+  }, { passive: false });
+  focSvg.addEventListener('keydown', e => {
+    const h = e.target.getAttribute && e.target.getAttribute('data-handle');
+    if (!h) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const step = (e.shiftKey ? 0.5 : span() < 1 ? 0.002 : 0.1) * (e.key === 'ArrowRight' ? 1 : -1);
+      setMarker(h, Math.pow(10, log(hzOf(h)) + step));
+      S.active = h;
+      render();
+      focSvg.querySelector('[data-handle="' + h + '"]')?.focus();
+    }
+  });
+  function zoom(k) {
+    const c = (S.focLo + S.focHi) / 2;
+    const nsp = clamp(span() * k, 0.02, F1 - F0);
+    setFocus(c - nsp / 2, c + nsp / 2);
+    render();
+  }
+  $('zoomIn').addEventListener('click', () => zoom(1 / 1.6));
+  $('zoomOut').addEventListener('click', () => zoom(1.6));
+  $('zoomFull').addEventListener('click', () => { setFocus(F0, F1); render(); });
+
+  // ---- scale toggle, power mode, layers --------------------------------------
+  $('scaleBtn').addEventListener('click', () => {
+    S.linear = !S.linear;
+    $('scaleBtn').setAttribute('aria-pressed', String(S.linear));
+    $('scaleBtn').textContent = S.linear ? 'Log scale' : 'Linear scale';
+    render();
+  });
+  document.querySelectorAll('input[name=pmode]').forEach(r =>
+    r.addEventListener('change', () => { S.pmode = r.value; renderPower(); }));
+  const layerBtns = document.querySelectorAll('.layers [data-layer]');
+  function applyLayer() {
+    layerBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.layer === S.layer)));
+    $('panelMatter').hidden = S.layer !== 'matter';
+    $('panelWave').hidden = S.layer !== 'wave';
+    $('panelStories').hidden = S.layer !== 'stories';
+  }
+  layerBtns.forEach(b => b.addEventListener('click', () => {
+    S.layer = S.layer === b.dataset.layer ? null : b.dataset.layer;
+    applyLayer(); render();
+  }));
+  $('obsWin').addEventListener('change', renderWaveText);
+
+  // ---- stories ---------------------------------------------------------------
+  function playStory(s) {
+    setMarker('a', byId[s.a].hz, s.a);
+    setMarker('b', byId[s.b].hz, s.b);
+    setFocus(F0, F1);
+    render();
+    scrollTo({ top: 0, behavior: reduced.matches ? 'auto' : 'smooth' });
+  }
+  for (const s of STORIES) {
+    const li = document.createElement('li');
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = s.name;
+    b.addEventListener('click', () => playStory(s));
+    li.appendChild(b); $('storyList').appendChild(li);
+  }
+  $('surprise').addEventListener('click', () => {
+    const others = STORIES.filter(s => !(s.a === S.aId && s.b === S.bId));
+    playStory(others[Math.floor(Math.random() * others.length)]);
+  });
+
+  // ---- self-tests (?test=1) ---------------------------------------------------
+  function selfTest() {
+    const out = [];
+    const ok = (name, cond) => out.push((cond ? 'PASS' : 'FAIL') + '  ' + name);
+    const close = (x, y, tol) => Math.abs(x / y - 1) < (tol || 1e-6);
+    ok('532 nm -> 563.52 THz', close(C / 532e-9, 563.5197e12, 1e-4));
+    ok('default ratio ~5.635 million', close((C / 532e-9) / 100e6, 5.6352e6, 1e-3));
+    ok('ratioWord default', ratioWord((C / 532e-9) / 100e6) === '5,640,000');
+    ok('full window ratio 1e16', close(FMAX / FMIN, 1e16));
+    ok('wavelength inverse', close(C / (C / 532e-9), 532e-9));
+    ok('period inverse', close(1 / 100e6, 10e-9));
+    ok('photon energy 532 nm ~2.331 eV', close((C / 532e-9) * EV_PER_HZ, 2.331, 1e-3));
+    ok('photon energy 100 MHz ~0.414 µeV', close(100e6 * EV_PER_HZ, 0.4136e-6, 1e-3));
+    ok('parse 532 nm', close(parseValue('532 nm'), C / 532e-9));
+    ok('parse 2.4 GHz', close(parseValue('2.4 GHz'), 2.4e9));
+    ok('parse 30 keV', close(parseValue('30 keV'), 30e3 / EV_PER_HZ));
+    ok('band landmark has range', byId['fm-radio'].lo < byId['fm-radio'].hz && byId['fm-radio'].hz < byId['fm-radio'].hi);
+    ok('spectrum landmark has range', byId['body-heat'].lo < byId['body-heat'].hz);
+    setMarker('a', C / 633e-9);
+    ok('snap to red laser line', S.aId === 'red-laser');
+    setMarker('a', 100e6, 'fm-radio');
+    ok('explicit active marker', (S.active === 'a' || S.active === 'b'));
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'color:#7ee0ff;font-size:12px;border:1px solid #345;padding:10px;';
+    pre.textContent = out.join('\n');
+    document.querySelector('.wrap').prepend(pre);
+    console.log(out.join('\n'));
+  }
+
+  // ---- boot -------------------------------------------------------------------
+  const wantTest = new URLSearchParams(location.search).has('test');
+  decodeState();
+  applyLayer();
+  render();
+  if (wantTest) selfTest();
+  addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); });
+})();
+</script>
+</body>
+</html>
