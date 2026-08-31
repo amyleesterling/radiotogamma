@@ -8,7 +8,7 @@ focus-lens spectrum ruler, a real-object wavelength scale, an interactive
 lockstep explorer, the equal-power photon revelation, and the octave ladder
 from one footstep to the Oort cloud.
 
-Live at **[radiotogamma.net](https://radiotogamma.net)**.
+Live at **[radiotogamma.com](https://radiotogamma.com)**.
 
 Born as part of [hbdanny.com](https://hbdanny.com) — patent-themed games for
 Danny Hillis — and grown into its own site. The `vendor/scifi-ui` styles are
