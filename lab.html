@@ -35,6 +35,13 @@
   .striplabel { font-size: 10.5px; letter-spacing: .12em; color: #6c7c8c; text-transform: uppercase;
                 margin: 0 0 4px; }
   #labStrip { display: block; width: 100%; height: 26px; border: 1px solid rgba(196,228,255,.2); }
+  .dockrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  #quizToggle { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+    letter-spacing: .1em; cursor: pointer; background: none; color: #a07cff;
+    border: 1px solid rgba(160,124,255,.4); padding: 5px 10px; }
+  #quizToggle:hover { border-color: #a07cff; background: rgba(160,124,255,.08); }
+  #quizToggle[aria-pressed="true"] { color: #eff4fb; background: rgba(160,124,255,.2); border-color: #a07cff; }
+  body:not(.quizon) .question { display: none; }
 
   .exp { border: 1px solid rgba(196,228,255,.14); margin: 26px 0; padding: 16px 18px; }
   .exp h2 { font-size: 14px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 4px; font-weight: 600; }
@@ -83,7 +90,10 @@
      showing which wavelengths each experiment is touching. Four manipulations of the same thing.</p>
 
   <div class="stripdock">
-    <p class="striplabel">The visible octave · 750 nm — 380 nm</p>
+    <div class="dockrow">
+      <p class="striplabel">The visible octave · 750 nm — 380 nm</p>
+      <button id="quizToggle" type="button" aria-pressed="false">LIGHT QUIZ</button>
+    </div>
     <canvas id="labStrip" aria-label="Visible spectrum strip; lights up with the wavelengths each experiment affects"></canvas>
   </div>
 
@@ -91,7 +101,10 @@
 
   <p class="foot">Everything here runs on the real physics in miniature: dispersion in glass,
      interference from a CD's 1.6 µm track spacing, the 42° water-droplet cone, and Rayleigh's
-     1/λ⁴ scattering. Illustrative in scale, honest in mechanism.</p>
+     1/λ⁴ scattering. Illustrative in scale, honest in mechanism. Want a full optical bench with lenses,
+     mirrors, and dispersive glass you arrange yourself? The open-source
+     <a href="https://phydemo.app/ray-optics/" style="color:#7ee0ff">Ray Optics Simulation</a>
+     is the deep end of this pool.</p>
 </div>
 
 <script>
@@ -139,7 +152,21 @@ window.LAB = (() => {
   addEventListener('resize', drawStrip);
   drawStrip();
 
+  const quizBtn = document.getElementById('quizToggle');
+  quizBtn.addEventListener('click', () => {
+    const on = !document.body.classList.contains('quizon');
+    document.body.classList.toggle('quizon', on);
+    quizBtn.setAttribute('aria-pressed', String(on));
+  });
+
   const mount = document.getElementById('labMount');
+  // sections land in a fixed order no matter when each module registers
+  const ORDER = ['prism', 'cd', 'hose', 'sky'];
+  for (const id of ORDER) {
+    const slot = document.createElement('div');
+    slot.id = 'slot-' + id;
+    mount.appendChild(slot);
+  }
   const registry = [];
   function register(exp) {
     registry.push(exp);
@@ -157,7 +184,7 @@ window.LAB = (() => {
       (exp.goal ? '<p class="goal">' + exp.goal + '</p>' : '') + qhtml +
       '<div class="stage"></div>' +
       (exp.hint ? '<p class="hint">' + exp.hint + '</p>' : '');
-    mount.appendChild(sec);
+    (document.getElementById('slot-' + exp.id) || mount).appendChild(sec);
     const qEl = sec.querySelector('.question');
     if (qEl) qEl.querySelectorAll('.choices button').forEach(b =>
       b.addEventListener('click', () => {

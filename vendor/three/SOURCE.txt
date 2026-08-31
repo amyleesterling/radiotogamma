@@ -1,0 +1,24 @@
+three.module.min.js and three.core.min.js are copied unmodified from
+C:\Users\amyle\microns\vendor\three\ , which is the same build that ships on
+amyleesterling.github.io/microns. Three.js is MIT, copyright the Three.js
+authors.
+
+Loaded through an import map, the way microns does it:
+  <script type="importmap">
+  {"imports":{"three":"../../vendor/three/three.module.min.js"}}
+  </script>
+
+Do not edit these files.
+
+addons/loaders/GLTFLoader.js and addons/utils/{BufferGeometryUtils,SkeletonUtils}.js
+come from the same microns vendor folder, unmodified.
+
+games/dust-off/danny.glb is derived from Amy's Meshy export
+"Meshy_AI_Kindly_Doctor_biped_Animation_Walking_withSkin.glb". Two changes,
+both made by scripts/optimise_glb.py and both deliberate:
+  * the 2048 square PNG albedo is resampled to a 512 JPEG, which takes the file
+    from 6.12 MB to 0.34 MB with no change to geometry, skin or animation
+  * the Meshy emissive trap is removed: emissiveFactor was [1,1,1] with an
+    emissive texture pointing at the SAME image as the albedo, so every surface
+    self-illuminated. Specular colour was also boosted to 2.0. Both are back to
+    neutral so the model responds to the scene lighting instead of glowing.
