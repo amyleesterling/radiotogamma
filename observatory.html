@@ -95,7 +95,8 @@
     background: rgba(160,124,255,.05); padding: 14px 18px; margin: 0 0 8px;
   }
   .sentence b { color: #fff; }
-  .rellabel { font-size: 11px; letter-spacing: .12em; color: #6c7c8c; text-transform: uppercase; margin-bottom: 3px; }
+  .rellabel { font-size: 13px; color: #9aa2b1; margin-bottom: 3px; }
+  .rellabel b { color: #cfe6e6; font-weight: 600; }
   .relratio { font-size: 30px; font-weight: 650; color: #fff; letter-spacing: .01em; }
   .relratio.long { font-size: 21px; }
   .relratio .x { color: #a07cff; font-weight: 400; }
@@ -835,7 +836,7 @@ beam power      P = photons per second × energy per photon</pre>
       const w = ratioWord(r);
       const tag = m => '<b class="' + m + '">' + nameOf(m) + ' (' + m.toUpperCase() + ')</b>';
       $('sentence').innerHTML =
-        '<div class="rellabel">frequency of ' + nameOf(hiM) + ' \u00f7 frequency of ' + nameOf(loM) + '</div>' +
+        '<div class="rellabel"><b>' + nameOf(hiM) + '</b> is ' + w + '\u00d7 higher in frequency than <b>' + nameOf(loM) + '</b></div>' +
         '<div class="relratio num' + (w.length > 12 ? ' long' : '') + '"><span class="x">×</span>' + w + '</div>' +
         '<div class="reldir">' + tag(loM) + '<span class="relarrow">⟶</span>' + tag(hiM) + '</div>' +
         '<div class="relnote">Along the arrow, <b>frequency</b> and <b>energy per photon</b> climb by ' +
