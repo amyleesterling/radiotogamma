@@ -23,9 +23,11 @@
     var W = 860, DPR = 1, drag = null, hot = null, solved = false;
     var RAD = Math.PI / 180;
 
+    /* borderless + full-bleed: no frame, and negative margins matching the
+       .exp card padding so the beam runs edge to edge of the card */
     var canvas = document.createElement('canvas');
-    canvas.style.cssText = 'display:block;width:100%;height:' + H + 'px;' +
-      'background:#05070c;border:1px solid rgba(196,228,255,.16);border-radius:6px;' +
+    canvas.style.cssText = 'display:block;width:calc(100% + 36px);margin:0 -18px;height:' + H + 'px;' +
+      'background:#05070c;border:none;border-radius:0;' +
       'touch-action:none;cursor:grab;';
     mount.appendChild(canvas);
     var ctx = canvas.getContext('2d');
@@ -41,7 +43,7 @@
     ];
     slots.forEach(function (s) { s.hx = 0; s.hy = TRAY_Y; });
     /* instances: {type, x, y, rot(deg), recipe|null, nm(lights: null=white)} */
-    var instances = [{ type: 'light', x: 26, y: BEAM_Y, rot: 0, recipe: null, nm: null }];
+    var instances = [{ type: 'light', x: -6, y: BEAM_Y, rot: 0, recipe: null, nm: null }];
     var MAX_OPTICS = 10, MAX_LIGHTS = 4;
     var LIGHT_NMS = [null, 650, 532, 450];    /* white → red → green → blue */
 
@@ -58,16 +60,33 @@
       setTimeout(function () { if (Date.now() >= flashUntil) draw(); }, 1500);
     }
 
+    function minX(o) { return o.type === 'light' ? -18 : 20; }
+
     function layout() {
-      for (var i = 0; i < slots.length; i++) slots[i].hx = W * (2 * i + 1) / 12;
+      for (var i = 0; i < slots.length; i++) { slots[i].hx = W * (2 * i + 1) / 12; slots[i].hy = TRAY_Y; }
       for (i = 0; i < instances.length; i++) {
-        instances[i].x = Math.min(Math.max(instances[i].x, 20), W - 20);
+        instances[i].x = Math.min(Math.max(instances[i].x, minX(instances[i])), W - 20);
       }
     }
 
     function resize() {
       var w = canvas.clientWidth || mount.clientWidth || 860;
-      if (w < 40) return;
+      var h = canvas.clientHeight || 300;
+      if (w < 40 || h < 40) return;
+      if (h !== H) {
+        /* fullscreen (or back): rescale the bench vertically; the layout
+           formulas reproduce the classic 300px geometry exactly at h=300 */
+        var oldBeam = BEAM_Y, oldH = H;
+        H = h;
+        BEAM_Y = Math.round(H * 110 / 300);
+        TRAY_LINE = H - 96;
+        TRAY_Y = H - 54;
+        for (var i = 0; i < instances.length; i++) {
+          var o = instances[i];
+          if (Math.abs(o.y - oldBeam) < 1) o.y = BEAM_Y;
+          else o.y = Math.min(Math.max(o.y * H / oldH, 16), H - 16);
+        }
+      }
       W = w;
       DPR = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(W * DPR);
@@ -593,6 +612,89 @@
       updateStrip();
     });
 
+    /* ---------- fullscreen ---------- */
+    var fs = false, fsMode = null;             /* 'api' | 'css' */
+    var fsBtn = document.createElement('button');
+    fsBtn.type = 'button';
+    fsBtn.textContent = '⛶';
+    fsBtn.setAttribute('aria-label', 'Toggle fullscreen');
+    fsBtn.style.cssText = 'position:absolute;top:8px;right:-10px;z-index:85;' +
+      'font:14px ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer;' +
+      'background:rgba(5,7,12,.6);color:#9aa2b1;border:1px solid rgba(196,228,255,.16);' +
+      'padding:3px 8px;line-height:1;';
+    mount.appendChild(fsBtn);                  /* .stage is position:relative */
+
+    function applyFS() {
+      fsBtn.textContent = fs ? '✕' : '⛶';
+      fsBtn.style.right = fs ? '10px' : '-10px';
+      if (fs) {
+        canvas.style.width = '100%';
+        canvas.style.margin = '0';
+        canvas.style.height = '100%';
+        panel.style.position = 'fixed'; panel.style.left = '12px';
+        panel.style.bottom = '12px'; panel.style.zIndex = '90';
+        panel.style.maxWidth = '420px';
+      } else {
+        canvas.style.width = 'calc(100% + 36px)';
+        canvas.style.margin = '0 -18px';
+        canvas.style.height = '300px';
+        panel.style.position = ''; panel.style.left = '';
+        panel.style.bottom = ''; panel.style.zIndex = '';
+        panel.style.maxWidth = '';
+      }
+      resize();
+    }
+
+    function cssTakeover(on) {
+      if (on) {
+        mount.style.position = 'fixed'; mount.style.top = '0'; mount.style.left = '0';
+        mount.style.right = '0'; mount.style.bottom = '0';
+        mount.style.zIndex = '80'; mount.style.background = '#04070a';
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      } else {
+        mount.style.position = ''; mount.style.top = ''; mount.style.left = '';
+        mount.style.right = ''; mount.style.bottom = '';
+        mount.style.zIndex = ''; mount.style.background = '';
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+      }
+    }
+
+    function enterCSS() { fs = true; fsMode = 'css'; cssTakeover(true); applyFS(); }
+    function exitCSS() { fs = false; fsMode = null; cssTakeover(false); applyFS(); }
+
+    fsBtn.addEventListener('click', function () {
+      if (!fs) {
+        if (mount.requestFullscreen) {         /* real Fullscreen API first */
+          var pr = mount.requestFullscreen();
+          if (pr && pr.catch) pr.catch(function () { enterCSS(); });
+        } else {
+          enterCSS();                          /* iOS Safari fallback */
+        }
+      } else if (fsMode === 'api') {
+        if (document.exitFullscreen) document.exitFullscreen();
+      } else {
+        exitCSS();
+      }
+    });
+
+    document.addEventListener('fullscreenchange', function () {
+      if (document.fullscreenElement === mount) {
+        fs = true; fsMode = 'api';
+        mount.style.background = '#04070a';
+        applyFS();
+      } else if (fsMode === 'api') {
+        fs = false; fsMode = null;
+        mount.style.background = '';
+        applyFS();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && fs && fsMode === 'css') exitCSS();
+    });
+
     /* ---------- interaction ---------- */
     function pointer(e) {
       var r = canvas.getBoundingClientRect();
@@ -659,7 +761,7 @@
         if (drag.mode === 'move') {
           if (Math.abs(p.x - drag.sx) + Math.abs(p.y - drag.sy) > 4) drag.moved = true;
           if (!drag.moved) return;
-          o.x = Math.min(Math.max(p.x + drag.dx, 20), W - 20);
+          o.x = Math.min(Math.max(p.x + drag.dx, minX(o)), W - 20);
           o.y = Math.min(Math.max(p.y + drag.dy, 16), H - 16);
         } else {
           var a = Math.atan2(p.y - o.y, p.x - o.x) / RAD;
