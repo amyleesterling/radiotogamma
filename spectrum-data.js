@@ -163,6 +163,8 @@ window.SPECTRUM_DATA = (() => {
     { id: 'sand',      name: 'a grain of sand',   size: 5e-4,   img: 'scale/sand.png' },
     { id: 'cell',      name: 'a living cell',     size: 1.5e-5, img: 'scale/cell.png' },
     { id: 'bacterium', name: 'a bacterium',       size: 2e-6,   img: 'scale/bacterium.png' },
+    { id: 'virus',     name: 'a virus',           size: 1e-7,   img: 'scale/virus.png' },
+    { id: 'dna',       name: 'a DNA double helix, across', size: 2e-9, img: 'scale/dna.png' },
     { id: 'atom',      name: 'an atom',           size: 1e-10,  img: 'scale/atom.png' },
     // an atomic nucleus (~10 fm) sits below any wavelength in the displayed
     // 10 kHz–100 EHz window — it is here so the ladder keeps its footing if
