@@ -244,6 +244,10 @@
   .stepladder span:nth-child(3n+1) { color: #a07cff; text-align: right; }
   .stepladder span:nth-child(3n+2) { color: #eff4fb; }
   .stepladder span:nth-child(3n)   { color: #8b98a8; font-family: "Segoe UI", system-ui, sans-serif; }
+  .stepladder .bmark { display: inline-block; font-style: normal; margin-left: 8px; padding: 1px 7px 2px;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; letter-spacing: .12em;
+    color: rgb(var(--bc)); border: 1px solid rgb(var(--bc) / .55); background: rgb(var(--bc) / .08);
+    border-radius: 3px; white-space: nowrap; }
 
   .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 8px; max-width: 70ch; }
   .coda { margin-top: 34px; font-size: 13px; color: #6c7c8c; line-height: 1.7; max-width: 66ch; }
@@ -419,15 +423,26 @@ beam power      P = photons per second × energy per photon</pre>
 
   <div class="power steps">
     <h2>✦ HOW FAR IS 53 OCTAVES?</h2>
-    <p>This view spans 53 doublings of frequency. To feel what that means, take one walking
-       step — <b>0.75 m</b> — and double it once for every octave:</p>
+    <p>Everything above, from the slowest radio rumble to the fiercest gamma ray, fits in a window
+       of about <b>53 octaves</b> of frequency. That is the entire observed electromagnetic range.</p>
+    <p>An <b>octave</b> is one doubling. The word is borrowed from music: the A above middle C
+       vibrates 440 times a second, and the next A up, at 880, is the same note one octave higher.
+       Frequency works the same way everywhere, so the natural unit of the spectrum is not
+       "plus so many hertz" but "doubled so many times". Radio to gamma is 53 doublings, stacked.</p>
+    <p>Doubling hides its own size. To feel it, take one walking step — <b>0.75 m</b> — and double
+       it once per octave. The named bands are marked at the octave where each begins:</p>
     <div class="stepladder num">
-      <span>0</span><span>0.75 m</span><span>one step</span>
+      <span>0</span><span>0.75 m</span><span>one step <i class="bmark" style="--bc:74,150,224">RADIO</i></span>
       <span>10</span><span>768 m</span><span>the corner store</span>
+      <span>15</span><span>24.6 km</span><span>a half-marathon and change <i class="bmark" style="--bc:74,200,224">MICROWAVE</i></span>
       <span>20</span><span>786 km</span><span>San Francisco to San Diego</span>
+      <span>25</span><span>25,200 km</span><span>five-eighths of the way around Earth <i class="bmark" style="--bc:226,120,80">INFRARED</i></span>
       <span>30</span><span>805,000 km</span><span>past the Moon, twice over</span>
-      <span>40</span><span>5.5 AU</span><span>past Jupiter</span>
+      <span>35</span><span>25.8 million km</span><span>a sixth of the way to the Sun <i class="bmark" style="--bc:255,255,255">VISIBLE</i></span>
+      <span>36</span><span>51.6 million km</span><span>a third of the way to the Sun; the whole rainbow was that one doubling <i class="bmark" style="--bc:138,96,230">UV</i></span>
+      <span>41</span><span>11 AU</span><span>past Saturn <i class="bmark" style="--bc:126,224,255">X-RAY</i></span>
       <span>46</span><span>353 AU</span><span>past Voyager 1, out of the heliosphere</span>
+      <span>51</span><span>0.18 light-years</span><span>into the inner Oort cloud <i class="bmark" style="--bc:226,120,180">GAMMA</i></span>
       <span>53</span><span>0.7 light-years</span><span>deep in the Oort cloud</span>
     </div>
     <p>One step becomes seven-tenths of a light-year — most of the way through the comet halo at
