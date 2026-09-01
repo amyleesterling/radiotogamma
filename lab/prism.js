@@ -511,7 +511,7 @@
       var inp = document.createElement('input');
       inp.type = 'range'; inp.min = '0'; inp.max = '100'; inp.step = '1';
       inp.value = String(draft[key]);
-      inp.style.cssText = 'width:150px;accent-color:#7ee0ff;';
+      inp.style.cssText = 'width:min(250px, 52vw);';
       var val = document.createElement('span');
       val.style.cssText = 'min-width:34px;color:#c4e4ff;';
       val.textContent = draft[key] + '%';
