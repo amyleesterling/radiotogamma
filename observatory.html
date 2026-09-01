@@ -146,6 +146,15 @@
   .ctl:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
   .ctl[aria-pressed="true"] { color: #7ee0ff; border-color: rgba(126,224,255,.6); background: rgba(126,224,255,.08); }
 
+  .sensechips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .sensechips button { font: inherit; font-size: 13.5px; cursor: pointer; background: none;
+    color: #9aa2b1; border: 1px solid rgba(196,228,255,.18); padding: 9px 13px; min-height: 42px; }
+  .sensechips button:hover { color: #ffd479; border-color: rgba(232,169,58,.5); }
+  .sensechips button[aria-pressed="true"] { color: #ffd479; border-color: rgba(232,169,58,.75);
+    background: rgba(232,169,58,.1); }
+  .sensedesc { font-size: 14px; color: #cfe6e6; line-height: 1.55; margin: 0 0 10px; min-height: 2.9em; }
+  .sensedesc b { color: #ffd479; font-weight: 600; }
+
   svg.spec { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16); background: #05070c; touch-action: none; }
   #ovSvg { margin-bottom: 4px; }
   .ovnote { font-size: 12px; color: #5c6b7a; margin: 6px 0 18px; line-height: 1.5; }
@@ -391,8 +400,10 @@ beam power      P = photons per second × energy per photon</pre>
 
   <div class="panel" id="panelSenses" hidden>
     <h3>Who senses what</h3>
+    <div class="sensechips" id="senseChips" role="group" aria-label="Pick a creature"></div>
+    <p class="sensedesc" id="senseDesc"></p>
     <svg class="spec" id="sensesSvg" viewBox="0 0 1000 170" role="img"
-         aria-label="Ranges of the spectrum sensed by different animals"></svg>
+         aria-label="The selected creature's range highlighted on the spectrum"></svg>
     <p class="note">Suggested by a reader: different animals are issued different slices. Bees and birds
        see into the ultraviolet; pit vipers image the world in the infrared glow of their prey; your own
        skin senses radiant warmth far below what your eyes catch. And one correction to a common mix-up:
@@ -842,28 +853,86 @@ beam power      P = photons per second × energy per photon</pre>
   }
 
   const SENSES = [
-    { lo: C / 750e-9, hi: C / 380e-9, name: 'your eye' },
-    { lo: 3e12,       hi: 4e14,       name: 'your skin, radiant warmth' },
-    { lo: C / 650e-9, hi: C / 300e-9, name: 'honeybee, into the UV' },
-    { lo: C / 700e-9, hi: C / 350e-9, name: 'songbird, four cone types' },
-    { lo: C / 720e-9, hi: C / 300e-9, name: 'mantis shrimp, twelve' },
-    { lo: C / 30e-6,  hi: C / 5e-6,   name: 'pit viper heat pits' },
+    { lo: C / 750e-9, hi: C / 380e-9, name: 'Your eye',
+      desc: 'Sees <b>380–750 nm</b>. One octave of the whole spectrum — the sliver everything else on this page is measured against.' },
+    { lo: C / 100e-6, hi: C / 750e-9, name: 'Your skin',
+      desc: 'Feels <b>750 nm – 100 µm</b> as radiant warmth. Hold a palm toward a fire and you are imaging its infrared — crudely, but honestly.' },
+    { lo: C / 650e-9, hi: C / 300e-9, name: 'Honeybee',
+      desc: 'Sees <b>300–650 nm</b> — the human window shifted up a notch. Flowers paint ultraviolet landing stripes for bees; deep red is invisible to them.' },
+    { lo: C / 700e-9, hi: C / 350e-9, name: 'Songbird',
+      desc: 'Sees <b>350–700 nm</b> with four cone types to your three — the fourth tuned to ultraviolet. Many birds wear UV plumage other birds can see and you cannot.' },
+    { lo: C / 720e-9, hi: C / 300e-9, name: 'Mantis shrimp',
+      desc: 'Sees <b>300–720 nm</b> through twelve photoreceptor classes — plus polarized light. The most elaborate eye hardware known, on a shrimp.' },
+    { lo: C / 30e-6,  hi: C / 5e-6,   name: 'Pit viper',
+      desc: 'Heat pits image <b>5–30 µm</b> — the infrared glow of warm-blooded prey in total darkness. A second pair of eyes, four octaves below yours.' },
   ];
+  let senseSel = 0;
+  // the zoomed window all these senses live inside: far infrared up to near UV
+  const SZ_LO = 2e12, SZ_HI = 1.2e15;
+  const fmtLam = f => {
+    const l = C / f;
+    return l >= 1e-6 ? parseFloat((l * 1e6).toPrecision(3)) + ' µm'
+                     : Math.round(l * 1e9) + ' nm';
+  };
   function renderSenses() {
     if (S.layer !== 'senses') return;
+    const chips = document.getElementById('senseChips');
+    if (!chips.childElementCount) SENSES.forEach((s, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = s.name;
+      b.addEventListener('click', () => { senseSel = i; renderSenses(); });
+      chips.appendChild(b);
+    });
+    [...chips.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === senseSel)));
+    const sel = SENSES[senseSel];
+    document.getElementById('senseDesc').innerHTML = sel.desc;
+
     sensesSvg.textContent = '';
+    const zx = f => (Math.log10(f) - Math.log10(SZ_LO)) / (Math.log10(SZ_HI) - Math.log10(SZ_LO)) * OW;
+    // top: the whole spectrum, with the zoom window marked on it
     BANDS.forEach(b => {
       const x0 = ovX(b.lo), x1 = ovX(b.hi);
-      el('rect', { x: x0, y: 0, width: x1 - x0, height: 14, fill: `rgb(${b.col})`, opacity: .25 }, sensesSvg);
+      el('rect', { x: x0, y: 0, width: x1 - x0, height: 16, fill: `rgb(${b.col})`, opacity: .3 }, sensesSvg);
     });
-    SENSES.forEach((r, i) => {
-      const y = 22 + i * 24;
-      const x0 = ovX(r.lo), x1 = ovX(r.hi);
-      el('rect', { x: x0, y, width: Math.max(x1 - x0, 3), height: 12, rx: 6, fill: 'rgba(232,169,58,.16)',
-                   stroke: 'rgba(232,169,58,.4)' }, sensesSvg);
-      el('text', { x: clamp(x0 + 8, 4, OW - r.name.length * 6 - 4), y: y + 10,
-                   'font-size': 10.5, fill: '#9aa2b1' }, sensesSvg, r.name);
+    const wx0 = ovX(SZ_LO), wx1 = ovX(SZ_HI);
+    el('rect', { x: wx0, y: 0, width: wx1 - wx0, height: 16, fill: 'none',
+                 stroke: '#e8a93a', 'stroke-width': 1.5 }, sensesSvg);
+    // wedge from the window down to the magnified strip
+    el('line', { x1: wx0, y1: 16, x2: 0, y2: 44, stroke: 'rgba(232,169,58,.35)', 'stroke-dasharray': '3 3' }, sensesSvg);
+    el('line', { x1: wx1, y1: 16, x2: OW, y2: 44, stroke: 'rgba(232,169,58,.35)', 'stroke-dasharray': '3 3' }, sensesSvg);
+    // the magnified strip: far IR to near UV, where every sense is actually wide
+    BANDS.forEach(b => {
+      const lo = Math.max(b.lo, SZ_LO), hi = Math.min(b.hi, SZ_HI);
+      if (hi <= lo) return;
+      el('rect', { x: zx(lo), y: 44, width: zx(hi) - zx(lo), height: 34, fill: `rgb(${b.col})`, opacity: .4 }, sensesSvg);
     });
+    // the visible octave rendered as an actual rainbow inside the strip
+    const defs = el('defs', {}, sensesSvg);
+    const grad = el('linearGradient', { id: 'senseVis' }, defs);
+    [['0%','#c92a2a'],['18%','#f08c00'],['36%','#ffd43b'],['54%','#37b24d'],['72%','#1098ad'],['86%','#3b5bdb'],['100%','#9c36b5']]
+      .forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, grad));
+    el('rect', { x: zx(C / 750e-9), y: 44, width: zx(C / 380e-9) - zx(C / 750e-9), height: 34,
+                 fill: 'url(#senseVis)', opacity: .85 }, sensesSvg);
+    // edge wavelengths of the magnified strip
+    el('text', { x: 4, y: 96, 'font-size': 11, fill: '#6c7c8c' }, sensesSvg, fmtLam(SZ_LO));
+    el('text', { x: OW - 4, y: 96, 'font-size': 11, fill: '#6c7c8c', 'text-anchor': 'end' }, sensesSvg, fmtLam(SZ_HI));
+    // the selected creature's range, highlighted
+    const x0 = zx(sel.lo), x1 = zx(sel.hi);
+    el('rect', { x: x0, y: 40, width: Math.max(x1 - x0, 4), height: 42, rx: 4,
+                 fill: 'rgba(232,169,58,.15)', stroke: '#e8a93a', 'stroke-width': 2 }, sensesSvg);
+    el('line', { x1: x0, y1: 82, x2: x0, y2: 104, stroke: 'rgba(232,169,58,.6)' }, sensesSvg);
+    el('line', { x1: x1, y1: 82, x2: x1, y2: 104, stroke: 'rgba(232,169,58,.6)' }, sensesSvg);
+    if (x1 - x0 > 110) {
+      el('text', { x: clamp(x0, 34, OW - 34), y: 122, 'font-size': 13, fill: '#ffd479',
+                   'text-anchor': 'middle' }, sensesSvg, fmtLam(sel.lo));
+      el('text', { x: clamp(x1, 34, OW - 34), y: 122, 'font-size': 13, fill: '#ffd479',
+                   'text-anchor': 'middle' }, sensesSvg, fmtLam(sel.hi));
+    } else {
+      el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 122, 'font-size': 13, fill: '#ffd479',
+                   'text-anchor': 'middle' }, sensesSvg, fmtLam(sel.lo) + ' – ' + fmtLam(sel.hi));
+    }
+    el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 146, 'font-size': 13.5, fill: '#cfd6e2',
+                 'text-anchor': 'middle', 'font-weight': 600 }, sensesSvg, sel.name.toUpperCase());
   }
 
   // ---- readouts -----------------------------------------------------------
