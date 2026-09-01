@@ -288,12 +288,7 @@
   // vector (sin of incidence / diffraction angles measured against the groove
   // direction) and solve d·(sin i − sin r) = mλ with d = 1.6 µm. Wavelengths
   // that land in 380–750 nm get added as spectral color — that IS the rainbow.
-  var FRAG = [
-    'varying vec3 vPos;',
-    'uniform vec3 uLp, uCp;',
-    'uniform sampler2D uEnv;',                       // equirect studio HDR (linear)
-    'uniform float uEnvOn, uPitch, uStripe;',        // uPitch: track pitch in disc units
-    'uniform mat3 uNorm;',                           // disc-local -> world rotation
+  var GLSL_WL = [                                    // shared shader chunk
     'vec3 wl2rgb(float nm){',                        // matches the JS approximation
     '  float r=0.,g=0.,b=0.,t;',
     '  if(nm<440.){t=(nm-380.)/60.;r=.35*(1.-t);b=1.;}',
@@ -306,7 +301,15 @@
     '  if(nm<420.)f=.4+.6*(nm-380.)/40.;',
     '  if(nm>700.)f=.4+.6*(750.-nm)/50.;',
     '  return vec3(r,g,b)*f;}',
-    'float hash(float n){return fract(sin(n)*43758.5453);}',
+    'float hash(float n){return fract(sin(n)*43758.5453);}'
+  ].join('\n');
+  var FRAG = [
+    'varying vec3 vPos;',
+    'uniform vec3 uLp, uCp;',
+    'uniform sampler2D uEnv;',                       // equirect studio HDR (linear)
+    'uniform float uEnvOn, uPitch, uStripe, uFlat;', // uPitch: track pitch in disc units
+    'uniform mat3 uNorm;',                           // disc-local -> world rotation
+    GLSL_WL,
     'void main(){',
     '  float r=length(vPos.xy);',
     '  vec2 rad=vPos.xy/max(r,1e-4);',               // grating vector: radial
@@ -333,9 +336,9 @@
     '    float win=smoothstep(380.,425.,lam)*(1.-smoothstep(690.,750.,lam));', // soft gamut window
     '    if(win>0.001) col+=wl2rgb(lam)*win*(.85/float(m))*fres*ndl*grain*(1.-lab)*(1.-.75*uStripe);',
     '  }',
-    '  float tr=r/uPitch;',                          // procedural LOD: concentric tracks
-    '  float wfr=max(fwidth(tr),1e-3);',             // resolve out of the shimmer as we dive
-    '  float lineF=abs(fract(tr)-.5);',
+    '  float tr=(mix(r,vPos.x,uFlat)-.68)/uPitch;',  // far-LOD stripes, phase-locked to the
+    '  float wfr=max(fwidth(tr),1e-3);',             // micro patch; near the handoff they
+    '  float lineF=abs(fract(tr+.5)-.5);',           // flatten from arcs to straight tracks
     '  float groove=(1.-smoothstep(.22-wfr,.22+wfr,lineF))*step(.001,uStripe);',
     '  col=mix(col,vec3(.028,.032,.04),groove*uStripe*.85);',
     '  col+=vec3(.30,.34,.42)*(1.-groove)*uStripe*.18*(.4+.6*ndl);',
@@ -343,6 +346,55 @@
     '  gl_FragColor=vec4(col,1.);}'
   ].join('\n');
   var VERT = 'varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+  // ---- micro-surface patch shader: real displaced pit geometry -------------
+  // Positions are in µm (patch local); the mesh is uniformly scaled so one
+  // 1.6 µm track pitch equals the zoom's implied pitch in disc units.
+  var VERT2 = 'varying vec3 vPos;varying vec3 vNrm;void main(){vPos=position;vNrm=normal;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+  var FRAG2 = [
+    'varying vec3 vPos;varying vec3 vNrm;',
+    'uniform vec3 uLp, uCp;',
+    'uniform sampler2D uEnv;',
+    'uniform float uEnvOn, uFade;',
+    'uniform mat3 uNorm;',                           // patch-local -> world (uniform scale)
+    GLSL_WL,
+    'void main(){',
+    '  vec3 N=normalize(vNrm);',
+    '  if(!gl_FrontFacing)N=-N;',
+    '  vec3 L=normalize(uLp-vPos), V=normalize(uCp-vPos);',
+    '  float ndl=max(dot(N,L),0.), ndv=max(dot(N,V),0.);',
+    '  vec3 Hv=normalize(L+V);',
+    '  float ndh=max(dot(N,Hv),0.);',
+    '  float fres=.25+.75*pow(1.-ndv,2.);',
+    '  vec3 col=vec3(.05,.054,.064)+vec3(.07,.075,.09)*ndl;', // aluminum, lit + shadowed
+    '  col+=vec3(.95,.97,1.)*pow(ndh,110.)*.9;',     // glints off pit walls and edges
+    '  vec3 Rw=normalize(uNorm*reflect(-V,N));',     // same studio HDR as the full disc
+    '  vec2 euv=vec2(atan(Rw.z,Rw.x)/6.2831853+.5,acos(clamp(Rw.y,-1.,1.))/3.14159265);',
+    '  vec3 env=texture2D(uEnv,euv).rgb;',
+    '  col+=uEnvOn*(env/(1.+env))*(.07+.45*fres);',
+    '  float s=abs(dot(L,vec3(1.,0.,0.))-dot(V,vec3(1.,0.,0.)));', // iridescence remnant:
+    '  float lam=1600.*s;',                          // +X is the grating (radial) direction
+    '  float win=smoothstep(380.,425.,lam)*(1.-smoothstep(690.,750.,lam));',
+    '  col+=wl2rgb(lam)*win*.10*fres;',
+    '  gl_FragColor=vec4(col,uFade);}'
+  ].join('\n');
+  // Seeded pit heightfield in µm. Real CD numbers: track pitch 1.6, pit width
+  // ~0.5, depth ~0.11, run lengths ~0.83-3.05 (3T-11T). Each 2.4 µm cell of a
+  // track carries one hashed pit; the hash is a pure function of (track, cell)
+  // so the landscape is stable frame to frame. `soft` widens edge ramps to the
+  // mesh resolution of each LOD (a cheap low-pass so coarse LODs don't alias).
+  var PIT_SEED = 7.31;
+  function prand(n) { var v = Math.sin(n * 12.9898 + PIT_SEED) * 43758.5453; return v - Math.floor(v); }
+  function pitHeight(x, y, soft) {
+    var ti = Math.round(x / 1.6), dx = x - ti * 1.6; // nearest track + offset across it
+    var ax = 1 - sm((Math.abs(dx) - 0.17) / (0.08 + soft));
+    if (ax <= 0.001) return 0;                       // on the flat land between tracks
+    var C = 2.4, ci = Math.floor(y / C), u = y - ci * C;
+    var h1 = prand(ti * 3.7 + ci * 11.93), h2 = prand(ti * 7.31 + ci * 5.17 + 99.7);
+    var len = 0.83 + h1 * 1.05;                      // this cell's pit length (~3T-7T)
+    var start = 0.15 + (C - len - 0.3) * h2;
+    var ay = sm((u - start) / (0.09 + soft)) * (1 - sm((u - start - len) / (0.09 + soft)));
+    return -0.11 * ax * ay;                          // pressed ~0.11 µm into the surface
+  }
   function init3D(mount, api, THREE, HDR) {
     var renderer = new THREE.WebGLRenderer({ antialias: true });
     var W = 860, dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -370,7 +422,7 @@
       uniforms: {
         uLp: { value: new THREE.Vector3() }, uCp: { value: new THREE.Vector3() },
         uEnv: { value: blackTex }, uEnvOn: { value: 0 },
-        uPitch: { value: 1 }, uStripe: { value: 0 },
+        uPitch: { value: 1 }, uStripe: { value: 0 }, uFlat: { value: 0 },
         uNorm: { value: new THREE.Matrix3() }
       },
       vertexShader: VERT, fragmentShader: FRAG, side: THREE.DoubleSide
@@ -381,6 +433,8 @@
           tex.mapping = THREE.EquirectangularReflectionMapping;
           mat.uniforms.uEnv.value = tex;
           mat.uniforms.uEnvOn.value = 1;
+          patchMat.uniforms.uEnv.value = tex;        // same studio, same metal
+          patchMat.uniforms.uEnvOn.value = 1;
           render();
         }, undefined, function () { /* keep analytic lighting */ });
       } catch (err) { /* keep analytic lighting */ }
@@ -394,6 +448,39 @@
       new THREE.RingGeometry(1.0, 1.022, 160, 1),
       new THREE.MeshBasicMaterial({ color: 0x1d2733, side: THREE.DoubleSide }));
     group.add(edge);
+    // ---- micro-surface: displaced pit geometry at the dive target ----------
+    // Three static LODs (one visible at a time, ~100k tris each) sitting
+    // tangent to the disc at local (0.68, 0, 0); patch +X = radial (across
+    // tracks), +Y = along the track. Curvature is negligible at this scale
+    // (0.1 µm sag over a 100 µm patch on a 41 mm radius).
+    var patchMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uLp: { value: new THREE.Vector3() }, uCp: { value: new THREE.Vector3() },
+        uEnv: { value: blackTex }, uEnvOn: { value: 0 },
+        uFade: { value: 0 }, uNorm: { value: new THREE.Matrix3() }
+      },
+      vertexShader: VERT2, fragmentShader: FRAG2, side: THREE.DoubleSide,
+      transparent: true, polygonOffset: true, polygonOffsetFactor: -1
+    });
+    var patches = null;                              // built on first dive past the handoff
+    function buildPatch(extentUm, seg) {
+      var geo = new THREE.PlaneGeometry(extentUm, extentUm, seg, seg);
+      var pos = geo.attributes.position, soft = extentUm / seg * 0.9;
+      for (var i = 0; i < pos.count; i++) pos.setZ(i, pitHeight(pos.getX(i), pos.getY(i), soft));
+      geo.computeVertexNormals();
+      var mesh = new THREE.Mesh(geo, patchMat);
+      mesh.visible = false;
+      group.add(mesh);
+      return mesh;
+    }
+    function ensurePatches() {
+      if (!patches) patches = [                      // [min zoom f, mesh]; ~100k tris each
+        [0, buildPatch(128, 224)],                   // 0.57 µm mesh step
+        [0.84, buildPatch(48, 224)],                 // 0.21 µm
+        [0.935, buildPatch(16, 224)]                 // 0.07 µm — pits ~7 segments wide
+      ];
+      return patches;
+    }
     // the little light: a glowing sprite orbiting a hemisphere above the disc
     var spr = document.createElement('canvas'); spr.width = spr.height = 64;
     var sctx = spr.getContext('2d');
@@ -427,19 +514,43 @@
     }
     function render() {
       sprite.position.copy(lightPos());
+      var z = zoomState();
+      // LOD handoff: past ~×600 the pit patch fades in over the (phase-locked)
+      // far stripes; its uniform scale makes 1.6 µm exactly z.pitchU disc
+      // units, so stripe spacing is continuous through the handoff.
+      var pf = sm((z.f - 0.74) / 0.08), active = null;
+      if (pf > 0.001) {
+        var ps = ensurePatches(), s = z.pitchU / 1.6;
+        for (var i = 0; i < ps.length; i++) {
+          ps[i][1].visible = false;
+          if (z.f >= ps[i][0]) active = ps[i][1];
+        }
+        active.visible = true;
+        active.scale.set(s, s, s);
+        active.position.set(0.68, 0, 0.05 * s);      // a hair above the flat ring
+        patchMat.uniforms.uFade.value = pf;
+      } else if (patches) {
+        for (var j = 0; j < patches.length; j++) patches[j][1].visible = false;
+      }
       group.updateMatrixWorld(true);
-      var z = zoomState();                           // fly toward local (0.68, 0, 0)
       tgt.set(0.68, 0, 0).applyMatrix4(group.matrixWorld)
-        .multiplyScalar(sm(Math.min(1, z.f * 1.6))); // narrowing target
+        .multiplyScalar(sm(Math.min(1, z.f * 1.6))); // narrowing target of the dive
       camera.position.copy(tgt).addScaledVector(DIR0, z.dolly);
       camera.lookAt(tgt);
       sprite.material.opacity = 1 - sm((z.f - 0.45) / 0.25);
       mat.uniforms.uPitch.value = z.pitchU;
       mat.uniforms.uStripe.value = z.stripe;
+      mat.uniforms.uFlat.value = pf;
       mat.uniforms.uNorm.value.setFromMatrix4(group.matrixWorld);
-      inv.copy(group.matrixWorld).invert();          // shader works in disc-local space
+      inv.copy(group.matrixWorld).invert();          // disc shader: disc-local space
       mat.uniforms.uLp.value.copy(sprite.position).applyMatrix4(inv);
       mat.uniforms.uCp.value.copy(camera.position).applyMatrix4(inv);
+      if (active) {                                  // patch shader: patch-local µm space
+        inv.copy(active.matrixWorld).invert();
+        patchMat.uniforms.uLp.value.copy(sprite.position).applyMatrix4(inv);
+        patchMat.uniforms.uCp.value.copy(camera.position).applyMatrix4(inv);
+        patchMat.uniforms.uNorm.value.setFromMatrix4(active.matrixWorld);
+      }
       renderer.render(scene, camera);
     }
     // ---- JS-side physics sampling (no pixel reads): ~8 disc points ---------
