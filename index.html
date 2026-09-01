@@ -255,12 +255,10 @@
   </div>
   </div>
 
-  <p class="cap">Visible light, magnified:
-    <button class="rainbow" id="rainbowBtn" aria-expanded="false"
-            aria-controls="visFun" aria-label="Things to try with visible light">
-      <span class="rainbow-arc" aria-hidden="true"></span>
-    </button>
-  </p>
+  <!-- unrolls only while marker B is inside the visible band; the rainbow
+       icons above are the way in -->
+  <div id="visZone" hidden>
+  <p class="cap">Visible light, magnified:</p>
   <div class="specvisbar" id="specVis">
     <div class="specmark b" id="markV" tabindex="0" role="slider" aria-label="Marker B within visible light"></div>
   </div>
@@ -310,6 +308,7 @@
       </div>
       <a class="trylab" href="lab.html#exp-sky">→ RUN THIS EXPERIMENT IN THE LIGHT LAB</a>
     </details>
+  </div>
   </div>
 
   <div class="specread">
@@ -469,11 +468,7 @@
     valR.textContent = r; specRatio.textContent = r;
     metaR.textContent = fB >= fA ? 'B over A, in frequency' : 'A over B, in frequency';
     const inVis = fB >= VIS_LO && fB <= VIS_HI;
-    vis.classList.toggle('off', !inVis);
-    // The rainbow used to hide itself outside the band and Amy couldn't find
-    // it. Now it always stands in the caption — gray out of band, lit within
-    // it — and always opens: nothing in the fun list depends on the marker.
-    rainbowBtn.classList.toggle('off', !inVis);
+    document.getElementById('visZone').hidden = !inVis;
     mV.style.display = inVis ? '' : 'none';
     if (inVis) { mV.style.left = (vX(fB) * 100) + '%'; mV.dataset.tag = 'B'; }
     for (const [m, f] of [[mA, fA], [mB, fB]]) {
@@ -597,15 +592,7 @@
       paint();
     });
   }
-  const rainbowBtn = document.getElementById('rainbowBtn');
   const visFun = document.getElementById('visFun');
-  rainbowBtn.addEventListener('click', () => {
-    // greyed out (B outside the band) -> light the spectrum up first
-    if (rainbowBtn.classList.contains('off')) { openVisible(); return; }
-    const open = visFun.hidden;
-    visFun.hidden = !open;
-    rainbowBtn.setAttribute('aria-expanded', String(open));
-  });
 
   // any rainbow doorway opens the visible spectrum for real: marker B jumps
   // into the band (green center), so the magnified strip lights up in color,
@@ -613,9 +600,9 @@
   function openVisible() {
     fB = Math.sqrt(VIS_LO * VIS_HI);
     visFun.hidden = false;
-    rainbowBtn.setAttribute('aria-expanded', 'true');
     render();
-    visFun.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+    document.getElementById('visZone').scrollIntoView({
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
   }
 
   // the rainbow flag pinned over the visible band on the full bar
