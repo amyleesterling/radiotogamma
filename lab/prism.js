@@ -71,15 +71,122 @@
 
     function onBeam(o) { return Math.abs(o.y - BEAM_Y) < 34 && o.x > 60 && o.x < W - 30; }
 
-    function activeObj() {
-      var best = null;
+    function beamOptics() {
+      var list = [];
       for (var i = 0; i < objs.length; i++) {
         var o = objs[i];
-        if ((o.placed || (drag && drag.obj === o)) && onBeam(o)) {
-          if (!best || o.x < best.x) best = o;
+        if ((o.placed || (drag && drag.obj === o)) && onBeam(o)) list.push(o);
+      }
+      list.sort(function (a, b) { return a.x - b.x; });
+      return list;
+    }
+
+    /* ---------- sequential ray tracing ----------
+       Light is a list of rays {x,y,dx,dy,nm,i,h,oi}: nm null = white,
+       i = intensity, h = optic interactions so far, oi = index of the next
+       optic (sorted by x) this ray may meet — monotone, so no loops. */
+    var RAY_CAP = 126;        /* ~120 rays total (3 white seeds + splits) */
+    var MAX_HITS = 4;         /* optic interactions per ray               */
+    var APER = 30;            /* half-height of each optic's aperture     */
+    var EPS = 1e-4;
+    var scene = null;         /* last trace, shared by draw + strip       */
+
+    function bendDeg(nm) {
+      var u = (750 - nm) / 370;               /* 0 at red .. 1 at blue: blue bends most */
+      return (8 + rot * 0.7) + u * (11 + Math.abs(rot) * 0.7);
+    }
+
+    function rotDir(dx, dy, degCW) {
+      var a = degCW * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+      return [dx * c - dy * s, dx * s + dy * c];
+    }
+
+    function exitLen(r) {
+      var t = 1e9;
+      if (r.dx > EPS) t = Math.min(t, (W + 20 - r.x) / r.dx);
+      else if (r.dx < -EPS) t = Math.min(t, (-20 - r.x) / r.dx);
+      if (r.dy > EPS) t = Math.min(t, (H + 20 - r.y) / r.dy);
+      else if (r.dy < -EPS) t = Math.min(t, (-20 - r.y) / r.dy);
+      return t === 1e9 ? 0 : t;
+    }
+
+    function traceScene() {
+      var optics = beamOptics();
+      var queue = [], segs = [], glows = [], survivors = [];
+      var made = 3, dispersed = false, guard = 0;
+      var offs = [-6, 0, 6];                   /* white beam has a little width */
+      for (var k = 0; k < offs.length; k++) {
+        queue.push({ x: -20, y: BEAM_Y + offs[k], dx: 1, dy: 0, nm: null, i: 1, h: 0, oi: 0 });
+      }
+      while (queue.length && guard++ < 800) {
+        var r = queue.shift();
+        var hit = null, o, t, hx, hy;
+        if (r.h < MAX_HITS) {
+          for (var oi = r.oi; oi < optics.length && !hit; oi++) {
+            o = optics[oi];
+            if (o.id === 'mirror') {
+              /* "/" mirror: line through (o.x,o.y), points satisfy x+y=const */
+              var den = r.dx + r.dy;
+              if (den <= EPS) continue;
+              t = (o.x + o.y - r.x - r.y) / den;
+              if (t <= EPS) continue;
+              hx = r.x + r.dx * t; hy = r.y + r.dy * t;
+              if (Math.abs(((hx - o.x) - (hy - o.y)) * 0.7071) > APER) continue;
+            } else {
+              if (r.dx <= EPS) continue;       /* vertical plane at o.x */
+              t = (o.x - r.x) / r.dx;
+              if (t <= EPS) continue;
+              hx = o.x; hy = r.y + r.dy * t;
+              if (Math.abs(hy - o.y) > APER) continue;
+            }
+            hit = { o: o, x: hx, y: hy, oi: oi };
+          }
+        }
+        if (!hit) {                            /* ray leaves the canvas */
+          var te = exitLen(r);
+          if (te > EPS) segs.push({ x1: r.x, y1: r.y, x2: r.x + r.dx * te, y2: r.y + r.dy * te, nm: r.nm, i: r.i });
+          if (r.nm !== null && r.i > 0) survivors.push(r);
+          continue;
+        }
+        segs.push({ x1: r.x, y1: r.y, x2: hit.x, y2: hit.y, nm: r.nm, i: r.i });
+        o = hit.o;
+        if (o.id === 'mirror') {
+          /* reflect about the "/" plane, normal (1,1)/√2 : d' = d - (dx+dy)(1,1) */
+          var dn = r.dx + r.dy;
+          queue.push({ x: hit.x, y: hit.y, dx: r.dx - dn, dy: r.dy - dn,
+            nm: r.nm, i: r.i, h: r.h + 1, oi: hit.oi + 1 });
+        } else if (o.id === 'lens') {
+          /* converge through the focal point, then keep going (diverges past it) */
+          var fx = o.x + 64, fy = o.y;
+          var vx = fx - hit.x, vy = fy - hit.y;
+          var L = Math.sqrt(vx * vx + vy * vy) || 1;
+          queue.push({ x: hit.x, y: hit.y, dx: vx / L, dy: vy / L,
+            nm: r.nm, i: r.i, h: r.h + 1, oi: hit.oi + 1 });
+          glows.push({ x: fx, y: fy, r: 10, nm: r.nm, a: 0.3 * Math.min(1, r.i) });
+        } else if (o.id === 'glass') {
+          /* absorbed: a dim glow tinted by whatever arrived, no outgoing ray */
+          glows.push({ x: hit.x - 3, y: hit.y, r: 14, nm: r.nm, a: 0.12 * Math.min(1, r.i) });
+        } else {                               /* prism */
+          if (r.nm === null) {
+            var n = Math.min(40, RAY_CAP - made);
+            if (n > 0) dispersed = true;
+            for (var j = 0; j < n; j++) {
+              var nm = 380 + 370 * j / Math.max(1, n - 1);
+              var d = rotDir(r.dx, r.dy, bendDeg(nm));
+              queue.push({ x: hit.x, y: hit.y, dx: d[0], dy: d[1],
+                nm: nm, i: r.i, h: r.h + 1, oi: hit.oi + 1 });
+              made++;
+            }
+          } else {
+            /* already a single color: just bends by its own angle — no re-split.
+               A second prism therefore widens the fan. */
+            var d2 = rotDir(r.dx, r.dy, bendDeg(r.nm));
+            queue.push({ x: hit.x, y: hit.y, dx: d2[0], dy: d2[1],
+              nm: r.nm, i: r.i, h: r.h + 1, oi: hit.oi + 1 });
+          }
         }
       }
-      return best;
+      return { segs: segs, glows: glows, survivors: survivors, dispersed: dispersed };
     }
 
     /* ---------- drawing ---------- */
@@ -90,74 +197,36 @@
       ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
 
-    function whiteBeam(x1, x2) {
-      ray(x1, BEAM_Y, x2, BEAM_Y, 'rgba(255,255,255,.28)', 7, 0, .6);
-      ray(x1, BEAM_Y, x2, BEAM_Y, '#ffffff', 2, 10, .95);
+    function rgbStr(nm) {
+      var c = api.strip.wavelengthRGB(nm);
+      return Math.round(c[0] * 255) + ',' + Math.round(c[1] * 255) + ',' + Math.round(c[2] * 255);
     }
 
-    function glowDot(x, y, r, a) {
-      var g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, 'rgba(255,255,255,' + a + ')');
-      g.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    function glow(g) {
+      var col = g.nm === null ? '255,255,255' : rgbStr(g.nm);
+      var grad = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
+      grad.addColorStop(0, 'rgba(' + col + ',' + g.a + ')');
+      grad.addColorStop(1, 'rgba(' + col + ',0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2); ctx.fill();
     }
 
-    function drawBeam() {
-      var a = activeObj();
+    function drawScene(sc) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      if (!a) {
-        whiteBeam(0, W);
-      } else if (a.id === 'mirror') {
-        whiteBeam(0, a.x);
-        ray(a.x, BEAM_Y, a.x, 0, 'rgba(255,255,255,.28)', 7, 0, .6);
-        ray(a.x, BEAM_Y, a.x, 0, '#ffffff', 2, 10, .95);
-      } else if (a.id === 'lens') {
-        whiteBeam(0, a.x - 14);
-        var fx = a.x + 64;
-        var g1 = ctx.createLinearGradient(a.x, 0, fx, 0);
-        g1.addColorStop(0, 'rgba(255,255,255,.16)');
-        g1.addColorStop(1, 'rgba(255,255,255,.45)');
-        ctx.fillStyle = g1;
-        ctx.beginPath(); ctx.moveTo(a.x + 2, BEAM_Y - 11); ctx.lineTo(fx, BEAM_Y);
-        ctx.lineTo(a.x + 2, BEAM_Y + 11); ctx.closePath(); ctx.fill();
-        glowDot(fx, BEAM_Y, 12, .9);
-        var g2 = ctx.createLinearGradient(fx, 0, W, 0);
-        g2.addColorStop(0, 'rgba(255,255,255,.30)');
-        g2.addColorStop(1, 'rgba(255,255,255,.02)');
-        ctx.fillStyle = g2;
-        ctx.beginPath(); ctx.moveTo(fx, BEAM_Y); ctx.lineTo(W, BEAM_Y - 34);
-        ctx.lineTo(W, BEAM_Y + 34); ctx.closePath(); ctx.fill();
-      } else if (a.id === 'glass') {
-        whiteBeam(0, a.x - 18);
-        glowDot(a.x - 16, BEAM_Y, 18, .18);
-      } else if (a.id === 'prism') {
-        whiteBeam(0, a.x - 18);
-        ray(a.x - 18, BEAM_Y, a.x + 6, BEAM_Y, 'rgba(255,255,255,.5)', 2, 0, .5);
-        drawFan(a.x + 6, BEAM_Y);
-        if (!solved) { solved = true; api.solved(); }
+      var i, s;
+      for (i = 0; i < sc.segs.length; i++) {
+        s = sc.segs[i];
+        var a = Math.min(1, s.i);
+        if (s.nm === null) {
+          ray(s.x1, s.y1, s.x2, s.y2, 'rgba(255,255,255,.28)', 5, 0, .45 * a);
+          ray(s.x1, s.y1, s.x2, s.y2, '#ffffff', 1.6, 8, .8 * a);
+        } else {
+          ray(s.x1, s.y1, s.x2, s.y2, 'rgb(' + rgbStr(s.nm) + ')', 2.4, 0, .3 * a);
+        }
       }
+      for (i = 0; i < sc.glows.length; i++) glow(sc.glows[i]);
       ctx.restore();
-    }
-
-    function drawFan(cx, cy) {
-      var base = 8 + rot * 0.7;                 /* exit direction follows rotation */
-      var spread = 11 + Math.abs(rot) * 0.7;    /* steeper prism = wider fan       */
-      for (var i = 0; i < 40; i++) {
-        var nm = 380 + 370 * i / 39;
-        var u = (750 - nm) / 370;               /* 0 at red .. 1 at blue: blue bends most */
-        var ang = (base + u * spread) * Math.PI / 180;
-        var c = api.strip.wavelengthRGB(nm);
-        ctx.strokeStyle = 'rgb(' + Math.round(c[0] * 255) + ',' + Math.round(c[1] * 255) + ',' + Math.round(c[2] * 255) + ')';
-        ctx.globalAlpha = 0.4;
-        ctx.lineWidth = 2.4;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + Math.cos(ang) * W, cy + Math.sin(ang) * W);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
     }
 
     var INK = 'rgba(196,228,255,.8)', INK_FAINT = 'rgba(196,228,255,.16)';
@@ -168,7 +237,9 @@
       ctx.strokeStyle = INK;
       ctx.lineWidth = 1.5;
       if (o.id === 'mirror') {
-        ctx.rotate(-Math.PI / 4);
+        /* "/" orientation: a left-to-right beam bounces straight up off the
+           lower-left face; hatch marks sit on the back (lower-right) side */
+        ctx.rotate(Math.PI / 4);
         ctx.fillStyle = 'rgba(196,228,255,.08)';
         ctx.fillRect(-3, -26, 6, 52);
         ctx.strokeRect(-3, -26, 6, 52);
@@ -202,7 +273,9 @@
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.fillStyle = '#05070c';
       ctx.fillRect(0, 0, W, H);
-      drawBeam();
+      scene = traceScene();
+      drawScene(scene);
+      if (scene.dispersed && !solved) { solved = true; api.solved(); }
       /* tray */
       ctx.strokeStyle = INK_FAINT;
       ctx.lineWidth = 1;
@@ -226,9 +299,26 @@
 
     /* ---------- strip ---------- */
     function updateStrip() {
-      var a = activeObj();
-      if (a && a.id === 'prism') api.strip.light(function () { return 0.9; });
-      else api.strip.light(function () { return 0.15; });
+      var sc = scene || traceScene();
+      var sur = sc.survivors;
+      if (!sur.length) {                       /* all white, or all absorbed */
+        api.strip.light(function () { return 0.15; });
+        return;
+      }
+      var N = 128, bins = new Array(N).fill(0), mx = 0, i, idx;
+      for (i = 0; i < sur.length; i++) {
+        idx = Math.round((sur[i].nm - 380) / 370 * (N - 1));
+        if (idx < 0) idx = 0; if (idx > N - 1) idx = N - 1;
+        bins[idx] += sur[i].i;
+        if (idx > 0) bins[idx - 1] += sur[i].i * 0.5;
+        if (idx < N - 1) bins[idx + 1] += sur[i].i * 0.5;
+      }
+      for (i = 0; i < N; i++) if (bins[i] > mx) mx = bins[i];
+      api.strip.light(function (nm) {
+        var k = Math.round((nm - 380) / 370 * (N - 1));
+        if (k < 0) k = 0; if (k > N - 1) k = N - 1;
+        return Math.max(0.15, bins[k] / mx * 0.9);
+      });
     }
 
     /* ---------- interaction ---------- */
