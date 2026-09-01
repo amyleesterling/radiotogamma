@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Spectral Zoo</title>
+<meta name="description" content="Who senses what: animal vision and radiant-heat detection across the electromagnetic spectrum, plus the senses that refuse to sit on a wavelength ruler.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Radio to Gamma">
+<meta property="og:title" content="The Spectral Zoo · Radio to Gamma">
+<meta property="og:description" content="Who senses what: animal vision and radiant-heat detection across the electromagnetic spectrum, plus the senses that refuse to sit on a wavelength ruler.">
+<meta property="og:url" content="https://radiotogamma.com/senses.html">
+<meta property="og:image" content="https://radiotogamma.com/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://radiotogamma.com/og-card.jpg">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
+<link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #04070a; color: #cfe6e6;
+         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .num, svg text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .gamebar { display: flex; flex-direction: column; gap: 10px; padding: 11px 18px;
+             border-radius: 0; border-left: 0; border-right: 0; border-top: 0;
+             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .gamebar a { text-decoration: none; }
+  .gbrand { display: flex; align-items: center; gap: 11px; }
+  .gamebar-icon { width: 27px; height: 27px; flex: none; }
+  .gbnav { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
+  .gbnav .gamebar-back { text-align: center; font-size: 12px; letter-spacing: .08em; padding: 7px 6px; }
+  .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
+                  border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
+                  padding: 7px 12px; align-self: center; white-space: nowrap; }
+  .gamebar-share { background: none; font: inherit; cursor: pointer; }
+  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
+  .gamebar-name { font-size: 19px; font-weight: 600; letter-spacing: .06em;
+                  color: rgb(var(--bar-accent)); white-space: nowrap; }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
+  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
+  .sub { font-size: 14.5px; color: #9aa2b1; margin: 0 0 22px; line-height: 1.6; max-width: 70ch; }
+  .sub b { color: #eff4fb; }
+
+  h2.group { font-size: 12px; letter-spacing: .14em; margin: 22px 0 9px; font-weight: 600; }
+  h2.group.vision { color: #7ee0ff; }
+  h2.group.heat { color: #ff9c6b; }
+  h2.group small { color: #6c7c8c; letter-spacing: 0; font-weight: 400; text-transform: none; font-size: 11.5px; }
+
+  .sensechips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
+  .sensechips button { font: inherit; font-size: 13.5px; cursor: pointer; background: none;
+    color: #9aa2b1; border: 1px solid rgba(196,228,255,.18); padding: 8px 12px; min-height: 42px;
+    display: inline-flex; align-items: center; gap: 9px; }
+  .sensechips button img { height: 32px; width: auto; max-width: 44px; object-fit: contain;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
+  .sensechips button:hover { color: #ffd479; border-color: rgba(232,169,58,.5); }
+  .sensechips button[aria-pressed="true"] { color: #ffd479; border-color: rgba(232,169,58,.75);
+    background: rgba(232,169,58,.1); }
+  .sensechips.heatrow button:hover { color: #ff9c6b; border-color: rgba(255,120,80,.5); }
+  .sensechips.heatrow button[aria-pressed="true"] { color: #ff9c6b; border-color: rgba(255,120,80,.75);
+    background: rgba(255,120,80,.08); }
+
+  .sensedesc { font-size: 14px; color: #cfe6e6; line-height: 1.6; margin: 14px 0 10px; min-height: 4.2em; }
+  .sensedesc b { color: #ffd479; font-weight: 600; }
+  .sensedesc .modetag { display: inline-block; font-family: ui-monospace, Menlo, monospace;
+    font-size: 10.5px; letter-spacing: .12em; padding: 2px 8px; margin-right: 8px; border-radius: 3px;
+    vertical-align: 2px; }
+  .modetag.vision { color: #7ee0ff; border: 1px solid rgba(126,224,255,.5); background: rgba(126,224,255,.07); }
+  .modetag.heat { color: #ff9c6b; border: 1px solid rgba(255,120,80,.5); background: rgba(255,120,80,.07); }
+
+  svg.spec { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16);
+             background: #05070c; }
+
+  .zoonote { font-size: 12.5px; color: #5c6b7a; margin: 10px 0 30px; line-height: 1.6; max-width: 74ch; }
+
+  .fields { border: 1px solid rgba(196,228,255,.14); padding: 16px 18px; margin: 30px 0 22px; }
+  .fields h2 { font-size: 13px; letter-spacing: .12em; color: #a8e06a; margin: 0 0 9px; font-weight: 600; }
+  .fields > p { font-size: 13.5px; color: #9aa2b1; line-height: 1.6; margin: 0 0 14px; max-width: 74ch; }
+  .fields > p b { color: #cfe6e6; }
+  .fieldcards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .fieldcard { border: 1px solid rgba(168,224,106,.25); border-left: 3px solid #a8e06a;
+               background: rgba(168,224,106,.04); padding: 12px 14px; }
+  .fieldcard h3 { margin: 0 0 6px; font-size: 14.5px; color: #eff4fb; }
+  .fieldcard p { margin: 0; font-size: 13px; color: #9aa2b1; line-height: 1.6; }
+
+  .xray { border: 1px solid rgba(226,120,180,.35); border-left: 3px solid #e278b4;
+          background: repeating-linear-gradient(45deg, rgba(226,120,180,.04) 0 8px, rgba(226,120,180,.09) 8px 10px);
+          padding: 13px 16px; margin: 0 0 26px; }
+  .xray h2 { font-size: 12px; letter-spacing: .12em; color: #e278b4; margin: 0 0 7px; font-weight: 600; }
+  .xray p { margin: 0; font-size: 13px; color: #9aa2b1; line-height: 1.6; max-width: 74ch; }
+  .xray b { color: #cfe6e6; }
+
+  .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 26px; max-width: 74ch; }
+  .foot a { color: #7ee0ff; }
+</style>
+</head>
+<body>
+<header class="gamebar holopanel" style="--bar-accent: 168 224 106;">
+  <div class="gbrand">
+    <img class="gamebar-icon" src="favicon.png" alt="">
+    <span class="gamebar-name">THE SPECTRAL ZOO</span>
+    <span style="flex:1"></span>
+    <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
+  </div>
+  <nav class="gbnav" aria-label="Site pages">
+    <a class="gamebar-back" href="index.html">← HOME</a>
+    <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
+    <a class="gamebar-back" href="lab.html">LIGHT LAB</a>
+    <a class="gamebar-back" href="gamma.html">GAMMA STRATOSPHERE</a>
+  </nav>
+</header>
+<div class="wrap">
+  <h1>Every animal is issued a different slice.</h1>
+  <p class="sub">Two honest categories live on this page. <b>Vision</b> means photoreception: a pigment
+     molecule absorbs a photon and the eye builds a picture, in whatever band evolution tuned it to.
+     <b>Radiant heat</b> means the organ absorbs infrared radiation and feels the microscopic warming
+     or mechanical change it causes — real electromagnetic detection, but not color seen the way an eye
+     sees red or violet. For the heat-sensers, the highlighted band below is the radiation their
+     <em>target</em> emits: a warm body, a wildfire, an ankle.</p>
+
+  <h2 class="group vision">◉ VISION — photoreception</h2>
+  <div class="sensechips" id="chipsVision" role="group" aria-label="Animals with photoreceptive vision"></div>
+  <h2 class="group heat">♨ RADIANT HEAT — absorbed and felt <small>(the band shown is what the target emits)</small></h2>
+  <div class="sensechips heatrow" id="chipsHeat" role="group" aria-label="Animals that detect radiant heat"></div>
+
+  <p class="sensedesc" id="senseDesc"></p>
+  <svg class="spec" id="zooSvg" viewBox="0 0 1000 170" role="img"
+       aria-label="The selected creature's range highlighted on the spectrum"></svg>
+  <p class="zoonote">The top bar is the whole spectrum, radio to gamma; the gold window wedges down into
+     a magnified strip running from the far infrared to the near ultraviolet, where every creature on
+     this page lives. Polarization is a second property of light rather than a wider band — cuttlefish
+     read polarization contrast, and bees, ants, butterflies and dung beetles steer by polarized
+     skylight. The mantis shrimp carries that flag here.</p>
+
+  <div class="fields">
+    <h2>⌁ FIELDS — electromagnetic senses with no wavelength</h2>
+    <p>Static and slowly changing electric or magnetic fields are electromagnetic, certainly — but they
+       are not propagating light, so they have no place on a wavelength ruler. Assigning a shark a
+       wavelength range would be physics wearing a counterfeit mustache. These senses get their own wing:</p>
+    <div class="fieldcards">
+      <div class="fieldcard"><h3>Shark &amp; ray</h3>
+        <p>Ampullae of Lorenzini read the faint electric fields leaking from every living body — nerve
+           and muscle activity betrayed through seawater. Weakly electric fish go further: they emit
+           their own field and read how nearby objects distort it, an electric flashlight for the dark.</p></div>
+      <div class="fieldcard"><h3>Platypus</h3>
+        <p>The bill is packed with electroreceptors. Hunting with eyes, ears and nostrils closed, a
+           platypus finds prey underwater by the electric fields of their muscle twitches, cross-referenced
+           with touch to judge distance.</p></div>
+      <div class="fieldcard"><h3>Migratory bird</h3>
+        <p>Songbirds crossing continents read Earth's magnetic field for compass direction — and likely
+           parts of their map. The leading suspect is a quantum effect: magnetically sensitive radical
+           pairs in cryptochrome proteins of the eye, which would make the compass something a bird
+           <em>sees</em>.</p></div>
+    </div>
+  </div>
+
+  <div class="xray">
+    <h2>☢ THE X-RAY FOOTNOTE</h2>
+    <p>Laboratory experiments have found acute responses to X-rays in several animals — most strikingly,
+       <b>C.&nbsp;elegans</b> worms perform an immediate avoidance maneuver, mediated by LITE-1, a receptor
+       protein otherwise tuned to ultraviolet. That is real — and it is <b>not</b> a naturally evolved,
+       image-forming X-ray eye. File under experimental edge case, radiation-warning halo attached.</p>
+  </div>
+
+  <p class="foot">All ranges are approximate and drawn from behavioral and electrophysiological studies;
+     species vary, and the near-infrared fish work in particular reports behavioral response bands, not
+     full visual sensitivity curves. The compact version of this page lives as the Senses layer of the
+     <a href="observatory.html?layer=senses">Observatory</a>.</p>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const C = 299792458;
+  const VIS_LO = 4e14, VIS_HI = 7.9e14;
+  const BANDS = [
+    { lo: 1e4, hi: 3e8, col: '74,150,224' }, { lo: 3e8, hi: 3e11, col: '74,200,224' },
+    { lo: 3e11, hi: VIS_LO, col: '196,96,64' }, { lo: VIS_LO, hi: VIS_HI, col: '255,255,255' },
+    { lo: VIS_HI, hi: 3e16, col: '138,96,230' }, { lo: 3e16, hi: 3e19, col: '126,224,255' },
+    { lo: 3e19, hi: 1e20, col: '226,120,180' },
+  ];
+  const F0 = 4, F1 = 20;
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+  // mode: 'v' = photoreceptive vision, 'h' = radiant heat.
+  // lo/hi are frequencies; for heat-sensers they bound the TARGET's emission.
+  const ZOO = [
+    { m: 'v', lo: C/750e-9,  hi: C/380e-9, name: 'Your eye', icon: 'senses/human.png',
+      d: 'Sees <b>380–750 nm</b>. One octave of the whole spectrum — the sliver everything else on this page is measured against.' },
+    { m: 'v', lo: C/650e-9,  hi: C/300e-9, name: 'Honeybee', icon: 'senses/bee.png',
+      d: 'Sees <b>300–650 nm</b> — the human window shifted up a notch. Flowers paint ultraviolet landing stripes for bees; deep red is invisible to them.' },
+    { m: 'v', lo: C/700e-9,  hi: C/350e-9, name: 'Songbird', icon: 'senses/bird.png',
+      d: 'Sees <b>350–700 nm</b> with four cone types to your three — the fourth tuned to ultraviolet. Many birds wear UV plumage other birds can see and you cannot.' },
+    { m: 'v', lo: C/720e-9,  hi: C/300e-9, name: 'Mantis shrimp', icon: 'senses/shrimp.png',
+      d: 'Sees <b>300–720 nm</b> through twelve photoreceptor classes — and reads polarized light on top, a second channel of the same photons. The most elaborate eye hardware known, on a shrimp.' },
+    { m: 'v', lo: C/700e-9,  hi: C/305e-9, name: 'Reindeer',
+      d: 'Sees down to roughly <b>300–320 nm</b>: reindeer lenses pass ultraviolet that human lenses block, and their retinas respond to it. Lichen, fur and urine all pop against UV-bright snow — a large, familiar mammal living in a wider world than yours.' },
+    { m: 'v', lo: C/650e-9,  hi: C/310e-9, name: 'House mouse',
+      d: 'The pantry goblin is a partly ultraviolet animal: mouse S-opsin peaks near <b>360 nm</b>, the lens transmits UV, and neurons in mouse visual cortex answer patterned UV stimuli.' },
+    { m: 'v', lo: C/1020e-9, hi: C/930e-9, name: 'Nile tilapia',
+      d: 'The near-infrared bridge: behavioral experiments found eye-mediated responses at <b>930–1020 nm</b>, just beyond your red edge — photoreception, not felt warmth. Zebrafish and guppies answer around 845–910 nm; green swordtails reach roughly 825–845 nm.' },
+    { m: 'h', lo: C/100e-6,  hi: C/750e-9, name: 'Your skin', icon: 'senses/hand.png',
+      d: 'Detects radiant heat across roughly <b>750 nm – 100 µm</b>. Hold a palm toward a fire and you are absorbing its infrared and reading the warming — imaging, crudely, with no picture.' },
+    { m: 'h', lo: C/4e-6,    hi: C/2.4e-6, name: 'Fire beetle',
+      d: 'Melanophila beetles carry infrared organs on the thorax most sensitive near <b>2.4–4 µm</b> — the radiation of a forest fire. Absorbed heat mechanically clicks tiny sensilla, steering them toward freshly burned trees, where they breed. The mid-infrared desert, colonized.' },
+    { m: 'h', lo: C/30e-6,   hi: C/3e-6,   name: 'Mosquito (female Aedes)',
+      d: 'Detects the radiant heat of skin: a 34 °C human glows across roughly <b>3–30 µm</b>, peaking near 9.4 µm, and female Aedes aegypti read that glow — alongside CO₂ and odor — from as far as ~70 cm, with TRPA1 and two opsins near the antennal tips. A tiny thermal-guidance missile, unfortunately powered by ankles.' },
+    { m: 'h', lo: C/13e-6,   hi: C/8e-6,   name: 'Vampire bat',
+      d: 'Heat-sensitive pits around the nose respond to surfaces warmer than about 29 °C — warm blood under thin skin, glowing near <b>8–13 µm</b> — via a specially tuned TRPV1 receptor. Mammals independently invented a face-mounted thermal targeting system.' },
+    { m: 'h', lo: C/30e-6,   hi: C/5e-6,   name: 'Pit viper', icon: 'senses/viper.png',
+      d: 'Facial pits detect the radiant heat of warm-blooded prey glowing at <b>5–30 µm</b>, sharp enough to strike in total darkness. Not seen as color — absorbed and felt, four octaves below your red.' },
+  ];
+  let sel = 0;
+
+  const SZ_LO = 2e12, SZ_HI = 1.2e15;
+  const fmtLam = f => {
+    const l = C / f;
+    return l >= 1e-6 ? parseFloat((l * 1e6).toPrecision(3)) + ' µm' : Math.round(l * 1e9) + ' nm';
+  };
+
+  const svg = document.getElementById('zooSvg');
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent, text) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  let OW = 1000;
+  function syncWidth() {
+    OW = svg.clientWidth || 1000;
+    svg.setAttribute('viewBox', '0 0 ' + OW + ' 170');
+  }
+
+  const ovX = f => (Math.log10(f) - F0) / (F1 - F0) * OW;
+  const zx = f => (Math.log10(f) - Math.log10(SZ_LO)) / (Math.log10(SZ_HI) - Math.log10(SZ_LO)) * OW;
+
+  function buildChips() {
+    for (const [id, mode] of [['chipsVision', 'v'], ['chipsHeat', 'h']]) {
+      const wrap = document.getElementById(id);
+      ZOO.forEach((z, i) => {
+        if (z.m !== mode) return;
+        const b = document.createElement('button');
+        b.type = 'button';
+        if (z.icon) b.innerHTML = '<img src="' + z.icon + '" alt="" loading="lazy">';
+        b.appendChild(document.createTextNode(z.name));
+        b.dataset.i = i;
+        b.addEventListener('click', () => { sel = i; render(); });
+        wrap.appendChild(b);
+      });
+    }
+  }
+
+  function render() {
+    document.querySelectorAll('.sensechips button').forEach(b =>
+      b.setAttribute('aria-pressed', String(+b.dataset.i === sel)));
+    const z = ZOO[sel];
+    const heat = z.m === 'h';
+    document.getElementById('senseDesc').innerHTML =
+      '<span class="modetag ' + (heat ? 'heat' : 'vision') + '">' +
+      (heat ? '♨ RADIANT HEAT' : '◉ VISION') + '</span>' + z.d;
+
+    svg.textContent = '';
+    const AC = heat ? '255,140,90' : '232,169,58';       // amber for eyes, ember for heat
+    const ACC = heat ? '#ff8c5a' : '#e8a93a';
+    BANDS.forEach(b => {
+      el('rect', { x: ovX(b.lo), y: 0, width: ovX(b.hi) - ovX(b.lo), height: 16,
+                   fill: 'rgb(' + b.col + ')', opacity: .3 }, svg);
+    });
+    const wx0 = ovX(SZ_LO), wx1 = ovX(SZ_HI);
+    el('rect', { x: wx0, y: 0, width: wx1 - wx0, height: 16, fill: 'none', stroke: ACC, 'stroke-width': 1.5 }, svg);
+    el('line', { x1: wx0, y1: 16, x2: 0, y2: 44, stroke: 'rgba(' + AC + ',.35)', 'stroke-dasharray': '3 3' }, svg);
+    el('line', { x1: wx1, y1: 16, x2: OW, y2: 44, stroke: 'rgba(' + AC + ',.35)', 'stroke-dasharray': '3 3' }, svg);
+    BANDS.forEach(b => {
+      const lo = Math.max(b.lo, SZ_LO), hi = Math.min(b.hi, SZ_HI);
+      if (hi <= lo) return;
+      el('rect', { x: zx(lo), y: 44, width: zx(hi) - zx(lo), height: 34, fill: 'rgb(' + b.col + ')', opacity: .4 }, svg);
+    });
+    const defs = el('defs', {}, svg);
+    const grad = el('linearGradient', { id: 'zooVis' }, defs);
+    [['0%','#c92a2a'],['18%','#f08c00'],['36%','#ffd43b'],['54%','#37b24d'],['72%','#1098ad'],['86%','#3b5bdb'],['100%','#9c36b5']]
+      .forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, grad));
+    el('rect', { x: zx(VIS_LO), y: 44, width: zx(VIS_HI) - zx(VIS_LO), height: 34,
+                 fill: 'url(#zooVis)', opacity: .85 }, svg);
+    el('text', { x: 4, y: 96, 'font-size': 11, fill: '#6c7c8c' }, svg, fmtLam(SZ_LO));
+    el('text', { x: OW - 4, y: 96, 'font-size': 11, fill: '#6c7c8c', 'text-anchor': 'end' }, svg, fmtLam(SZ_HI));
+
+    const x0 = zx(z.lo), x1 = zx(z.hi);
+    el('rect', { x: x0, y: 40, width: Math.max(x1 - x0, 4), height: 42, rx: 4,
+                 fill: 'rgba(' + AC + ',.15)', stroke: ACC, 'stroke-width': 2,
+                 'stroke-dasharray': heat ? '6 4' : 'none' }, svg);
+    el('line', { x1: x0, y1: 82, x2: x0, y2: 104, stroke: 'rgba(' + AC + ',.6)' }, svg);
+    el('line', { x1: x1, y1: 82, x2: x1, y2: 104, stroke: 'rgba(' + AC + ',.6)' }, svg);
+    const lab = heat ? '#ffb28f' : '#ffd479';
+    if (x1 - x0 > 110) {
+      el('text', { x: clamp(x0, 34, OW - 34), y: 122, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.lo));
+      el('text', { x: clamp(x1, 34, OW - 34), y: 122, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.hi));
+    } else {
+      el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 122, 'font-size': 13, fill: lab,
+                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' – ' + fmtLam(z.hi));
+    }
+    el('text', { x: clamp((x0 + x1) / 2, 80, OW - 80), y: 146, 'font-size': 13.5, fill: '#cfd6e2',
+                 'text-anchor': 'middle', 'font-weight': 600 }, svg,
+       z.name.toUpperCase() + (heat ? ' · TARGET EMISSION' : ''));
+  }
+
+  buildChips();
+  syncWidth();
+  render();
+  addEventListener('resize', () => { syncWidth(); render(); });
+})();
+</script>
+<script src="share.js"></script>
+</body>
+</html>
