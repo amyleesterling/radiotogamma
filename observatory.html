@@ -151,6 +151,9 @@
   .sensechips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
   .sensechips button { font: inherit; font-size: 13.5px; cursor: pointer; background: none;
     color: #9aa2b1; border: 1px solid rgba(196,228,255,.18); padding: 9px 13px; min-height: 42px; }
+  .sensechips button { display: inline-flex; align-items: center; gap: 9px; }
+  .sensechips button img { height: 34px; width: auto; max-width: 46px; object-fit: contain;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
   .sensechips button:hover { color: #ffd479; border-color: rgba(232,169,58,.5); }
   .sensechips button[aria-pressed="true"] { color: #ffd479; border-color: rgba(232,169,58,.75);
     background: rgba(232,169,58,.1); }
@@ -872,15 +875,15 @@ beam power      P = photons per second × energy per photon</pre>
   const SENSES = [
     { lo: C / 750e-9, hi: C / 380e-9, name: 'Your eye',
       desc: 'Sees <b>380–750 nm</b>. One octave of the whole spectrum — the sliver everything else on this page is measured against.' },
-    { lo: C / 100e-6, hi: C / 750e-9, name: 'Your skin',
+    { lo: C / 100e-6, hi: C / 750e-9, name: 'Your skin', icon: 'senses/hand.png',
       desc: 'Feels <b>750 nm – 100 µm</b> as radiant warmth. Hold a palm toward a fire and you are imaging its infrared — crudely, but honestly.' },
-    { lo: C / 650e-9, hi: C / 300e-9, name: 'Honeybee',
+    { lo: C / 650e-9, hi: C / 300e-9, name: 'Honeybee', icon: 'senses/bee.png',
       desc: 'Sees <b>300–650 nm</b> — the human window shifted up a notch. Flowers paint ultraviolet landing stripes for bees; deep red is invisible to them.' },
-    { lo: C / 700e-9, hi: C / 350e-9, name: 'Songbird',
+    { lo: C / 700e-9, hi: C / 350e-9, name: 'Songbird', icon: 'senses/bird.png',
       desc: 'Sees <b>350–700 nm</b> with four cone types to your three — the fourth tuned to ultraviolet. Many birds wear UV plumage other birds can see and you cannot.' },
-    { lo: C / 720e-9, hi: C / 300e-9, name: 'Mantis shrimp',
+    { lo: C / 720e-9, hi: C / 300e-9, name: 'Mantis shrimp', icon: 'senses/shrimp.png',
       desc: 'Sees <b>300–720 nm</b> through twelve photoreceptor classes — plus polarized light. The most elaborate eye hardware known, on a shrimp.' },
-    { lo: C / 30e-6,  hi: C / 5e-6,   name: 'Pit viper',
+    { lo: C / 30e-6,  hi: C / 5e-6,   name: 'Pit viper', icon: 'senses/viper.png',
       desc: 'Heat pits image <b>5–30 µm</b> — the infrared glow of warm-blooded prey in total darkness. A second pair of eyes, four octaves below yours.' },
   ];
   let senseSel = 0;
@@ -896,7 +899,9 @@ beam power      P = photons per second × energy per photon</pre>
     const chips = document.getElementById('senseChips');
     if (!chips.childElementCount) SENSES.forEach((s, i) => {
       const b = document.createElement('button');
-      b.type = 'button'; b.textContent = s.name;
+      b.type = 'button';
+      if (s.icon) b.innerHTML = '<img src="' + s.icon + '" alt="" loading="lazy">';
+      b.appendChild(document.createTextNode(s.name));
       b.addEventListener('click', () => { senseSel = i; renderSenses(); });
       chips.appendChild(b);
     });
