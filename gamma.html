@@ -33,6 +33,7 @@
   .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
                   border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
                   padding: 7px 12px; align-self: center; white-space: nowrap; }
+  .gamebar-share { background: none; font: inherit; cursor: pointer; }
   .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
   .gamebar-name { font-size: 19px; font-weight: 600; letter-spacing: .06em;
                   color: rgb(var(--bar-accent)); white-space: nowrap; }
@@ -90,6 +91,7 @@
   <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
   <span class="gamebar-name">THE GAMMA ATTIC</span>
   <span style="flex:1"></span>
+  <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
   <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
   <a class="gamebar-back" href="lab.html">LIGHT LAB</a>
 </header>
@@ -305,5 +307,6 @@
   render();
 })();
 </script>
+<script src="share.js"></script>
 </body>
 </html>

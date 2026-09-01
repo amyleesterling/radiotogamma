@@ -41,6 +41,7 @@
     border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
     padding: 7px 12px; align-self: center; white-space: nowrap;
   }
+  .gamebar-share { background: none; font: inherit; cursor: pointer; }
   .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
   .gamebar-name {
     font-size: 19px; font-weight: 600; letter-spacing: .06em;
@@ -281,6 +282,7 @@
   <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
   <span class="gamebar-name">OBSERVATORY</span>
   <span style="flex:1"></span>
+  <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
   <a class="gamebar-back" href="lab.html">LIGHT LAB →</a>
   <a class="gamebar-back" href="gamma.html">GAMMA STRATOSPHERE →</a>
 </header>
@@ -1436,9 +1438,19 @@ beam power      P = photons per second × energy per photon</pre>
   decodeState();
   applyLayer();
   render();
+  // a shared link that names a layer should land the reader on that layer,
+  // not at the top of the page
+  if (new URLSearchParams(location.search).get('layer')) {
+    setTimeout(() => {
+      const id = 'panel' + S.layer.charAt(0).toUpperCase() + S.layer.slice(1);
+      const el = document.getElementById(id);
+      if (el && !el.hidden) el.scrollIntoView({ block: 'start' });
+    }, 80);
+  }
   if (wantTest) selfTest();
   addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); });
 })();
 </script>
+<script src="share.js"></script>
 </body>
 </html>
