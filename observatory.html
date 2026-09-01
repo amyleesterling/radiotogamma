@@ -188,6 +188,47 @@
   .sensedesc b { color: #ffd479; font-weight: 600; }
 
   svg.spec { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16); background: #05070c; touch-action: none; }
+
+  #tourOverlay { position: fixed; inset: 0; z-index: 60; display: grid;
+    place-items: end center; padding: 14px; background: rgba(2,4,8,.55);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  #tourOverlay[hidden] { display: none; }
+  .tourpanel { --holo-glow: 232 169 58; width: min(560px, 100%); max-height: 72vh;
+    overflow-y: auto; padding: 18px 20px 16px; margin-bottom: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tourpanel .thead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 4px; }
+  .tourpanel .ttag { font-size: 11px; letter-spacing: .18em; color: #ffd479; }
+  .tourpanel .tcount { font-size: 11px; color: #6c7c8c; }
+  .tourpanel .tclose { margin-left: auto; font: inherit; font-size: 14px; line-height: 1;
+    cursor: pointer; background: none; color: #6c7c8c;
+    border: 1px solid rgba(196,228,255,.18); padding: 5px 9px; }
+  .tourpanel .tclose:hover { color: #eff4fb; border-color: rgba(232,169,58,.5); }
+  .tourpanel .tdots { display: flex; gap: 6px; margin: 0 0 12px; }
+  .tourpanel .tdots i { width: 26px; height: 3px; background: rgba(196,228,255,.14); }
+  .tourpanel .tdots i.on { background: #e8a93a; box-shadow: 0 0 8px rgba(232,169,58,.7); }
+  .tourpanel .tdots i.done { background: rgba(232,169,58,.45); }
+  .tourpanel .tq { font-family: "Segoe UI", system-ui, sans-serif; font-size: 16px;
+    color: #eff4fb; margin: 0 0 12px; line-height: 1.45; }
+  .tourpanel .tchoices { display: grid; gap: 8px; }
+  .tourpanel .tchoices button { font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px;
+    text-align: left; cursor: pointer; background: rgba(196,228,255,.03); color: #cfd6e2;
+    border: 1px solid rgba(196,228,255,.18); padding: 10px 13px; min-height: 42px; }
+  .tourpanel .tchoices button:hover { color: #eff4fb; border-color: rgba(232,169,58,.6); }
+  .tourpanel.answered .tchoices button { cursor: default; opacity: .5; }
+  .tourpanel.answered .tchoices button.good { opacity: 1; color: #baf5d0;
+    border-color: rgba(120,235,170,.75); background: rgba(120,235,170,.08); }
+  .tourpanel.answered .tchoices button.bad { opacity: 1; color: #ffb3a7;
+    border-color: rgba(255,120,100,.65); background: rgba(255,120,100,.07); }
+  .tourpanel .treveal { font-family: "Segoe UI", system-ui, sans-serif; font-size: 13.5px;
+    color: #cfe6e6; line-height: 1.6; margin: 12px 0 0; display: none; }
+  .tourpanel.answered .treveal { display: block; }
+  .tourpanel .tfoot { display: flex; align-items: center; gap: 12px; margin: 14px 0 0; min-height: 34px; }
+  .tourpanel .tnext { font: inherit; font-size: 12px; letter-spacing: .12em; cursor: pointer;
+    background: rgba(232,169,58,.14); color: #eff4fb;
+    border: 1px solid rgba(232,169,58,.7); padding: 9px 16px; visibility: hidden; }
+  .tourpanel.answered .tnext { visibility: visible; }
+  .tourpanel .tnext:hover { background: rgba(232,169,58,.28); }
+  .tourpanel .tnote { font-size: 11px; color: #6c7c8c; }
   #ovSvg { margin-bottom: 4px; }
   .ovnote { font-size: 12px; color: #5c6b7a; margin: 6px 0 18px; line-height: 1.5; }
   .ovnote.linear { color: #e8a93a; }
@@ -409,6 +450,7 @@ beam power      P = photons per second × energy per photon</pre>
     <button class="ctl" data-layer="wave" type="button" aria-pressed="false">Wave view</button>
     <button class="ctl" data-layer="senses" type="button" aria-pressed="false">Senses</button>
     <button class="ctl" data-layer="stories" type="button" aria-pressed="false">Stories</button>
+    <button class="ctl" id="tourBtn" type="button" style="color:#ffd479; border-color: rgba(232,169,58,.5)">✦ Guided tour</button>
   </div>
 
   <div class="panel" id="panelMatter" hidden>
@@ -1471,6 +1513,86 @@ beam power      P = photons per second × energy per photon</pre>
 
   // ---- boot -------------------------------------------------------------------
   const wantTest = new URLSearchParams(location.search).has('test');
+  // ---- Guided tour: five predict-first stops through the spectrum --------
+  const TOUR = [
+    { a: 'wifi', b: 'microwave-oven',
+      q: 'Wi-Fi and a microwave oven. How far apart in frequency?',
+      choices: ['About a million times apart', 'About a thousand times apart', 'Almost exactly the same'],
+      ans: 2 },
+    { a: 'body-heat', b: 'dust-off',
+      q: 'Your body is glowing right now, in infrared. How far below green laser light is your glow?',
+      choices: ['About 18 times lower', 'About 18 thousand times lower', 'About 18 million times lower'],
+      ans: 0 },
+    { a: 'red-laser', b: 'blue-laser',
+      q: 'Red light to blue light. End to end, how wide is everything your eyes can see?',
+      choices: ['About 4,000 times', 'About 40 times', 'Not even 2 times: one octave'],
+      ans: 2 },
+    { a: 'sunlight', b: 'supernova',
+      q: 'Where does a supernova\'s light peak, compared to sunlight?',
+      choices: ['Almost the same octave', 'About a thousand times higher', 'About a billion times higher'],
+      ans: 0 },
+    { a: 'am-radio', b: 'tc99m-gamma',
+      q: 'AM radio to medical gamma rays. How many times higher in frequency?',
+      choices: ['34 thousand times', '34 million times', '34 trillion times'],
+      ans: 2 },
+  ];
+  const tourBtn = $('tourBtn');
+  const tOverlay = document.createElement('div');
+  tOverlay.id = 'tourOverlay'; tOverlay.hidden = true;
+  tOverlay.innerHTML = '<div class="tourpanel holopanel" role="dialog" aria-modal="true" aria-label="Guided tour"></div>';
+  document.body.appendChild(tOverlay);
+  const tPanel = tOverlay.firstElementChild;
+  let ti = 0;
+  const closeTour = () => { tOverlay.hidden = true; tourBtn.focus(); };
+  tOverlay.addEventListener('click', e => { if (e.target === tOverlay) closeTour(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !tOverlay.hidden) closeTour(); });
+  function tourStep() {
+    if (ti >= TOUR.length) {
+      tPanel.classList.remove('answered');
+      tPanel.innerHTML = '<div class="thead"><span class="ttag">✦ GUIDED TOUR</span>' +
+        '<button type="button" class="tclose">✕</button></div>' +
+        '<p class="tq">That is the whole idea: one family of waves, and every pair on this page is ' +
+        'the same comparison at a different scale. The bar is yours now.</p>' +
+        '<div class="tfoot"><button type="button" class="tnext" style="visibility:visible">START OVER</button>' +
+        '<button type="button" class="tclose" style="margin-left:0">EXPLORE FREELY</button></div>';
+      tPanel.querySelector('.tnext').addEventListener('click', () => { ti = 0; tourStep(); });
+      tPanel.querySelectorAll('.tclose').forEach(b => b.addEventListener('click', closeTour));
+      return;
+    }
+    const st = TOUR[ti];
+    // the page itself is the exhibit: markers travel to each stop
+    setMarker('a', byId[st.a].hz, st.a);
+    setMarker('b', byId[st.b].hz, st.b);
+    render(); encodeState();
+    tPanel.classList.remove('answered');
+    tPanel.innerHTML = '<div class="thead"><span class="ttag">✦ GUIDED TOUR</span>' +
+      '<span class="tcount num">' + (ti + 1) + ' / ' + TOUR.length + '</span>' +
+      '<button type="button" class="tclose" aria-label="Close tour">✕</button></div>' +
+      '<div class="tdots">' + TOUR.map((_, k) =>
+        '<i class="' + (k < ti ? 'done' : k === ti ? 'on' : '') + '"></i>').join('') + '</div>' +
+      '<p class="tq">' + st.q + '</p>' +
+      '<div class="tchoices">' + st.choices.map((c, k) =>
+        '<button type="button" data-i="' + k + '">' + c + '</button>').join('') + '</div>' +
+      '<p class="treveal"></p>' +
+      '<div class="tfoot"><button type="button" class="tnext">' +
+      (ti === TOUR.length - 1 ? 'FINISH →' : 'NEXT STOP →') + '</button>' +
+      '<span class="tnote">Guess first. The markers above have already moved.</span></div>';
+    const story = STORIES.find(x => (x.a === st.a && x.b === st.b) || (x.a === st.b && x.b === st.a));
+    tPanel.querySelectorAll('.tchoices button').forEach(b => b.addEventListener('click', () => {
+      if (tPanel.classList.contains('answered')) return;
+      const k = +b.dataset.i;
+      b.classList.add(k === st.ans ? 'good' : 'bad');
+      if (k !== st.ans) tPanel.querySelector('.tchoices button[data-i="' + st.ans + '"]').classList.add('good');
+      tPanel.querySelector('.treveal').textContent = story ? story.insight :
+        'Scroll the page behind this card: every readout is now comparing exactly these two.';
+      tPanel.querySelector('.tnote').textContent = '';
+      tPanel.classList.add('answered');
+    }));
+    tPanel.querySelector('.tnext').addEventListener('click', () => { ti++; tourStep(); });
+    tPanel.querySelector('.tclose').addEventListener('click', closeTour);
+  }
+  tourBtn.addEventListener('click', () => { ti = 0; tOverlay.hidden = false; tourStep(); });
+
   decodeState();
   applyLayer();
   render();
