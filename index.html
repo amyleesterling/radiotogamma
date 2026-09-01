@@ -248,6 +248,53 @@
   .applenote { font-size: 13px; color: #9aa2b1; line-height: 1.55; }
   .applecaveat { font-size: 11.5px; color: #5c6b7a; margin: 10px 0 0; }
 
+  /* dial two: beam power, same custom-slider idiom as the sunset lab, but the
+     track runs cold blue to searing red because it is a power ramp, not a sky */
+  .applepow input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 38px;
+    margin: 2px 0 0; background: transparent; cursor: ew-resize; touch-action: pan-y; }
+  .applepow input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 4px;
+    background: linear-gradient(90deg, #14293b, #2e6d8a 38%, #7ee0ff 66%, #ffd479 84%, #ff6b5e);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+  .applepow input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+    width: 28px; height: 28px; border-radius: 50%; margin-top: -10px;
+    background: radial-gradient(circle at 34% 30%, #ffffff, #bfeaff 45%, #5ec8ef 90%);
+    border: 2px solid #eff4fb; cursor: grab;
+    box-shadow: 0 0 14px rgba(126,224,255,.9), 0 3px 8px rgba(0,0,0,.6);
+    transition: box-shadow .12s, transform .12s; }
+  .applepow input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.08); }
+  .applepow input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.18);
+    box-shadow: 0 0 24px rgba(126,224,255,1), 0 3px 10px rgba(0,0,0,.7); }
+  .applepow input[type=range]::-moz-range-track { height: 8px; border-radius: 4px;
+    background: linear-gradient(90deg, #14293b, #2e6d8a 38%, #7ee0ff 66%, #ffd479 84%, #ff6b5e);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+  .applepow input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 30%, #ffffff, #bfeaff 45%, #5ec8ef 90%);
+    border: 2px solid #eff4fb; cursor: grab;
+    box-shadow: 0 0 14px rgba(126,224,255,.9), 0 3px 8px rgba(0,0,0,.6); }
+  .applepowline { font-size: 12.5px; color: #8b98a8; margin: 2px 0 14px; }
+  .applepowline b { color: #eff4fb; font-weight: 600; }
+
+  .applestats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 14px; }
+  .applestat { border: 1px solid rgba(196,228,255,.14); padding: 11px 13px; min-width: 0; }
+  .applestat.p { border-left: 3px solid #ff6b5e; }
+  .applestat.e { border-left: 3px solid #e8a93a; }
+  .applestat .specval { font-size: 19px; }
+  @media (max-width: 559px) { .applestats { grid-template-columns: 1fr; } }
+
+  .appleouts { flex: 1 1 260px; min-width: 240px; display: grid;
+               grid-template-columns: 1fr 1fr; gap: 10px; }
+  .applepanel { border: 1px solid rgba(196,228,255,.14); padding: 10px 12px; min-width: 0; }
+  .applepanel.therm { border-left: 3px solid #e8a93a; }
+  .applepanel.mol { border-left: 3px solid #a07cff; }
+  .applepanel-tag { font-size: 11px; letter-spacing: .1em; color: #6c7c8c; margin-bottom: 6px; }
+  .applepanel .appleverdict { font-size: 15px; }
+  .applebadge { display: inline-block; font-size: 10.5px; letter-spacing: .08em;
+                border: 1px solid rgba(196,228,255,.25); padding: 2px 6px; margin-top: 8px;
+                color: #9aa2b1; }
+  @media (max-width: 679px) { .appleouts { grid-template-columns: 1fr; } }
+  .applesets { margin: 14px 0 6px; }
+
   /* the three header items outgrow a phone side by side; wrapping keeps the
      observatory link on screen instead of clipped off the right edge */
 </style>
@@ -368,7 +415,7 @@
 
   <div class="specpresets" id="specPresets"></div>
 
-  <p class="cap">For scale, one minute of exposure. The eventful stretch is the high end, so this bar is zoomed &mdash; the strip shows where it sits on the full spectrum:</p>
+  <p class="cap">For scale: point a beam at an apple. Dial one is frequency. The eventful stretch is the high end, so this bar is zoomed; the strip shows where the window sits on the full spectrum:</p>
   <div class="specmini" id="appleMini" aria-hidden="true"><div class="specmini-win" id="appleMiniWin"></div></div>
   <div class="specscroll">
     <div class="specbar" id="appleBar">
@@ -376,16 +423,36 @@
     </div>
     <div class="specticks" id="appleTicks"></div>
   </div>
+  <p class="cap">Dial two is power, held on the apple for 60&nbsp;s:</p>
+  <div class="applepow">
+    <input type="range" id="applePower" min="0" max="1000" value="500"
+           aria-label="Beam power, from one microwatt to one megawatt">
+    <p class="applepowline" id="applePowLine"></p>
+  </div>
+  <div class="applestats">
+    <div class="applestat p"><div class="speclabel">PHOTONS PER SECOND</div>
+      <div class="specval" id="applePhot"></div><div class="specmeta" id="applePhotMeta"></div></div>
+    <div class="applestat e"><div class="speclabel">ENERGY DELIVERED IN 60 <span class="u">s</span></div>
+      <div class="specval" id="appleEnergy"></div><div class="specmeta" id="appleEnergyMeta"></div></div>
+  </div>
   <div class="applerow">
     <canvas class="applecanvas" id="appleCanvas" width="256" height="256"></canvas>
-    <div class="appletext">
-      <div class="appleverdict" id="appleVerdict"></div>
-      <div class="applenote" id="appleNote"></div>
+    <div class="appleouts">
+      <div class="applepanel therm"><div class="applepanel-tag">THERMAL &middot; TOTAL ENERGY</div>
+        <div class="appleverdict" id="appleThermV"></div>
+        <div class="applenote" id="appleThermN"></div></div>
+      <div class="applepanel mol"><div class="applepanel-tag">MOLECULAR &middot; PER PHOTON</div>
+        <div class="appleverdict" id="appleMolV"></div>
+        <div class="applenote" id="appleMolN"></div>
+        <div class="applebadge" id="appleMolB"></div></div>
     </div>
   </div>
+  <div class="specpresets applesets" id="applePresets"></div>
   <p class="applecaveat">
-    Illustrative, not a dose calculation: real damage is about total energy absorbed, not
-    just the photon's frequency. The ranking, harmless to harmful as you go right, is real.
+    The two dials are the whole lesson. Frequency decides what each photon can do: nudge,
+    excite, break a bond, or ionize. Power times time decides how much arrives. Pour megawatts
+    into radio and it cooks. A gamma trickle cannot warm a thing, yet every photon still
+    ionizes. That is why your router is harmless and a sterilizer plant is not.
     Please do not eat any irradiated apples!
   </p>
 
@@ -742,9 +809,11 @@
   addEventListener('resize', render);
 
   // ---- for scale: an apple sitting in the beam for a minute --------------
-  // A photon's frequency alone does not decide the outcome, real damage is
-  // about total energy absorbed, but the ranking here (harmless at radio,
-  // ionizing by x-ray) is the real one, so it is a fair thing to show.
+  // Two dials, two verdicts. Frequency fixes the energy per photon, so it
+  // decides what any single photon CAN do (nudge, excite, break, ionize).
+  // Power x 60 s fixes the total energy, so it decides how much arrives.
+  // The thermal panel runs on absorbed joules (apple as ~100 g of water);
+  // the molecular panel gates on eV per photon, then scales with dose.
   //
   // Everything eventful happens in the top decades, so this bar is zoomed to
   // 100 MHz-100 EHz; the mini strip above it shows where that window sits on
@@ -763,25 +832,94 @@
   miniWin.style.width = ((1 - toX(Math.pow(10, AF0))) * 100) + '%';
   let fApple = 2.4e9;
 
-  const APPLE_STAGES = [
-    { hi: 3e8, verdict: 'Nothing happens', draw: 'plain',
-      note: 'Radio photons carry too little energy to do anything to a bond in the peel. They pass straight through.' },
-    { hi: 3e11, verdict: 'A little warm, at oven power', draw: 'warm',
-      note: 'Microwaves shake water molecules. That is how an oven cooks one in minutes; at the power a router puts out, a minute does nothing.' },
-    { hi: VIS_LO, verdict: 'Comfortably warm', draw: 'warm2',
-      note: 'Infrared is radiant heat, the same thing a campfire throws. A minute of it just warms the skin.' },
-    { hi: VIS_HI, verdict: 'Lit up, unharmed', draw: 'plain',
-      note: 'Visible light is what lets you see the apple at all. Each photon still carries too little energy to break anything.' },
-    { hi: 3e16, verdict: 'Sunburned', draw: 'burn',
-      note: 'UV starts breaking chemical bonds at the surface. A minute of strong UV is roughly what a peel gets in an afternoon at the beach.' },
-    { hi: 1e18, verdict: 'A dangerous dose', draw: 'xray',
-      note: 'X-rays are energetic enough to punch through to the core. A real minute at an intensity you could feel would be a medical emergency, for the apple and for whoever is holding it.' },
-    { hi: 3e19, verdict: 'Ionized through', draw: 'ion',
-      note: 'Hard x-rays tear electrons off atoms all the way through the flesh. Chemistry starts failing everywhere at once, not just at the skin.' },
-    { hi: 1e20, verdict: 'Destroyed', draw: 'char',
-      note: 'Gamma rays ionize all the way through. A minute at a dose strong enough to see here would cook it from the inside out.' },
-  ];
-  const appleStageFor = f => APPLE_STAGES.find(s => f < s.hi) || APPLE_STAGES[APPLE_STAGES.length - 1];
+  const H = 6.62607015e-34;                          // J s, so photons/s = P / (h f)
+  const APPLE_MASS = 0.1, C_WATER = 4184;            // ~100 g, mostly water
+  const E_BOIL = APPLE_MASS * C_WATER * 80;          // 20 C -> 100 C, ~33 kJ absorbed
+  const E_VAPOR = E_BOIL + APPLE_MASS * 2.26e6;      // + heat of vaporization, ~0.26 MJ
+  const EXPOSE_S = 60;
+
+  // rough per-band absorbed fraction, stated as approximate in the readout
+  const ABSORB = {
+    radio:      [0.02, 'mostly passes straight through'],
+    microwave:  [0.50, 'couples hard into the water'],
+    infrared:   [0.85, 'is soaked up right at the surface'],
+    visible:    [0.60, 'is partly reflected'],
+    UV:         [0.80, 'is absorbed in the peel'],
+    'x-ray':    [0.30, 'partly deposits through the flesh'],
+    gamma:      [0.10, 'mostly passes through, some deposits'],
+  };
+
+  const PU = [[1e6,'MW'],[1e3,'kW'],[1,'W'],[1e-3,'mW'],[1e-6,'µW']];
+  const JU = [[1e6,'MJ'],[1e3,'kJ'],[1,'J'],[1e-3,'mJ'],[1e-6,'µJ']];
+  const power = p => unit(p, PU, 'W');
+  const joules = e => unit(e, JU, 'J');
+  const sci = v => {
+    const e = Math.floor(Math.log10(v));
+    return num(v / Math.pow(10, e)) + '&times;10<sup>' + e + '</sup>';
+  };
+  const dTs = dT => dT >= 100 ? 'about ' + Math.round(dT)
+    : dT >= 1 ? 'about ' + dT.toFixed(1) : dT >= 0.01 ? 'about ' + dT.toFixed(2) : 'less than 0.01';
+
+  const applePowEl = document.getElementById('applePower');
+  // log slider, 1 uW at the left to 1 MW at the right, 1 W in the middle;
+  // applePow is the truth, so a preset is not quantized to a slider step
+  let applePow = 1;
+  applePowEl.addEventListener('input', () => {
+    applePow = Math.pow(10, -6 + (applePowEl.value / 1000) * 12);
+  });
+  const applePowSet = p => { applePow = p; applePowEl.value = Math.round((Math.log10(p) + 6) / 12 * 1000); };
+
+  // thermal stage from absorbed joules alone; every threshold is a budget,
+  // not a band, so a megawatt of radio really can vaporize the apple
+  function thermalFor(Eabs) {
+    const dT = Eabs / (APPLE_MASS * C_WATER);
+    if (Eabs >= E_VAPOR) return { draw: 'gone', v: 'Vaporized', dT,
+      tail: 'That blows past the full steam budget for 100 g of water, about ' + joules(E_VAPOR) + ' absorbed. Nothing solid is left.' };
+    if (Eabs >= E_BOIL * 3) return { draw: 'char', v: 'Charred', dT,
+      tail: 'That is several times the energy needed to boil it. The water flashes to steam and the flesh blackens.' };
+    if (Eabs >= E_BOIL) return { draw: 'cook', v: 'Boiling and steaming', dT,
+      tail: 'That is enough to take 100 g of water past 100 °C. It steams.' };
+    if (dT >= 40) return { draw: 'cook', v: 'Cooking', dT,
+      tail: 'Past about 60 °C the flesh cooks.' };
+    if (dT >= 15) return { draw: 'warm2', v: 'Hot to the touch', dT, tail: '' };
+    if (dT >= 1) return { draw: 'warm', v: 'Noticeably warm', dT, tail: '' };
+    return { draw: 'plain', v: 'No real heating', dT, tail: '' };
+  }
+
+  // molecular verdict: gate on eV per photon, then scale with absorbed dose
+  function molecularFor(eV, Eabs, phots) {
+    if (eV < 1.6) return { v: 'No chemistry possible', badge: 'BELOW EVERY BOND', tint: null, sev: 0,
+      n: 'Each photon carries ' + energy(fApple) + ', only enough to nudge rotation and vibration. Multiply by ' +
+         sci(phots) + ' photons per second and it is still zero broken bonds. Heat is all this beam can ever do.' };
+    if (eV < 3.1) return { v: 'Electronic excitation', badge: 'PHOTOCHEMISTRY ONLY', tint: null, sev: 0,
+      n: 'At ' + energy(fApple) + ' a photon can excite electrons and pigments. Photosynthesis and fading run on this. Bonds stay intact.' };
+    if (eV < 10) {
+      if (Eabs < 1) return { v: 'Bonds could break, dose too low', badge: 'DOSE TOO LOW', tint: null, sev: 0,
+        n: 'Each photon carries ' + energy(fApple) + ', enough to disrupt a bond in the peel. Only ' + joules(Eabs) +
+           ' is absorbed in 60 s, too little to mark it' +
+           (Eabs > 0.01 ? ', though microbes on the skin are already having a bad day.' : '.') };
+      const heavy = Eabs >= 100;
+      const sev = clamp((Math.log10(Eabs) + 0.5) / 3.5, 0.15, 1);
+      return { v: heavy ? 'Peel destroyed by photochemistry' : 'Surface sunburn', tint: 'rgba(138,96,230,', sev,
+        badge: heavy ? 'HEAVY UV DOSE' : 'SURFACE BROWNING',
+        n: 'UV photons at ' + energy(fApple) + ' break bonds where they land, and ' + joules(Eabs) +
+           ' absorbed is ' + (heavy ? 'far past' : 'about') + ' an afternoon of hard sun on the peel. It stays a surface story: UV does not penetrate.' };
+    }
+    const kGy = Eabs / APPLE_MASS / 1000;
+    const doseStr = kGy >= 1 ? num(kGy) + ' <span class="u">kGy</span>'
+      : kGy >= 1e-3 ? num(kGy * 1e3) + ' <span class="u">Gy</span>'
+      : sci(kGy * 1e3) + ' <span class="u">Gy</span>';
+    const pen = eV >= 1000 ? 'punches through the whole apple' : 'strips electrons near the surface';
+    const sev = clamp((Math.log10(Math.max(kGy, 1e-8)) + 3) / 5, 0.1, 1);
+    if (kGy < 1e-3) return { v: 'Ionizing, but a trickle', badge: 'NEGLIGIBLE DOSE', tint: 'rgba(126,224,255,', sev,
+      n: 'Every photon here ionizes: at ' + energy(fApple) + ' each one ' + pen + '. But only ' + sci(phots) +
+         ' arrive per second, an absorbed dose of ' + doseStr + '. A handful of molecules lose electrons and the apple never notices.' };
+    if (kGy < 10) return { v: 'Sterilized through', badge: 'FOOD IRRADIATION DOSE', tint: 'rgba(126,224,255,', sev,
+      n: 'Each photon ' + pen + ', and the absorbed dose of ' + doseStr +
+         ' is the range Co-60 plants use to kill microbes in food. The apple would look and taste fine.' };
+    return { v: 'Radiolysis throughout', badge: 'MASSIVE DOSE', tint: 'rgba(126,224,255,', sev,
+      n: 'At ' + doseStr + ' absorbed, ionization is rewriting chemistry through the whole volume, not just the skin. Water splits into radicals everywhere at once.' };
+  }
 
   const appleCanvas = document.getElementById('appleCanvas');
   const appleCtx = appleCanvas.getContext('2d');
@@ -791,10 +929,11 @@
   // fallback for any stage whose photo has not loaded yet
   const appleImg = new Image();
   appleImg.src = 'apple.png';
-  // sunburn has no photo on purpose: the charred one read as an x-ray dose,
-  // so UV keeps the mild tinted rendering and the photos start at x-ray
+  // 'cook' wears the browned photo, 'ion' the see-through one (a sterilizing
+  // dose leaves the outside looking fine, which is exactly its point);
+  // 'gone' is procedural only: there is no photo of an apple that is not there
   const STAGE_IMGS = { plain: appleImg };
-  for (const [k, src] of [['warm', 'apple-warm.png'], ['xray', 'apple-burn.png'],
+  for (const [k, src] of [['warm', 'apple-warm.png'], ['cook', 'apple-burn.png'],
                           ['ion', 'apple-xray.png'], ['char', 'apple-char.png']]) {
     const im = new Image(); im.src = src; STAGE_IMGS[k] = im;
   }
@@ -814,6 +953,23 @@
     appleCtx.clearRect(0, 0, AW, AH);
     const { cx, cy, r } = appleBody(appleCtx);
 
+    if (stage.draw === 'gone') {
+      appleCtx.save();
+      appleCtx.setLineDash([5, 6]);
+      appleCtx.strokeStyle = 'rgba(196,228,255,.4)';
+      appleCtx.lineWidth = 1.4;
+      appleBody(appleCtx); appleCtx.stroke();
+      appleCtx.restore();
+      appleCtx.fillStyle = 'rgba(180,200,215,.3)';
+      for (let i = 0; i < 6; i++) {
+        const yy = cy + r - ((t * 26 + i * 22) % (r * 2.4));
+        appleCtx.beginPath();
+        appleCtx.ellipse(cx + Math.sin(t * 1.7 + i * 2.1) * r * 0.5, yy, 3.5, 7, 0, 0, TAU);
+        appleCtx.fill();
+      }
+      return;
+    }
+
     const photo = STAGE_IMGS[stage.draw];
     if (photo && photo.complete && photo.naturalWidth) {
       const s = (AW * 0.92) / Math.max(photo.naturalWidth, photo.naturalHeight);
@@ -822,7 +978,7 @@
       return;
     }
 
-    if (stage.draw === 'xray') {
+    if (stage.draw === 'ion') {
       appleCtx.save();
       appleCtx.globalAlpha = 0.22;
       appleCtx.fillStyle = '#7ee0ff';
@@ -869,7 +1025,7 @@
         appleCtx.fillStyle = g;
         appleCtx.fillRect(0, 0, AW, AH);
       }
-      if (stage.draw === 'burn') {
+      if (stage.draw === 'cook') {
         appleCtx.fillStyle = 'rgba(70,30,15,.3)';
         appleCtx.fillRect(0, 0, AW, AH);
         appleCtx.fillStyle = 'rgba(70,30,15,.55)';
@@ -880,7 +1036,7 @@
       appleCtx.restore();
       return;
     } else {
-      const base = stage.draw === 'burn' ? '#a5502e' : '#d33b3b';
+      const base = stage.draw === 'cook' ? '#a5502e' : '#d33b3b';
       appleCtx.fillStyle = base;
       appleBody(appleCtx); appleCtx.fill();
 
@@ -892,7 +1048,7 @@
         appleCtx.fillStyle = g;
         appleBody(appleCtx); appleCtx.fill();
       }
-      if (stage.draw === 'burn') {
+      if (stage.draw === 'cook') {
         appleCtx.fillStyle = 'rgba(70,30,15,.55)';
         for (const [dx, dy, rr] of [[-10,-6,9],[9,-10,7],[3,10,8],[-8,9,6]]) {
           appleCtx.beginPath(); appleCtx.ellipse(cx + dx, cy + dy, rr, rr * 0.7, 0.4, 0, TAU); appleCtx.fill();
@@ -908,23 +1064,73 @@
       appleCtx.strokeStyle = '#6b4a2c';
       appleCtx.lineWidth = 3;
       appleCtx.beginPath(); appleCtx.moveTo(cx, cy - r * 0.9); appleCtx.lineTo(cx + 3, cy - r * 1.25); appleCtx.stroke();
-      appleCtx.fillStyle = stage.draw === 'burn' ? '#5e6b3a' : '#4caf50';
+      appleCtx.fillStyle = stage.draw === 'cook' ? '#5e6b3a' : '#4caf50';
       appleCtx.beginPath();
       appleCtx.ellipse(cx + 12, cy - r * 1.18, 9, 5, -0.6, 0, TAU);
       appleCtx.fill();
     }
   }
 
+  // what the animation loop draws, refreshed by renderApple()
+  let appleDrawKey = 'plain', molTint = null, molAlpha = 0;
+  const capish = w => w === 'UV' ? 'UV' : w.charAt(0).toUpperCase() + w.slice(1);
+
   function renderApple() {
     markApple.style.left = (aX(fApple) * 100) + '%';
-    const stage = appleStageFor(fApple);
-    appleVerdict.textContent = stage.verdict;
-    appleNote.textContent = stage.note;
     markApple.setAttribute('aria-valuetext', freq(fApple).replace(/<[^>]+>/g, ''));
+
+    const P = applePow;
+    const E = P * EXPOSE_S;
+    const band = bandOf(fApple);
+    const [absF, absNote] = ABSORB[band] || [0.05, 'barely couples'];
+    const Eabs = E * absF;
+    const eV = fApple * EV_PER_HZ;
+    const phots = P / (H * fApple);
+
+    document.getElementById('applePowLine').innerHTML =
+      'Beam power <b>' + power(P) + '</b>, held on the apple for <b>60 s</b>.';
+    document.getElementById('applePhot').innerHTML = sci(phots) + ' <span class="u">/s</span>';
+    document.getElementById('applePhotMeta').innerHTML =
+      'at ' + power(P) + ', each photon carrying ' + energy(fApple);
+    document.getElementById('appleEnergy').innerHTML = joules(E);
+    document.getElementById('appleEnergyMeta').innerHTML = power(P) + ' &times; 60 s. ' +
+      capish(band) + ' ' + absNote + ': roughly ' + Math.round(absF * 100) + '% is absorbed.';
+
+    const therm = thermalFor(Eabs);
+    document.getElementById('appleThermV').textContent = therm.v;
+    document.getElementById('appleThermN').innerHTML =
+      joules(Eabs) + ' absorbed would warm 100 g of watery flesh by ' +
+      dTs(therm.dT) + ' <span class="u">°C</span>. ' + therm.tail;
+
+    const mol = molecularFor(eV, Eabs, phots);
+    document.getElementById('appleMolV').textContent = mol.v;
+    document.getElementById('appleMolN').innerHTML = mol.n;
+    const badge = document.getElementById('appleMolB');
+    badge.textContent = mol.badge;
+    badge.style.color = mol.tint ? mol.tint + '.9)' : '';
+    badge.style.borderColor = mol.tint ? mol.tint + '.45)' : '';
+
+    // the photos track the thermal story; an apple that looks untouched but
+    // holds a sterilizing dose gets the see-through rendering instead
+    appleDrawKey = (mol.tint === 'rgba(126,224,255,' && mol.sev >= 0.45 &&
+                    (therm.draw === 'plain' || therm.draw === 'warm'))
+      ? 'ion' : therm.draw;
+    molTint = mol.sev > 0 ? mol.tint : null;
+    molAlpha = 0.1 + 0.3 * mol.sev;
   }
+
   const appleStart = performance.now();
   function appleFrame(now) {
-    drawApple(appleStageFor(fApple), (now - appleStart) / 1000);
+    const t = (now - appleStart) / 1000;
+    drawApple({ draw: appleDrawKey }, t);
+    if (molTint && appleDrawKey !== 'gone') {
+      // tint only the pixels already drawn, so the glow hugs the apple
+      appleCtx.save();
+      appleCtx.globalCompositeOperation = 'source-atop';
+      appleCtx.fillStyle = molTint + (molAlpha + 0.04 * Math.sin(t * 3)).toFixed(3) + ')';
+      appleCtx.fillRect(0, 0, AW, AH);
+      appleCtx.restore();
+    }
     requestAnimationFrame(appleFrame);
   }
   grab(markApple, appleBar,
@@ -935,6 +1141,23 @@
     fApple = aF((e.clientX - r.left) / r.width);
     renderApple();
   });
+  applePowEl.addEventListener('input', renderApple);
+
+  // presets set both dials at once: same button furniture as the marker row
+  const APPLE_PRESETS = [
+    ['Sunlight on a picnic table', 4.3e14, 2.5],
+    ['Microwave oven', 2.45e9, 800],
+    ['UVC wand', C / 254e-9, 0.01],
+    ['Sterilization gamma', 1e20, 100],
+    ['1 W green laser', C / 532e-9, 1],
+  ];
+  const applePresets = document.getElementById('applePresets');
+  for (const [n, f, p] of APPLE_PRESETS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = n;
+    b.addEventListener('click', () => { fApple = f; applePowSet(p); renderApple(); });
+    applePresets.appendChild(b);
+  }
 
   renderApple();
   requestAnimationFrame(appleFrame);
