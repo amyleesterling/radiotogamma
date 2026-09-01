@@ -111,6 +111,10 @@
   .specticks i { position: absolute; transform: translateX(-50%); font-style: normal; white-space: nowrap; }
 
   .cap { font-size: 12.5px; color: #8b98a8; margin: 0 0 7px; }
+  .bandzone { border: 1px solid rgba(196,228,255,.14); padding: 12px 14px; margin: 0 0 24px; }
+  .bandzone .bandhook { font-size: 13px; color: #9aa2b1; line-height: 1.55; margin: 0 0 10px; }
+  .bandzone .bandhook b { color: #eff4fb; }
+  .bandzone .trylab { margin: 0; }
   .specvisbar {
     position: relative; height: 26px; margin-bottom: 24px; touch-action: none; cursor: pointer;
     border: 1px solid rgba(196,228,255,.18);
@@ -194,10 +198,10 @@
   .visfun summary::after { content: ' +'; color: rgb(126 224 255 / .6); }
   .visfun details[open] summary { color: #7ee0ff; }
   .visfun details[open] summary::after { content: ' \2212'; }
-  .visfun .trylab { display: inline-block; margin: 4px 0 10px; font-size: 12px;
+  .visfun .trylab, .bandzone .trylab { display: inline-block; margin: 4px 0 10px; font-size: 12px;
     letter-spacing: .08em; color: #7ee0ff; text-decoration: none;
     border: 1px solid rgba(126,224,255,.35); padding: 6px 10px; }
-  .visfun .trylab:hover { border-color: #7ee0ff; background: rgba(126,224,255,.08); }
+  .visfun .trylab:hover, .bandzone .trylab:hover { border-color: #7ee0ff; background: rgba(126,224,255,.08); }
   .visfun details p {
     margin: 0; padding: 0 12px 12px;
     font-size: 14px; line-height: 1.6; color: #9aa2b1; max-width: 70ch;
@@ -255,8 +259,14 @@
   </div>
   </div>
 
-  <!-- unrolls only while marker B is inside the visible band; the rainbow
-       icons above are the way in -->
+  <!-- every band invites you somewhere: B's band decides which card shows in
+       this slot. Visible gets the full magnified bar and play zone; the rest
+       get a one-line hook and a doorway to the page that does it justice. -->
+  <div class="bandzone" id="bandZone" hidden>
+    <p class="bandhook" id="bandHook"></p>
+    <a class="trylab" id="bandLink" href="#"></a>
+  </div>
+
   <div id="visZone" hidden>
   <p class="cap">Visible light, magnified:</p>
   <div class="specvisbar" id="specVis">
@@ -469,6 +479,30 @@
     metaR.textContent = fB >= fA ? 'B over A, in frequency' : 'A over B, in frequency';
     const inVis = fB >= VIS_LO && fB <= VIS_HI;
     document.getElementById('visZone').hidden = !inVis;
+    const INVITES = {
+      radio: ['Waves down here are as long as buildings and cities — and this whole floor is just the doorstep.',
+              'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
+      microwave: ['Your Wi-Fi, your dinner, and the afterglow of the Big Bang all live in this band.',
+              'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
+      infrared: ['You are glowing in this band right now, and your skin can feel it coming off a fire.',
+              'SEE WHO SENSES WHAT IN THE OBSERVATORY', 'observatory.html?layer=senses&b='],
+      UV: ['Bees and songbirds see into this band. Flowers paint runway stripes here that you cannot see.',
+              'SEE WHO SENSES WHAT IN THE OBSERVATORY', 'observatory.html?layer=senses&b='],
+      'x-ray': ['Wavelengths here are the size of atoms and DNA — which is exactly why they can photograph your bones.',
+              'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
+      gamma: ['This sliver is a trick of the map: gamma is secretly <b>35 octaves</b> tall, wider than every other band combined.',
+              'CLIMB INTO THE GAMMA ATTIC', 'gamma.html'],
+    };
+    const bandZone = document.getElementById('bandZone');
+    const bName = bandOf(fB);
+    if (!inVis && INVITES[bName]) {
+      const [hook, label, href] = INVITES[bName];
+      bandZone.hidden = false;
+      document.getElementById('bandHook').innerHTML = hook;
+      const a = document.getElementById('bandLink');
+      a.textContent = '→ ' + label;
+      a.href = href.endsWith('=') ? href + fB.toExponential(3) : href;
+    } else bandZone.hidden = true;
     mV.style.display = inVis ? '' : 'none';
     if (inVis) { mV.style.left = (vX(fB) * 100) + '%'; mV.dataset.tag = 'B'; }
     for (const [m, f] of [[mA, fA], [mB, fB]]) {
