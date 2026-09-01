@@ -270,7 +270,9 @@
 </header>
 <div class="wrap">
   <h1 id="specHead">Radio to gamma</h1>
-  <p class="sub">A to B: <b id="specRatio">5.6 million</b>&times; apart. End to end, the whole bar covers a ten-quadrillion-fold range. Drag a marker.</p>
+  <p class="sub" id="subLine"><b>FM radio</b> and <b>green laser light</b> are the same phenomenon,
+     <b>5.6 million</b>&times; apart in frequency. End to end, this bar covers a ten-quadrillion-fold
+     range. Drag a marker.</p>
 
   <div class="specwavebox">
     <span class="lane-tag a">A</span>
@@ -518,7 +520,21 @@
     metaA.innerHTML = bandOf(fA) + ', ' + wave(fA) + ', ' + energy(fA) + ' per photon';
     metaB.innerHTML = bandOf(fB) + ', ' + wave(fB) + ', ' + energy(fB) + ' per photon';
     const r = ratio(Math.max(fA, fB) / Math.min(fA, fB));
-    valR.textContent = r; specRatio.textContent = r;
+    valR.textContent = r;
+    // the opening line names what the markers actually sit on, so the first
+    // screen is a statement, not an A/B abstraction
+    const PRETTY = { 'Green laser': 'green laser light', 'Sunlight': 'sunlight',
+                     'Red laser': 'red laser light', 'Blue laser': 'blue laser light' };
+    const nameFor = f => {
+      for (const [n, pf] of PRESETS)
+        if (Math.abs(Math.log10(f / pf)) < 0.002) return PRETTY[n] || n;
+      return null;
+    };
+    const nA = nameFor(fA), nB = nameFor(fB);
+    document.getElementById('subLine').innerHTML = (nA && nB
+      ? '<b>' + nA + '</b> and <b>' + nB + '</b> are the same phenomenon, <b>' + r + '</b>&times; apart in frequency.'
+      : 'A to B: <b>' + r + '</b>&times; apart.') +
+      ' End to end, this bar covers a ten-quadrillion-fold range. Drag a marker.';
     metaR.textContent = fB >= fA ? 'B over A, in frequency' : 'A over B, in frequency';
     const inVis = fB >= VIS_LO && fB <= VIS_HI;
     document.getElementById('visZone').hidden = !inVis;
