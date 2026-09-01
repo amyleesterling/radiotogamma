@@ -584,9 +584,12 @@ beam power      P = photons per second × energy per photon</pre>
   }
   function decodeState() {
     const p = new URLSearchParams(location.search);
+    const norm = t => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
     const parse = (v, m) => {
       if (!v) return;
-      if (byId[v]) setMarker(m, byId[v].hz, v);
+      if (byId[v]) { setMarker(m, byId[v].hz, v); return; }
+      const hit = LANDMARKS.find(l => norm(l.id) === norm(v) || norm(l.name) === norm(v));
+      if (hit) setMarker(m, hit.hz, hit.id);
       else if (isFinite(+v)) setMarker(m, +v);
     };
     parse(p.get('a'), 'a'); parse(p.get('b'), 'b');
@@ -1441,11 +1444,16 @@ beam power      P = photons per second × energy per photon</pre>
   // a shared link that names a layer should land the reader on that layer,
   // not at the top of the page
   if (new URLSearchParams(location.search).get('layer')) {
-    setTimeout(() => {
+    const goLayer = () => {
       const id = 'panel' + S.layer.charAt(0).toUpperCase() + S.layer.slice(1);
       const el = document.getElementById(id);
       if (el && !el.hidden) el.scrollIntoView({ block: 'start' });
-    }, 80);
+    };
+    setTimeout(goLayer, 80);
+    // images above the panel finish loading later and shift the layout;
+    // land on the panel again once everything has its final height
+    if (document.readyState === 'complete') setTimeout(goLayer, 400);
+    else addEventListener('load', () => setTimeout(goLayer, 60), { once: true });
   }
   if (wantTest) selfTest();
   addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); });
