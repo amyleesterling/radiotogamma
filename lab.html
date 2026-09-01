@@ -40,24 +40,67 @@
     letter-spacing: .1em; cursor: pointer; background: none; color: #a07cff;
     border: 1px solid rgba(160,124,255,.4); padding: 5px 10px; }
   #quizToggle:hover { border-color: #a07cff; background: rgba(160,124,255,.08); }
-  #quizToggle[aria-pressed="true"] { color: #eff4fb; background: rgba(160,124,255,.2); border-color: #a07cff; }
-  body:not(.quizon) .question { display: none; }
 
   .exp { border: 1px solid rgba(196,228,255,.14); margin: 26px 0; padding: 16px 18px; }
   .exp h2 { font-size: 14px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 4px; font-weight: 600; }
   .exp .goal { font-size: 15px; color: #eff4fb; font-weight: 600; margin: 0 0 12px; }
-  .question { border-left: 3px solid #a07cff; background: rgba(160,124,255,.06);
-              padding: 10px 14px; margin: 0 0 14px; }
-  .question .q { font-size: 14px; color: #eff4fb; margin: 0 0 9px; }
-  .question .choices { display: flex; flex-wrap: wrap; gap: 7px; }
-  .question .choices button { font: inherit; font-size: 12.5px; cursor: pointer; background: none;
-    color: #9aa2b1; border: 1px solid rgba(196,228,255,.16); padding: 7px 11px; min-height: 36px; }
-  .question .choices button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
-  .question .choices button.picked { color: #a07cff; border-color: rgba(160,124,255,.7); }
-  .question .status { font-size: 12px; color: #6c7c8c; margin: 8px 0 0; }
-  .question .reveal { font-size: 13px; color: #cfe6e6; margin: 8px 0 0; line-height: 1.55; display: none; }
-  .question.solved .reveal { display: block; }
-  .question.solved .status { display: none; }
+
+  /* ---- LIGHT QUIZ modal: a holopanel that floats over the lab ---- */
+  #quizOverlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+    padding: 18px; background: rgba(2,4,8,.72);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  #quizOverlay[hidden] { display: none; }
+  .quizpanel { --holo-glow: 160 124 255; width: min(560px, 100%); max-height: calc(100vh - 36px);
+    overflow-y: auto; padding: 20px 22px 18px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .quizpanel .qhead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 4px; }
+  .quizpanel .qtag { font-size: 11px; letter-spacing: .18em; color: #a07cff; }
+  .quizpanel .qcount { font-size: 11px; color: #6c7c8c; }
+  .quizpanel .qclose { margin-left: auto; font: inherit; font-size: 15px; line-height: 1;
+    cursor: pointer; background: none; color: #6c7c8c;
+    border: 1px solid rgba(196,228,255,.18); padding: 6px 10px; }
+  .quizpanel .qclose:hover { color: #eff4fb; border-color: rgba(126,224,255,.5); }
+  .quizpanel .qdots { display: flex; gap: 6px; margin: 0 0 14px; }
+  .quizpanel .qdots i { width: 22px; height: 3px; background: rgba(196,228,255,.14); }
+  .quizpanel .qdots i.on { background: #a07cff; box-shadow: 0 0 8px rgba(160,124,255,.7); }
+  .quizpanel .qdots i.done { background: rgba(126,224,255,.55); }
+  .quizpanel .qfrom { font-size: 11px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 6px; }
+  .quizpanel .qlabtag { color: #ffd479; }
+  .quizpanel .q { font-family: "Segoe UI", system-ui, sans-serif; font-size: 16.5px;
+    color: #eff4fb; margin: 0 0 14px; line-height: 1.45; }
+  .quizpanel .choices { display: grid; gap: 8px; margin: 0 0 4px; }
+  .quizpanel .choices button { font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px;
+    text-align: left; cursor: pointer; background: rgba(196,228,255,.03); color: #cfd6e2;
+    border: 1px solid rgba(196,228,255,.18); padding: 10px 13px; min-height: 42px; }
+  .quizpanel .choices button:hover { color: #eff4fb; border-color: rgba(160,124,255,.7); }
+  .quizpanel.answered .choices button { cursor: default; opacity: .55; }
+  .quizpanel.answered .choices button:hover { border-color: rgba(196,228,255,.18); }
+  .quizpanel.answered .choices button.good { opacity: 1; color: #baf5d0;
+    border-color: rgba(120,235,170,.75); background: rgba(120,235,170,.08);
+    box-shadow: 0 0 14px rgba(120,235,170,.18); }
+  .quizpanel.answered .choices button.bad { opacity: 1; color: #ffb3a7;
+    border-color: rgba(255,120,100,.65); background: rgba(255,120,100,.07); }
+  .quizpanel .verdict { font-size: 12px; letter-spacing: .14em; margin: 12px 0 0; display: none; }
+  .quizpanel.answered .verdict { display: block; }
+  .quizpanel .verdict.good { color: #78ebaa; }
+  .quizpanel .verdict.bad { color: #ff9c8a; }
+  .quizpanel .reveal { font-family: "Segoe UI", system-ui, sans-serif; font-size: 13.5px;
+    color: #cfe6e6; line-height: 1.6; margin: 8px 0 0; display: none; }
+  .quizpanel.answered .reveal { display: block; animation: qreveal 500ms cubic-bezier(.16,1,.3,1) both; }
+  @keyframes qreveal {
+    from { opacity: 0; transform: translateY(6px); filter: blur(6px) brightness(2); }
+    to   { opacity: 1; transform: none; filter: none; }
+  }
+  .quizpanel .qfoot { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; min-height: 36px; }
+  .quizpanel .qnext { font: inherit; font-size: 12px; letter-spacing: .12em; cursor: pointer;
+    background: rgba(160,124,255,.14); color: #eff4fb;
+    border: 1px solid rgba(160,124,255,.7); padding: 9px 16px; visibility: hidden; }
+  .quizpanel.answered .qnext { visibility: visible; }
+  .quizpanel .qnext:hover { background: rgba(160,124,255,.28); }
+  .quizpanel .qnote { font-size: 11px; color: #6c7c8c; }
+  .quizpanel .score { font-family: "Segoe UI", system-ui, sans-serif; font-size: 17px;
+    color: #eff4fb; margin: 6px 0 10px; }
+  @media (prefers-reduced-motion: reduce) { .quizpanel.answered .reveal { animation: none; } }
 
   .stage { position: relative; }
   .exp canvas { display: block; width: 100%; touch-action: none;
@@ -92,7 +135,7 @@
   <div class="stripdock">
     <div class="dockrow">
       <p class="striplabel">The visible octave · 750 nm — 380 nm</p>
-      <button id="quizToggle" type="button" aria-pressed="false">LIGHT QUIZ</button>
+      <button id="quizToggle" type="button" aria-haspopup="dialog">LIGHT QUIZ</button>
     </div>
     <canvas id="labStrip" aria-label="Visible spectrum strip; lights up with the wavelengths each experiment affects"></canvas>
   </div>
@@ -152,11 +195,89 @@ window.LAB = (() => {
   addEventListener('resize', drawStrip);
   drawStrip();
 
+  // ---- LIGHT QUIZ: a modal that walks the four questions, predict-first ----
+  // The right answer stays hidden until a choice is committed. Correct indices
+  // live here (a module may also ship question.answer and override this map).
+  const ANSWERS = { prism: 2, cd: 2, hose: 2, sky: 1 };
   const quizBtn = document.getElementById('quizToggle');
+  const overlay = document.createElement('div');
+  overlay.id = 'quizOverlay'; overlay.hidden = true;
+  overlay.innerHTML = '<div class="quizpanel holopanel" role="dialog" aria-modal="true" aria-label="Light quiz"></div>';
+  document.body.appendChild(overlay);
+  const panel = overlay.firstElementChild;
+  let qi = 0, score = 0, picks = [];
+
+  function quizItems() { return registry.filter(e => e.question); }
+  function closeQuiz() { overlay.hidden = true; quizBtn.focus(); }
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeQuiz(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !overlay.hidden) closeQuiz(); });
+
+  function materialize() {
+    panel.classList.remove('is-in'); void panel.offsetWidth; panel.classList.add('is-in');
+  }
+  function headHTML(items) {
+    return '<div class="qhead"><span class="qtag">LIGHT QUIZ</span>' +
+      '<span class="qcount num">' + Math.min(qi + 1, items.length) + ' / ' + items.length + '</span>' +
+      '<button type="button" class="qclose" aria-label="Close quiz">✕</button></div>' +
+      '<div class="qdots">' + items.map((_, k) =>
+        '<i class="' + (k < qi ? 'done' : k === qi ? 'on' : '') + '"></i>').join('') + '</div>';
+  }
+  function showQuestion() {
+    const items = quizItems();
+    if (qi >= items.length) return showScore(items);
+    const exp = items[qi];
+    panel.classList.remove('answered');
+    panel.innerHTML = headHTML(items) +
+      '<p class="qfrom">' + exp.title +
+      (exp.solvedFlag ? ' <span class="qlabtag">✦ demonstrated in the lab</span>' : '') + '</p>' +
+      '<p class="q">' + exp.question.text + '</p>' +
+      '<div class="choices">' + exp.question.choices.map((c, k) =>
+        '<button type="button" data-i="' + k + '">' + c + '</button>').join('') + '</div>' +
+      '<p class="verdict"></p><p class="reveal"></p>' +
+      '<div class="qfoot"><button type="button" class="qnext">' +
+      (qi === items.length - 1 ? 'RESULTS →' : 'NEXT →') + '</button>' +
+      '<span class="qnote">Commit to a guess. The answer stays sealed until you do.</span></div>';
+    materialize();
+    const answer = Number.isInteger(exp.question.answer) ? exp.question.answer : ANSWERS[exp.id];
+    panel.querySelectorAll('.choices button').forEach(b => b.addEventListener('click', () => {
+      if (panel.classList.contains('answered')) return;
+      const k = +b.dataset.i, right = (k === answer);
+      if (right) score++;
+      picks[qi] = right;
+      b.classList.add(right ? 'good' : 'bad');
+      if (!right) panel.querySelector('.choices button[data-i="' + answer + '"]').classList.add('good');
+      const v = panel.querySelector('.verdict');
+      v.textContent = right ? 'CORRECT' : 'NOT THIS TIME';
+      v.classList.add(right ? 'good' : 'bad');
+      panel.querySelector('.reveal').textContent = exp.question.reveal;
+      panel.querySelector('.qnote').textContent = '';
+      panel.classList.add('answered');
+    }));
+    panel.querySelector('.qnext').addEventListener('click', () => { qi++; showQuestion(); });
+    panel.querySelector('.qclose').addEventListener('click', closeQuiz);
+  }
+  function showScore(items) {
+    const n = items.length;
+    const word = score === n ? 'Fully light literate.' :
+                 score >= n - 1 ? 'One photon short of perfect.' :
+                 score >= Math.ceil(n / 2) ? 'The lab is starting to rub off on you.' :
+                 'Good news: every answer is downstairs, running live.';
+    panel.classList.remove('answered');
+    panel.innerHTML = headHTML(items) +
+      '<p class="qfrom">RESULTS</p>' +
+      '<p class="score"><span class="num">' + score + ' / ' + n + '</span> — ' + word + '</p>' +
+      '<p class="reveal" style="display:block">' + items.map((e, k) =>
+        (picks[k] ? '✓ ' : '✗ ') + e.title).join('<br>') + '</p>' +
+      '<div class="qfoot"><button type="button" class="qnext" style="visibility:visible">TRY AGAIN</button>' +
+      '<button type="button" class="qclose" style="margin-left:0">BACK TO THE LAB</button></div>';
+    materialize();
+    panel.querySelector('.qnext').addEventListener('click', () => { qi = 0; score = 0; picks = []; showQuestion(); });
+    panel.querySelectorAll('.qclose').forEach(b => b.addEventListener('click', closeQuiz));
+  }
   quizBtn.addEventListener('click', () => {
-    const on = !document.body.classList.contains('quizon');
-    document.body.classList.toggle('quizon', on);
-    quizBtn.setAttribute('aria-pressed', String(on));
+    qi = 0; score = 0; picks = [];
+    overlay.hidden = false;
+    showQuestion();
   });
 
   const mount = document.getElementById('labMount');
@@ -172,34 +293,17 @@ window.LAB = (() => {
     registry.push(exp);
     const sec = document.createElement('section');
     sec.className = 'exp'; sec.id = 'exp-' + exp.id;
-    let qhtml = '';
-    if (exp.question) {
-      qhtml = '<div class="question"><p class="q">' + exp.question.text + '</p>' +
-        '<div class="choices">' + exp.question.choices.map((c, i) =>
-          '<button type="button" data-i="' + i + '">' + c + '</button>').join('') + '</div>' +
-        '<p class="status">Pick a hypothesis, then run the experiment.</p>' +
-        '<p class="reveal"></p></div>';
-    }
     sec.innerHTML = '<h2>' + exp.title + '</h2>' +
-      (exp.goal ? '<p class="goal">' + exp.goal + '</p>' : '') + qhtml +
+      (exp.goal ? '<p class="goal">' + exp.goal + '</p>' : '') +
       '<div class="stage"></div>' +
       (exp.hint ? '<p class="hint">' + exp.hint + '</p>' : '');
     (document.getElementById('slot-' + exp.id) || mount).appendChild(sec);
-    const qEl = sec.querySelector('.question');
-    if (qEl) qEl.querySelectorAll('.choices button').forEach(b =>
-      b.addEventListener('click', () => {
-        qEl.querySelectorAll('.choices button').forEach(x => x.classList.remove('picked'));
-        b.classList.add('picked');
-      }));
     const expApi = {
       strip: api,
       // the experiment calls this when the visitor has made the phenomenon
-      // happen; the question resolves with its reveal text
-      solved() {
-        if (!qEl || qEl.classList.contains('solved')) return;
-        qEl.classList.add('solved');
-        qEl.querySelector('.reveal').textContent = exp.question.reveal;
-      },
+      // happen; the quiz shows a "demonstrated in the lab" tag for it, but the
+      // answer itself stays sealed until they commit to a guess in the modal
+      solved() { exp.solvedFlag = true; },
       reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     };
     try { exp.init(sec.querySelector('.stage'), expApi); }
