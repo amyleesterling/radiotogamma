@@ -21,6 +21,29 @@
     if (f > 0.78) txt += ' — the grooves';
     return txt;
   }
+  // ---- the hint under the stage follows the dive ---------------------------
+  var HINT0 = 'Drag the lamp around the disc. When the rainbow appears, use the zoom slider to dive into the surface and find out why.';
+  var HINT_TRACKS = 'Those stripes are the data track — one spiral groove, 1.6 µm between turns. Keep going.';
+  var HINT_PITS = 'Each pit is smaller than a wavelength of light. Tilt the disc and watch the glints move.';
+  function bindHint(mount) {                         // lab.html renders the hint as a
+    var exp = mount.closest && mount.closest('.exp'); // sibling of the stage
+    var el = exp && exp.querySelector('.hint');
+    return function (f) {
+      if (!el) return;
+      var t = f >= 0.93 ? HINT_PITS : f >= 0.56 ? HINT_TRACKS : HINT0;
+      if (el.textContent !== t) el.textContent = t;
+    };
+  }
+  function wrapLines(ctx, text, maxW) {              // greedy word wrap, measured
+    var words = text.split(' '), lines = [], cur = '';
+    for (var i = 0; i < words.length; i++) {
+      var t = cur ? cur + ' ' + words[i] : words[i];
+      if (cur && ctx.measureText(t).width > maxW) { lines.push(cur); cur = words[i]; }
+      else cur = t;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
   function makeControls(mount) {
     var controls = document.createElement('div');
     controls.className = 'controls';
@@ -75,7 +98,8 @@
     ctx.stroke();
     ctx.fillStyle = '#8b98a8';
     ctx.fillText('1.6 µm — a few wavelengths of light', midX, baseY + 52);
-    ctx.fillText('one wave hits adjacent tracks; each color adds up at its own angle', midX, 26);
+    var expl = wrapLines(ctx, 'one wave hits adjacent tracks; each color adds up at its own angle', W - 24);
+    for (var li = 0; li < expl.length; li++) ctx.fillText(expl[li], midX, 26 + li * 16);
     var d = [0.42, 0.907];                           // incoming direction, down-right
     ctx.lineWidth = 1.4;
     for (var j = -1; j <= 1; j++) {                  // 3 parallel white rays
@@ -263,8 +287,10 @@
     }
     canvas.addEventListener('pointerup', endDrag);
     canvas.addEventListener('pointercancel', endDrag);
+    var setHint = bindHint(mount);
     zoomInput.addEventListener('input', function () {
       zoomLabel.textContent = zoomText(zoomFrac());
+      setHint(zoomFrac());
       updateStrip(); draw();
     });
     function resize() {
@@ -704,8 +730,78 @@
         return Math.min(0.95, w);
       });
     }
-    // ---- max-zoom overlay: measurement label over the (still 3D) surface ---
+    // ---- max-zoom overlay: measurement label + the payoff explanation ------
     function proj(v) { tmp.copy(v).project(camera); return [(tmp.x * 0.5 + 0.5) * W, (-tmp.y * 0.5 + 0.5) * H]; }
+    var EXPL = [                                     // the WHY, in three beats
+      'Light bounces off MANY rows of pits at once.',
+      'Each color’s waves line up — crest on crest — at one particular angle, and cancel at the others.',
+      'Different colors line up at different angles, so the bounce sorts white light into a rainbow.'
+    ];
+    function drawExplain(a) {                        // staged block in the empty sky
+      var pad = 12, maxW = Math.min(W - 24 - pad * 2, 520);
+      octx.save();
+      octx.globalAlpha = a;
+      octx.font = MONO; octx.textAlign = 'center';
+      var lines = [], wmax = 0, s, i;
+      for (s = 0; s < EXPL.length; s++) {            // wrap each beat to the canvas
+        var ws = wrapLines(octx, EXPL[s], maxW);
+        for (i = 0; i < ws.length; i++) {
+          lines.push(ws[i]);
+          wmax = Math.max(wmax, octx.measureText(ws[i]).width);
+        }
+        if (s < EXPL.length - 1) lines.push('');     // small gap between beats
+      }
+      var lh = 16, gap = 7, textH = 0;
+      for (i = 0; i < lines.length; i++) textH += lines[i] ? lh : gap;
+      var dgH = 78;                                  // room for the mini ray diagram
+      var plw = Math.min(W - 24, Math.max(wmax, 260) + pad * 2);
+      var plh = textH + dgH + pad * 2;
+      var x0 = W / 2 - plw / 2, y0 = 10;
+      octx.fillStyle = 'rgba(5,7,12,.82)';           // backing plate: never collides
+      octx.strokeStyle = 'rgba(196,228,255,.16)';    // with the surface or page text
+      octx.lineWidth = 1;
+      octx.beginPath();
+      if (octx.roundRect) octx.roundRect(x0, y0, plw, plh, 6);
+      else octx.rect(x0, y0, plw, plh);
+      octx.fill(); octx.stroke();
+      var y = y0 + pad + 11;
+      octx.fillStyle = '#8b98a8';
+      for (i = 0; i < lines.length; i++) {
+        if (lines[i]) { octx.fillText(lines[i], W / 2, y); y += lh; }
+        else y += gap;
+      }
+      // the same story as one picture: pits, parallel light in, sorted colors out
+      function rot(x2, y2, an) { var c2 = Math.cos(an), s2 = Math.sin(an); return [x2 * c2 - y2 * s2, x2 * s2 + y2 * c2]; }
+      var baseY = y0 + plh - pad - 6, midX = W / 2;
+      var sp = Math.min(46, (plw - 50) / 5);
+      octx.strokeStyle = 'rgba(196,228,255,.4)';
+      octx.beginPath(); octx.moveTo(midX - 2.6 * sp, baseY); octx.lineTo(midX + 2.6 * sp, baseY); octx.stroke();
+      for (i = -2; i <= 2; i++) {
+        octx.beginPath(); octx.arc(midX + i * sp, baseY, 5, Math.PI, 0);
+        octx.fillStyle = 'rgba(196,228,255,.18)'; octx.fill();
+        octx.strokeStyle = 'rgba(196,228,255,.5)'; octx.stroke();
+      }
+      var d = [0.42, 0.907];                         // incoming direction, down-right
+      octx.lineWidth = 1.3;
+      for (i = -1; i <= 1; i++) {                    // parallel white rays: many rows at once
+        octx.strokeStyle = 'rgba(255,255,255,.75)';
+        octx.beginPath();
+        octx.moveTo(midX + i * sp - d[0] * 52, baseY - 5 - d[1] * 52);
+        octx.lineTo(midX + i * sp, baseY - 5);
+        octx.stroke();
+      }
+      octx.globalCompositeOperation = 'lighter';
+      var out = [[650, -0.20], [550, -0.09], [470, 0]]; // red bends farthest
+      for (i = -1; i <= 1; i++) for (var c = 0; c < out.length; c++) {
+        var v = rot(d[0], -d[1], out[c][1]);
+        octx.strokeStyle = rgba(api.strip.wavelengthRGB(out[c][0]), 0.85);
+        octx.beginPath();
+        octx.moveTo(midX + i * sp, baseY - 5);
+        octx.lineTo(midX + i * sp + v[0] * 46, baseY - 5 + v[1] * 46);
+        octx.stroke();
+      }
+      octx.restore();
+    }
     function drawOverlay() {
       var z = zoomState();
       var a = sm((z.f - 0.82) / 0.13);
@@ -714,8 +810,11 @@
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.clearRect(0, 0, W, H);
       octx.font = MONO; octx.textAlign = 'center'; octx.fillStyle = '#8b98a8';
-      octx.fillText('one wave hits adjacent tracks; each color adds up at its own angle', W / 2, 26);
-      octx.fillText('1.6 µm — a few wavelengths of light', W / 2, H - 24);
+      var cap = wrapLines(octx, '1.6 µm — a few wavelengths of light', W - 24);
+      for (var ci = 0; ci < cap.length; ci++)
+        octx.fillText(cap[ci], W / 2, H - 24 - (cap.length - 1 - ci) * 16);
+      var ae = sm((z.f - 0.84) / 0.12);              // the payoff, only past the handoff
+      if (ae > 0.01) drawExplain(ae);
       // measure one real track pitch: project the radial pitch vector to screen
       var s0 = proj(tgt.set(0.68, 0, 0).applyMatrix4(group.matrixWorld));
       var s1 = proj(tgt.set(0.68 + z.pitchU, 0, 0).applyMatrix4(group.matrixWorld));
@@ -787,8 +886,10 @@
     }
     canvas.addEventListener('pointerup', endDrag);
     canvas.addEventListener('pointercancel', endDrag);
+    var setHint = bindHint(mount);
     zoomInput.addEventListener('input', function () {
       zoomLabel.textContent = zoomText(zoomInput.value / 1000);
+      setHint(zoomInput.value / 1000);
       render(); drawOverlay(); updateStrip();
     });
     var beamBtn = document.createElement('button');  // pure mirror-shine view on demand
@@ -828,7 +929,7 @@
       choices: ['Microscopic colored material', 'Reflection from the room', 'A tiny repeating structure', 'Magic, obviously'],
       reveal: 'A tiny repeating structure. The data track spirals around the disc with a spacing of 1.6 micrometers — a few wavelengths of light — and that regular spacing reflects each wavelength constructively at a slightly different angle. The disc is a diffraction grating that happens to hold music.'
     },
-    hint: 'Drag the lamp around the disc. When the rainbow appears, use the zoom slider to dive into the surface and find out why.',
+    hint: HINT0,
     init: function (mount, api) {
       mount.style.position = 'relative';
       var note = document.createElement('p');
