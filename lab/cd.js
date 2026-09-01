@@ -291,6 +291,9 @@
   var FRAG = [
     'varying vec3 vPos;',
     'uniform vec3 uLp, uCp;',
+    'uniform sampler2D uEnv;',                       // equirect studio HDR (linear)
+    'uniform float uEnvOn, uPitch, uStripe;',        // uPitch: track pitch in disc units
+    'uniform mat3 uNorm;',                           // disc-local -> world rotation
     'vec3 wl2rgb(float nm){',                        // matches the JS approximation
     '  float r=0.,g=0.,b=0.,t;',
     '  if(nm<440.){t=(nm-380.)/60.;r=.35*(1.-t);b=1.;}',
@@ -314,23 +317,33 @@
     '  float grain=.9+.1*hash(floor(ang*700.)+floor(r*40.)*7.);', // faint radial groove noise
     '  float ndl=max(dot(N,L),0.), ndv=max(dot(N,V),0.);',
     '  vec3 col=vec3(.052,.056,.066);',              // dark plastic
-    '  float lab=smoothstep(.475,.44,r)*step(.001,r);', // label ring near the hub
+    '  float lab=smoothstep(.475,.44,r);',           // label ring near the hub
     '  col=mix(col,vec3(.13,.135,.15),lab);',
     '  vec3 Hv=normalize(L+V);',
     '  float ndh=max(dot(N,Hv),0.);',
-    '  col+=vec3(.9,.94,1.)*(pow(ndh,220.)*.9+pow(ndh,14.)*.10)*grain*(1.-.5*lab);', // white streak
+    '  col+=vec3(.9,.94,1.)*(pow(ndh,220.)*.9+pow(ndh,14.)*.10)*grain*(1.-.5*lab)*(1.-.5*uStripe);',
     '  float fres=.25+.75*pow(1.-ndv,2.);',          // Fresnel-ish weight
+    '  vec3 Rw=uNorm*reflect(-V,N);',                // mirror the studio HDR off the disc
+    '  vec2 euv=vec2(atan(Rw.z,Rw.x)/6.2831853+.5,acos(clamp(Rw.y,-1.,1.))/3.14159265);',
+    '  vec3 env=texture2D(uEnv,euv).rgb;',
+    '  col+=uEnvOn*(env/(1.+env))*(.05+.45*fres)*(1.-.55*lab)*(1.-.6*uStripe);', // tone-mapped
     '  float s=abs(sinI-sinR);',
     '  for(int m=1;m<=2;m++){',                      // diffraction orders ±1, ±2
     '    float lam=1600.*s/float(m);',               // d(sin i − sin r) = mλ, d=1.6 µm
     '    float win=smoothstep(380.,425.,lam)*(1.-smoothstep(690.,750.,lam));', // soft gamut window
-    '    if(win>0.001) col+=wl2rgb(lam)*win*(.85/float(m))*fres*ndl*grain*(1.-lab);',
+    '    if(win>0.001) col+=wl2rgb(lam)*win*(.85/float(m))*fres*ndl*grain*(1.-lab)*(1.-.75*uStripe);',
     '  }',
+    '  float tr=r/uPitch;',                          // procedural LOD: concentric tracks
+    '  float wfr=max(fwidth(tr),1e-3);',             // resolve out of the shimmer as we dive
+    '  float lineF=abs(fract(tr)-.5);',
+    '  float groove=(1.-smoothstep(.22-wfr,.22+wfr,lineF))*step(.001,uStripe);',
+    '  col=mix(col,vec3(.028,.032,.04),groove*uStripe*.85);',
+    '  col+=vec3(.30,.34,.42)*(1.-groove)*uStripe*.18*(.4+.6*ndl);',
     '  col*=.55+.45*grain;',
     '  gl_FragColor=vec4(col,1.);}'
   ].join('\n');
   var VERT = 'varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
-  function init3D(mount, api, THREE) {
+  function init3D(mount, api, THREE, HDR) {
     var renderer = new THREE.WebGLRenderer({ antialias: true });
     var W = 860, dpr = Math.min(2, window.devicePixelRatio || 1);
     var canvas = renderer.domElement;
@@ -339,7 +352,7 @@
     canvas.style.cursor = 'grab';
     canvas.setAttribute('aria-label', 'A 3D CD you can tilt, with a draggable light and a zoom slider');
     mount.appendChild(canvas);
-    var overlay = document.createElement('canvas'); // 2D close-up, crossfaded over the 3D view
+    var overlay = document.createElement('canvas'); // labels only; the surface stays 3D
     overlay.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:' + H + 'px;pointer-events:none;opacity:0;border:0;background:transparent;';
     mount.appendChild(overlay);
     var octx = overlay.getContext('2d');
@@ -348,13 +361,30 @@
     var zoomLabel = controls.querySelector('.zoomlabel');
     renderer.setClearColor(0x05070c, 1);
     var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 30);
+    var camera = new THREE.PerspectiveCamera(34, W / H, 0.01, 30);
     camera.position.set(0, 0.55, 3.1);
     camera.lookAt(0, 0, 0);
+    var blackTex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+    blackTex.needsUpdate = true;                     // placeholder until the HDR arrives
     var mat = new THREE.ShaderMaterial({
-      uniforms: { uLp: { value: new THREE.Vector3() }, uCp: { value: new THREE.Vector3() } },
+      uniforms: {
+        uLp: { value: new THREE.Vector3() }, uCp: { value: new THREE.Vector3() },
+        uEnv: { value: blackTex }, uEnvOn: { value: 0 },
+        uPitch: { value: 1 }, uStripe: { value: 0 },
+        uNorm: { value: new THREE.Matrix3() }
+      },
       vertexShader: VERT, fragmentShader: FRAG, side: THREE.DoubleSide
     });
+    if (HDR && HDR.HDRLoader) {                      // real studio environment (CC0 Poly Haven)
+      try {                                          // URL resolves against the PAGE (site root)
+        new HDR.HDRLoader().load('env/studio_small_03_1k.hdr', function (tex) {
+          tex.mapping = THREE.EquirectangularReflectionMapping;
+          mat.uniforms.uEnv.value = tex;
+          mat.uniforms.uEnvOn.value = 1;
+          render();
+        }, undefined, function () { /* keep analytic lighting */ });
+      } catch (err) { /* keep analytic lighting */ }
+    }
     var group = new THREE.Group();
     group.rotation.order = 'YXZ';
     group.rotation.x = -0.62;                        // pitch; yaw is rotation.y
@@ -373,17 +403,40 @@
     var sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(spr), transparent: true, depthTest: false }));
     sprite.scale.set(0.34, 0.34, 1);
     scene.add(sprite);
-    var lightAz = 0.9, lightEl = 1.25, LR = 2.3;     // azimuth, elevation, orbit radius
+    var lightAz = 0.9, lightEl = 0.42, LR = 1.3;     // azimuth, elevation, orbit radius
     function lightPos() {
       return new THREE.Vector3(
         LR * Math.cos(lightEl) * Math.sin(lightAz),
         LR * Math.sin(lightEl),
         LR * Math.cos(lightEl) * Math.cos(lightAz));
     }
-    var inv = new THREE.Matrix4(), tmp = new THREE.Vector3();
+    var inv = new THREE.Matrix4(), tmp = new THREE.Vector3(), tgt = new THREE.Vector3();
+    var DIR0 = new THREE.Vector3(0, 0.55, 3.1).normalize();
+    var PITCH0 = 1.6e-6 / 0.06;                      // 1.6 µm track pitch, disc radius ≈ 60 mm
+    // The zoom slider is a real camera dive toward a fixed surface point. The
+    // dolly covers ~1.4 orders of magnitude; the rest of the ~5 orders is a
+    // procedural LOD: the shader's track pitch is inflated by the residual
+    // factor so on-screen spacing matches the total implied magnification.
+    function zoomState() {
+      var f = zoomInput.value / 1000;
+      var dolly = 3.2 * Math.pow(0.04, f);           // geometric part of the dive
+      var pitchU = PITCH0 * Math.pow(10, 4.55 * f) * dolly / 3.2;
+      var pitchPx = pitchU * H / (2 * dolly * Math.tan(camera.fov * Math.PI / 360));
+      var stripe = pitchPx < 1.5 ? 0 : sm((Math.log10(pitchPx) - 0.25) / 0.65);
+      return { f: f, dolly: dolly, pitchU: pitchU, pitchPx: pitchPx, stripe: stripe };
+    }
     function render() {
       sprite.position.copy(lightPos());
       group.updateMatrixWorld(true);
+      var z = zoomState();                           // fly toward local (0.68, 0, 0)
+      tgt.set(0.68, 0, 0).applyMatrix4(group.matrixWorld)
+        .multiplyScalar(sm(Math.min(1, z.f * 1.6))); // narrowing target
+      camera.position.copy(tgt).addScaledVector(DIR0, z.dolly);
+      camera.lookAt(tgt);
+      sprite.material.opacity = 1 - sm((z.f - 0.45) / 0.25);
+      mat.uniforms.uPitch.value = z.pitchU;
+      mat.uniforms.uStripe.value = z.stripe;
+      mat.uniforms.uNorm.value.setFromMatrix4(group.matrixWorld);
       inv.copy(group.matrixWorld).invert();          // shader works in disc-local space
       mat.uniforms.uLp.value.copy(sprite.position).applyMatrix4(inv);
       mat.uniforms.uCp.value.copy(camera.position).applyMatrix4(inv);
@@ -409,8 +462,7 @@
     }
     var solvedDone = false;
     function updateStrip() {                         // called only from interaction handlers
-      var f = zoomInput.value / 1000;
-      if (f > 0.77) { api.strip.light(function () { return 0.55; }); return; }
+      if (zoomState().stripe > 0.5) { api.strip.light(function () { return 0.55; }); return; }
       var lams = sampleLambdas();
       if (!lams.length) { api.strip.light(null); return; }
       if (!solvedDone) { solvedDone = true; api.solved(); }
@@ -423,18 +475,46 @@
         return Math.min(0.95, w);
       });
     }
-    // ---- zoom overlay ------------------------------------------------------
+    // ---- max-zoom overlay: measurement label over the (still 3D) surface ---
+    function proj(v) { tmp.copy(v).project(camera); return [(tmp.x * 0.5 + 0.5) * W, (-tmp.y * 0.5 + 0.5) * H]; }
     function drawOverlay() {
-      var f = zoomInput.value / 1000;
-      var ovl = sm((f - 0.3) / 0.28);                // crossfade in at mid zoom
-      overlay.style.opacity = ovl.toFixed(3);
-      if (ovl < 0.01) return;
+      var z = zoomState();
+      var a = sm((z.f - 0.82) / 0.13);
+      overlay.style.opacity = a.toFixed(3);
+      if (a < 0.01) return;
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.clearRect(0, 0, W, H);
-      octx.fillStyle = '#05070c'; octx.fillRect(0, 0, W, H);
-      var mid = 1 - sm((f - 0.72) / 0.2), tracks = sm((f - 0.74) / 0.2);
-      if (mid > 0.01) drawMidView(octx, api, W, mid, f);
-      if (tracks > 0.01) drawTracksView(octx, api, W, tracks);
+      octx.font = MONO; octx.textAlign = 'center'; octx.fillStyle = '#8b98a8';
+      octx.fillText('one wave hits adjacent tracks; each color adds up at its own angle', W / 2, 26);
+      octx.fillText('1.6 µm — a few wavelengths of light', W / 2, H - 24);
+      // measure one real track pitch: project the radial pitch vector to screen
+      var s0 = proj(tgt.set(0.68, 0, 0).applyMatrix4(group.matrixWorld));
+      var s1 = proj(tgt.set(0.68 + z.pitchU, 0, 0).applyMatrix4(group.matrixWorld));
+      var dx = s1[0] - s0[0], dy = s1[1] - s0[1], len = Math.hypot(dx, dy);
+      if (len > 10 && len < W) {
+        var px = -dy / len, py = dx / len;           // perpendicular (end caps)
+        octx.strokeStyle = 'rgba(196,228,255,.75)'; octx.lineWidth = 1;
+        octx.beginPath();
+        octx.moveTo(s0[0], s0[1]); octx.lineTo(s1[0], s1[1]);
+        octx.moveTo(s0[0] + px * 9, s0[1] + py * 9); octx.lineTo(s0[0] - px * 9, s0[1] - py * 9);
+        octx.moveTo(s1[0] + px * 9, s1[1] + py * 9); octx.lineTo(s1[0] - px * 9, s1[1] - py * 9);
+        octx.stroke();
+      }
+      // tiny ray diagram: one white wave in, three colors out at their angles
+      var ox = W * 0.2, oy = H * 0.62;
+      octx.lineWidth = 1.4;
+      octx.strokeStyle = 'rgba(255,255,255,.7)';
+      octx.beginPath(); octx.moveTo(ox - 52, oy - 84); octx.lineTo(ox, oy); octx.stroke();
+      octx.globalCompositeOperation = 'lighter';
+      var out = [[650, 0.62], [550, 0.44], [470, 0.28]]; // red bends farthest
+      for (var c = 0; c < out.length; c++) {
+        var th = -Math.PI / 2 + out[c][1];
+        octx.strokeStyle = rgba(api.strip.wavelengthRGB(out[c][0]), 0.85);
+        octx.beginPath(); octx.moveTo(ox, oy);
+        octx.lineTo(ox + Math.cos(th) * 92, oy + Math.sin(th) * 92);
+        octx.stroke();
+      }
+      octx.globalCompositeOperation = 'source-over';
     }
     // ---- interaction: drag tilts the disc, or grabs the light --------------
     var dragging = 0;                                // 0 none, 1 tilt, 2 light
@@ -447,7 +527,7 @@
       rafId = requestAnimationFrame(function tick() {
         if (!dragging) {                             // <0.5 s inertia settle
           var dt = (performance.now() - settleT) / 1000;
-          if (api.reducedMotion || dt > 0.45 || (Math.abs(vx) + Math.abs(vy)) < 0.02) { rafId = 0; render(); return; }
+          if (api.reducedMotion || dt > 0.45 || (Math.abs(vx) + Math.abs(vy)) < 0.02) { rafId = 0; render(); drawOverlay(); return; }
           group.rotation.y += vx * 0.016;
           group.rotation.x = Math.max(-1.22, Math.min(1.22, group.rotation.x + vy * 0.016));
           vx *= 0.9; vy *= 0.9;
@@ -462,7 +542,7 @@
     }
     canvas.addEventListener('pointerdown', function (e) {
       var p = toLocal(e), ls = lightScreenXY();
-      dragging = Math.hypot(p.x - ls.x, p.y - ls.y) < 30 ? 2 : 1;
+      dragging = (zoomState().f < 0.5 && Math.hypot(p.x - ls.x, p.y - ls.y) < 30) ? 2 : 1;
       lastX = p.x; lastY = p.y; vx = vy = 0;
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
       canvas.style.cursor = 'grabbing';
@@ -475,12 +555,13 @@
       lastX = p.x; lastY = p.y;
       if (dragging === 2) {                          // move the light on its hemisphere
         lightAz += dx * 0.012;
-        lightEl = Math.max(0.12, Math.min(1.5, lightEl + dy * 0.008));
+        lightEl = Math.max(0.1, Math.min(0.62, lightEl - dy * 0.006)); // stays on screen
       } else {                                       // tilt the disc: clamped pitch, free yaw
         group.rotation.y += dx * 0.008; vx = dx * 0.5;
         group.rotation.x = Math.max(-1.22, Math.min(1.22, group.rotation.x + dy * 0.008)); vy = dy * 0.5;
       }
       render();                                      // uniforms fresh before sampling
+      drawOverlay();                                 // measurement follows the tilt
       updateStrip();
     });
     function endDrag() {
@@ -494,7 +575,7 @@
     canvas.addEventListener('pointercancel', endDrag);
     zoomInput.addEventListener('input', function () {
       zoomLabel.textContent = zoomText(zoomInput.value / 1000);
-      drawOverlay(); updateStrip(); render();
+      render(); drawOverlay(); updateStrip();
     });
     function resize() {
       var rect = canvas.getBoundingClientRect();
@@ -506,7 +587,7 @@
       canvas.style.width = '100%'; canvas.style.height = H + 'px';
       overlay.width = Math.round(W * dpr); overlay.height = Math.round(H * dpr);
       camera.aspect = W / H; camera.updateProjectionMatrix();
-      drawOverlay(); render();
+      render(); drawOverlay();
     }
     if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
     else window.addEventListener('resize', resize);
@@ -530,9 +611,12 @@
       note.textContent = 'loading the disc…';
       note.style.cssText = 'font:' + MONO + ';color:#8b98a8;opacity:.55;margin:6px 0;';
       mount.appendChild(note);
-      import('../vendor/three/three.module.min.js').then(function (THREE) {
+      Promise.all([
+        import('../vendor/three/three.module.min.js'),
+        import('../vendor/three/HDRLoader.js').catch(function () { return null; })
+      ]).then(function (mods) {
         note.remove();
-        init3D(mount, api, THREE);                   // throws if WebGL is unavailable
+        init3D(mount, api, mods[0], mods[1]);        // throws if WebGL is unavailable
       }).catch(function () {
         while (mount.firstChild) mount.removeChild(mount.firstChild);
         init2D(mount, api);
