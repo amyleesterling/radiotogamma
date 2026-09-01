@@ -2,6 +2,9 @@
    A rainbow is not a thing at a place; it is an angle. Drag the sun along its
    arc and the spray cloud through the air; when droplets sit near 42 degrees
    off the antisolar axis (sun -> your head, extended), the bow appears.
+   Light that bounces twice inside each droplet exits near 51 degrees instead,
+   making a fainter secondary bow with the colours flipped, and no droplet can
+   aim light into the gap between them: Alexander's dark band.
    Self-contained; registers with window.LAB (see lab.html). */
 (function () {
   'use strict';
@@ -9,6 +12,7 @@
   var DEG = Math.PI / 180;
   var TAU = Math.PI * 2;
   var BANDS = [660, 620, 590, 560, 520, 480, 450, 415]; // red outer -> violet inner
+  var TH2_LO = 50.4, TH2_HI = 53.5; // secondary bow: two bounces, red inner -> violet outer
 
   function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
   function smooth(u) { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); }
@@ -32,7 +36,7 @@
       ],
       reveal: 'Only at one angle. Each droplet sends red light back at 42° from the line running from the sun through your head — the antisolar point. The rainbow is not a thing at a place; it is an angle, a 42° cone around your own shadow, and every observer stands at the tip of their own private cone.'
     },
-    hint: 'Drag the sun across the sky and the spray around the yard. Nothing… nothing… then geometry. SHOW THE LIGHT reveals why.',
+    hint: 'Drag the sun across the sky and the spray around the yard. Nothing… nothing… then geometry. When the bow is strong, look just outside it: a fainter twin at 51°, colors flipped, with Alexander’s dark band of sky between the two. SHOW THE LIGHT reveals why.',
 
     init: function (mount, api) {
       var H = 320;
@@ -76,6 +80,10 @@
       // which colour a droplet at this off-axis angle sends to the eye
       function nmOf(ang) { return 380 + clamp((ang - 40.0) / 3.4, 0, 1) * 320; }
 
+      // same question for the two-bounce path: the ordering is flipped,
+      // red on the secondary's inside edge, violet on its outside
+      function nm2Of(ang) { return 380 + clamp((TH2_HI - ang) / (TH2_HI - TH2_LO), 0, 1) * 320; }
+
       function rgbCss(nm, a) {
         var c = api.strip.wavelengthRGB(nm);
         return 'rgba(' + Math.round(c[0] * 255) + ',' + Math.round(c[1] * 255) + ',' +
@@ -107,22 +115,27 @@
         // ---- physics: every droplet's angle off the antisolar axis ----
         var dx = g.hx - g.sx, dy = g.hy - g.sy, dl = Math.hypot(dx, dy) || 1;
         var ax = dx / dl, ay = dy / dl;              // antisolar unit vector
-        var qual = [], best = null;
+        var mid2 = (TH2_LO + TH2_HI) / 2;
+        var qual = [], qual2 = [], best = null;
         for (i = 0; i < pts.length; i++) {
           var vx = pts[i].x - g.hx, vy = pts[i].y - g.hy, vl = Math.hypot(vx, vy);
           if (vl < 24 || pts[i].y > g.groundY - 2) continue;
           var ang = Math.acos(clamp((vx * ax + vy * ay) / vl, -1, 1)) / DEG;
           if (Math.abs(ang - 42) < 2.8) qual.push({ x: pts[i].x, y: pts[i].y, ang: ang });
+          if (Math.abs(ang - mid2) < 3.4) qual2.push({ x: pts[i].x, y: pts[i].y, ang: ang });
           if (!best || Math.abs(ang - 42) < Math.abs(best.ang - 42)) best = { x: pts[i].x, y: pts[i].y, ang: ang };
         }
         var vxC = g.spx - g.hx, vyC = g.spy - g.hy, distC = Math.hypot(vxC, vyC) || 1;
         var angC = Math.acos(clamp((vxC * ax + vyC * ay) / distC, -1, 1)) / DEG;
         var angRad = Math.atan2(50, distC) / DEG;    // cloud's angular radius from the eye
         var intensity = smooth(1 - Math.abs(angC - 42) / (angRad + 1.5));
+        var intensity2 = smooth(1 - Math.abs(angC - mid2) / (angRad + 1.5));
         var Lax = distC * Math.cos(angC * DEG);      // spray depth along the axis:
         var bowOn = Lax > 40 && qual.length >= 4;    // >0 means sun is behind you
+        var bow2On = Lax > 40 && qual2.length >= 4;
         if (bowOn && qual.length >= 6 && intensity >= 0.55 && !solvedSent) { solvedSent = true; api.solved(); }
-        updateStrip(bowOn ? intensity : 0);
+        // either bow spans the whole visible octave; light the strip for whichever is stronger
+        updateStrip(Math.max(bowOn ? intensity : 0, bow2On ? 0.45 * intensity2 : 0));
 
         // ---- scene ----
         ctx.fillStyle = '#05070c';
@@ -170,34 +183,68 @@
           ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, 1.5, 0, TAU); ctx.fill();
         }
 
-        // ---- the bow ----
-        if (qual.length && Lax > 40) {
+        // ---- the bows ----
+        if ((qual.length || qual2.length) && Lax > 40) {
           ctx.save();
           ctx.beginPath(); ctx.rect(0, 0, W, g.groundY); ctx.clip();
+          // both bows are centred on the antisolar axis at the spray's depth —
+          // tangent there to the true 42° / 52° loci — clipped to the droplets' span
+          var ccx = g.hx + ax * Lax, ccy = g.hy + ay * Lax;
+          var phc = Math.atan2(g.spy - ccy, g.spx - ccx);
+          var lo = 9, hi = -9, all = qual.concat(qual2);
+          for (i = 0; i < all.length; i++) {
+            var da = wrap(Math.atan2(all[i].y - ccy, all[i].x - ccx) - phc);
+            if (da < lo) lo = da;
+            if (da > hi) hi = da;
+          }
+          lo -= 0.05; hi += 0.05;
+
+          // Alexander's dark band: no droplet can send light between the
+          // primary's red edge (42.4°) and the secondary's (50.4°); the sky
+          // just inside and just outside picks up scattered light instead
+          if (bowOn || bow2On) {
+            var peak = Math.max(bowOn ? intensity : 0, bow2On ? intensity2 : 0);
+            var r1 = Lax * Math.tan((40.7 + 1.7) * DEG);
+            var r2 = Lax * Math.tan(TH2_LO * DEG);
+            ctx.strokeStyle = 'rgba(207,230,255,' + (0.05 * peak).toFixed(3) + ')';
+            ctx.lineWidth = r1 * 0.55;
+            ctx.beginPath(); ctx.arc(ccx, ccy, r1 * 0.7, phc + lo, phc + hi); ctx.stroke();
+            ctx.strokeStyle = 'rgba(207,230,255,' + (0.03 * peak).toFixed(3) + ')';
+            ctx.lineWidth = 34;
+            ctx.beginPath(); ctx.arc(ccx, ccy, Lax * Math.tan(TH2_HI * DEG) + 18, phc + lo, phc + hi); ctx.stroke();
+            ctx.strokeStyle = 'rgba(0,0,0,' + (0.3 * peak).toFixed(3) + ')';
+            ctx.lineWidth = Math.max(1, r2 - r1);
+            ctx.beginPath(); ctx.arc(ccx, ccy, (r1 + r2) / 2, phc + lo, phc + hi); ctx.stroke();
+          }
+
           ctx.globalCompositeOperation = 'lighter';
           // each qualifying droplet glints in the one colour it sends your way
           for (i = 0; i < qual.length; i++) {
             ctx.fillStyle = rgbCss(nmOf(qual[i].ang), 0.3 + 0.6 * intensity);
             ctx.beginPath(); ctx.arc(qual[i].x, qual[i].y, 2.1, 0, TAU); ctx.fill();
           }
+          for (i = 0; i < qual2.length; i++) {
+            ctx.fillStyle = rgbCss(nm2Of(qual2[i].ang), (0.3 + 0.6 * intensity2) * 0.45);
+            ctx.beginPath(); ctx.arc(qual2[i].x, qual2[i].y, 2.1, 0, TAU); ctx.fill();
+          }
           if (bowOn) {
-            // banded arc centred on the antisolar axis at the spray's depth —
-            // tangent there to the true 42° locus — clipped to the droplets' span
-            var ccx = g.hx + ax * Lax, ccy = g.hy + ay * Lax;
-            var phc = Math.atan2(g.spy - ccy, g.spx - ccx);
-            var lo = 9, hi = -9;
-            for (i = 0; i < qual.length; i++) {
-              var da = wrap(Math.atan2(qual[i].y - ccy, qual[i].x - ccx) - phc);
-              if (da < lo) lo = da;
-              if (da > hi) hi = da;
-            }
-            lo -= 0.05; hi += 0.05;
             ctx.globalAlpha = 0.15 + 0.85 * intensity;
             ctx.lineWidth = 2.2;
             for (i = 0; i < BANDS.length; i++) {
               var thb = (40.7 + (BANDS[i] - 380) / 320 * 1.7) * DEG; // red 42.4° … violet 40.7°
               ctx.strokeStyle = rgbCss(BANDS[i], 1);
               ctx.beginPath(); ctx.arc(ccx, ccy, Lax * Math.tan(thb), phc + lo, phc + hi); ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+          }
+          if (bow2On) {
+            // two bounces flip the spread: red hugs the inside, violet the outside
+            ctx.globalAlpha = (0.15 + 0.85 * intensity2) * 0.4;
+            ctx.lineWidth = 2.2;
+            for (i = 0; i < BANDS.length; i++) {
+              var th2 = (TH2_HI - (BANDS[i] - 380) / 320 * (TH2_HI - TH2_LO)) * DEG; // red 50.4° … violet 53.5°
+              ctx.strokeStyle = rgbCss(BANDS[i], 1);
+              ctx.beginPath(); ctx.arc(ccx, ccy, Lax * Math.tan(th2), phc + lo, phc + hi); ctx.stroke();
             }
             ctx.globalAlpha = 1;
           }
@@ -279,7 +326,58 @@
           ctx.fillStyle = onCone ? rgbCss(nmOf(p.ang), 0.9) : 'rgba(196,228,255,.5)';
           ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, TAU); ctx.fill();
         }
+
+        // inset: inside one droplet — one internal bounce vs two
+        var iw = 268, ih = 122, ix = clamp(W - iw - 14, 8, W), iy = 12;
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(5,7,12,.85)';
+        ctx.fillRect(ix, iy, iw, ih);
+        ctx.strokeStyle = 'rgba(196,228,255,.2)';
+        ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
+        dropletDiagram(ix + 70, iy + 48, 19, 1);
+        dropletDiagram(ix + 198, iy + 48, 19, 2);
+        ctx.fillStyle = '#a07cff';
+        ctx.fillText('one bounce → 42°', ix + 70, iy + ih - 20);
+        ctx.fillText('two bounces → 51°,', ix + 198, iy + ih - 20);
+        ctx.fillText('colors flipped', ix + 198, iy + ih - 8);
         ctx.restore();
+      }
+
+      // a droplet in cross-section: sunlight in, one or two internal
+      // reflections, and the dispersed fan on the way out
+      function dropletDiagram(cx0, cy0, r, bounces) {
+        ctx.strokeStyle = 'rgba(126,224,255,.6)';
+        ctx.beginPath(); ctx.arc(cx0, cy0, r, 0, TAU); ctx.stroke();
+        var path = bounces === 1
+          ? [{ x: cx0 - 0.64 * r, y: cy0 - 0.77 * r },
+             { x: cx0 + 0.98 * r, y: cy0 + 0.20 * r },
+             { x: cx0 - 0.34 * r, y: cy0 + 0.94 * r }]
+          : [{ x: cx0 - 0.64 * r, y: cy0 - 0.77 * r },
+             { x: cx0 + 0.99 * r, y: cy0 - 0.10 * r },
+             { x: cx0 + 0.05 * r, y: cy0 + 1.00 * r },
+             { x: cx0 - 0.95 * r, y: cy0 + 0.30 * r }];
+        // sunlight in from the left
+        ctx.strokeStyle = 'rgba(255,217,122,.75)';
+        ctx.beginPath(); ctx.moveTo(path[0].x - 24, path[0].y); ctx.lineTo(path[0].x, path[0].y); ctx.stroke();
+        // the internal legs
+        ctx.strokeStyle = 'rgba(196,228,255,.55)';
+        ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y);
+        for (var k = 1; k < path.length; k++) ctx.lineTo(path[k].x, path[k].y);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(196,228,255,.85)';
+        for (k = 1; k < path.length - 1; k++) {     // mark each internal bounce
+          ctx.beginPath(); ctx.arc(path[k].x, path[k].y, 2, 0, TAU); ctx.fill();
+        }
+        // exit: the two-bounce path leaves steeper, and its colours come out flipped
+        var exit = path[path.length - 1];
+        var base = bounces === 1 ? Math.atan2(0.62, -0.79) : Math.atan2(-0.76, -0.65);
+        var fan = bounces === 1 ? [660, 415] : [415, 660];
+        for (k = 0; k < fan.length; k++) {
+          var fa = base + (k - 0.5) * 0.18;
+          ctx.strokeStyle = rgbCss(fan[k], 0.9);
+          ctx.beginPath(); ctx.moveTo(exit.x, exit.y);
+          ctx.lineTo(exit.x + Math.cos(fa) * 22, exit.y + Math.sin(fa) * 22); ctx.stroke();
+        }
       }
 
       // ---- interaction ----
