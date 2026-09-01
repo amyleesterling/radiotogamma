@@ -28,12 +28,16 @@
   }
 
   .gamebar {
-    display: flex; align-items: baseline; gap: 18px;
+    display: flex; flex-direction: column; gap: 10px;
     padding: 11px 18px; border-radius: 0;
     border-left: 0; border-right: 0; border-top: 0;
     font-family: inherit;
   }
-  .gamebar a { text-decoration: none; }
+    .gamebar a { text-decoration: none; }
+  .gbrand { display: flex; align-items: center; gap: 11px; }
+  .gamebar-icon { width: 27px; height: 27px; flex: none; }
+  .gbnav { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
+  .gbnav .gamebar-back { text-align: center; font-size: 12px; letter-spacing: .08em; padding: 7px 6px; }
   .gamebar-back {
     font-size: 13px; letter-spacing: .12em;
     color: rgb(var(--holo-dim, 154 162 177));
@@ -223,18 +227,22 @@
 
   /* the three header items outgrow a phone side by side; wrapping keeps the
      observatory link on screen instead of clipped off the right edge */
-  @media (max-width: 700px) { .gamebar { flex-wrap: wrap; gap: 10px; } }
 </style>
 </head>
 <body>
 <header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
-  <a class="gamebar-back" href="https://hbdanny.com/games/dust-off/">← DUST OFF</a>
-  <span class="gamebar-name">RADIO TO GAMMA</span>
-  <span style="flex:1"></span>
-  <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
-  <a class="gamebar-back" href="observatory.html">OBSERVATORY →</a>
-  <a class="gamebar-back" href="lab.html">LIGHT LAB →</a>
-  <a class="gamebar-back" href="gamma.html">GAMMA STRATOSPHERE →</a>
+  <div class="gbrand">
+    <img class="gamebar-icon" src="favicon.png" alt="">
+    <span class="gamebar-name">RADIO TO GAMMA</span>
+    <span style="flex:1"></span>
+    <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
+  </div>
+  <nav class="gbnav" aria-label="Site pages">
+    <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
+    <a class="gamebar-back" href="lab.html">LIGHT LAB</a>
+    <a class="gamebar-back" href="gamma.html">GAMMA STRATOSPHERE</a>
+    <a class="gamebar-back" href="https://hbdanny.com/games/dust-off/">DUST OFF</a>
+  </nav>
 </header>
 <div class="wrap">
   <h1 id="specHead">Radio to gamma</h1>

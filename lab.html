@@ -26,10 +26,14 @@
          -webkit-font-smoothing: antialiased; }
   .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
-  .gamebar { display: flex; align-items: baseline; gap: 18px; padding: 11px 18px;
+  .gamebar { display: flex; flex-direction: column; gap: 10px; padding: 11px 18px;
              border-radius: 0; border-left: 0; border-right: 0; border-top: 0;
              font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  .gamebar a { text-decoration: none; }
+    .gamebar a { text-decoration: none; }
+  .gbrand { display: flex; align-items: center; gap: 11px; }
+  .gamebar-icon { width: 27px; height: 27px; flex: none; }
+  .gbnav { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
+  .gbnav .gamebar-back { text-align: center; font-size: 12px; letter-spacing: .08em; padding: 7px 6px; }
   .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
                   border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
                   padding: 7px 12px; align-self: center; white-space: nowrap; }
@@ -37,7 +41,6 @@
   .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
   .gamebar-name { font-size: 19px; font-weight: 600; letter-spacing: .06em;
                   color: rgb(var(--bar-accent)); white-space: nowrap; }
-  @media (max-width: 700px) { .gamebar { flex-wrap: wrap; gap: 10px; } }
 
   .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
   h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
@@ -134,12 +137,17 @@
 </head>
 <body>
 <header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
-  <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
-  <span class="gamebar-name">THE LIGHT LAB</span>
-  <span style="flex:1"></span>
-  <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
-  <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
-  <a class="gamebar-back" href="gamma.html">GAMMA STRATOSPHERE</a>
+  <div class="gbrand">
+    <img class="gamebar-icon" src="favicon.png" alt="">
+    <span class="gamebar-name">THE LIGHT LAB</span>
+    <span style="flex:1"></span>
+    <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
+  </div>
+  <nav class="gbnav" aria-label="Site pages">
+    <a class="gamebar-back" href="index.html">← HOME</a>
+    <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
+    <a class="gamebar-back" href="gamma.html">GAMMA STRATOSPHERE</a>
+  </nav>
 </header>
 <div class="wrap">
   <h1>Reach in and mess with it.</h1>
