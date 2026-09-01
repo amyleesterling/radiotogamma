@@ -15,6 +15,8 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://radiotogamma.com/og-card.jpg">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
 <style>
@@ -33,6 +35,7 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   .gamebar a { text-decoration: none; }
+  .gamebar-ring { width: 26px; height: 26px; align-self: center; flex: none; }
   .gamebar-back {
     font-size: 13px; letter-spacing: .12em;
     color: rgb(var(--holo-dim, 154 162 177));
@@ -274,6 +277,7 @@
 <body>
 <header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
   <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
+  <canvas class="gamebar-ring" data-ring width="26" height="26" aria-hidden="true"></canvas>
   <span class="gamebar-name">OBSERVATORY</span>
   <span style="flex:1"></span>
   <a class="gamebar-back" href="lab.html">LIGHT LAB →</a>
@@ -1433,5 +1437,6 @@ beam power      P = photons per second × energy per photon</pre>
   addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); });
 })();
 </script>
+<script src="spectrum-ring.js"></script>
 </body>
 </html>
