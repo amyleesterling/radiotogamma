@@ -30,7 +30,6 @@
              border-radius: 0; border-left: 0; border-right: 0; border-top: 0;
              font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   .gamebar a { text-decoration: none; }
-  .gamebar-ring { width: 26px; height: 26px; align-self: center; flex: none; }
   .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
                   border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
                   padding: 7px 12px; align-self: center; white-space: nowrap; }
@@ -135,7 +134,6 @@
 <body>
 <header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
   <a class="gamebar-back" href="index.html">← RADIO TO GAMMA</a>
-  <canvas class="gamebar-ring" data-ring width="26" height="26" aria-hidden="true"></canvas>
   <span class="gamebar-name">THE LIGHT LAB</span>
   <span style="flex:1"></span>
   <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
@@ -331,6 +329,5 @@ window.LAB = (() => {
 <script src="lab/cd.js"></script>
 <script src="lab/hose.js"></script>
 <script src="lab/sky.js"></script>
-<script src="spectrum-ring.js"></script>
 </body>
 </html>
