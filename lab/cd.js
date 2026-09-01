@@ -307,7 +307,8 @@
     'varying vec3 vPos;',
     'uniform vec3 uLp, uCp;',
     'uniform sampler2D uEnv;',                       // equirect studio HDR (linear)
-    'uniform float uEnvOn, uPitch, uStripe, uFlat;', // uPitch: track pitch in disc units
+    'uniform sampler2D uLabel;',                     // printed label art (sRGB decode)
+    'uniform float uEnvOn, uLabelOn, uPitch, uStripe, uFlat;', // uPitch: pitch, disc units
     'uniform mat3 uNorm;',                           // disc-local -> world rotation
     GLSL_WL,
     'void main(){',
@@ -315,13 +316,28 @@
     '  vec2 rad=vPos.xy/max(r,1e-4);',               // grating vector: radial
     '  vec3 N=gl_FrontFacing?vec3(0.,0.,1.):vec3(0.,0.,-1.);',
     '  vec3 L=normalize(uLp-vPos), V=normalize(uCp-vPos);',
+    '  if(!gl_FrontFacing&&uLabelOn>.5){',           // the BACK is the printed label:
+    '    vec3 alb=texture2D(uLabel,vPos.xy*.5+.5).rgb;', // planar UV over the full face,
+    '    vec3 Hb=normalize(L+V);',                   // diffuse paper — no grating here
+    '    float nl=.35+.65*max(dot(N,L),0.);',        // wrapped so the flip never goes black
+    '    vec3 lc=alb*nl+vec3(.9,.94,1.)*pow(max(dot(N,Hb),0.),30.)*.06;', // slight sheen
+    '    vec3 Rb=uNorm*reflect(-V,N);',
+    '    vec2 buv=vec2(atan(Rb.z,Rb.x)/6.2831853+.5,acos(clamp(Rb.y,-1.,1.))/3.14159265);',
+    '    vec3 eb=texture2D(uEnv,buv).rgb;',
+    '    lc+=uEnvOn*(eb/(1.+eb))*.05;',              // whisper of the studio on the print
+    '    gl_FragColor=vec4(pow(max(lc,0.),vec3(.4545)),1.);return;}', // linear -> display
     '  float sinI=dot(L,vec3(rad,0.)), sinR=dot(V,vec3(rad,0.));',
     '  float ang=atan(vPos.y,vPos.x);',
     '  float grain=.9+.1*hash(floor(ang*700.)+floor(r*40.)*7.);', // faint radial groove noise
     '  float ndl=max(dot(N,L),0.), ndv=max(dot(N,V),0.);',
     '  vec3 col=vec3(.052,.056,.066);',              // dark plastic
     '  float lab=smoothstep(.475,.44,r);',           // label ring near the hub
-    '  col=mix(col,vec3(.13,.135,.15),lab);',
+    '  vec3 lrc=vec3(.13,.135,.15);',
+    '  if(uLabelOn>.5&&lab>0.){',                    // tint the front ring with the art,
+    '    float ar=mix(.5,.82,clamp((r-.32)/.155,0.,1.));', // sampled radially, so both
+    '    vec3 art=texture2D(uLabel,rad*ar*.5+.5).rgb;',    // faces read as one object
+    '    lrc=mix(lrc,pow(art,vec3(.4545)),.5);}',
+    '  col=mix(col,lrc,lab);',
     '  vec3 Hv=normalize(L+V);',
     '  float ndh=max(dot(N,Hv),0.);',
     '  col+=vec3(.9,.94,1.)*(pow(ndh,220.)*.9+pow(ndh,14.)*.10)*grain*(1.-.5*lab)*(1.-.5*uStripe);',
@@ -419,7 +435,7 @@
     canvas.style.height = H + 'px';
     canvas.style.touchAction = 'none';
     canvas.style.cursor = 'grab';
-    canvas.setAttribute('aria-label', 'A 3D CD you can tilt, with a draggable light and a zoom slider');
+    canvas.setAttribute('aria-label', 'A 3D CD you can tilt and flip over, with a draggable light and a zoom slider');
     mount.appendChild(canvas);
     var overlay = document.createElement('canvas'); // labels only; the surface stays 3D
     overlay.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:' + H + 'px;pointer-events:none;opacity:0;border:0;background:transparent;';
@@ -439,6 +455,7 @@
       uniforms: {
         uLp: { value: new THREE.Vector3() }, uCp: { value: new THREE.Vector3() },
         uEnv: { value: blackTex }, uEnvOn: { value: 0 },
+        uLabel: { value: blackTex }, uLabelOn: { value: 0 },
         uPitch: { value: 1 }, uStripe: { value: 0 }, uFlat: { value: 0 },
         uNorm: { value: new THREE.Matrix3() }
       },
@@ -456,6 +473,15 @@
         }, undefined, function () { /* keep analytic lighting */ });
       } catch (err) { /* keep analytic lighting */ }
     }
+    try {                                            // the printed label art; if it fails
+      var ltex = new THREE.TextureLoader().load(     // to load, the plain gray ring and
+        'cd-label.jpg',                              // dark back face stay as they were
+        function () { mat.uniforms.uLabelOn.value = 1; render(); },
+        undefined, function () { /* keep the plain label look */ });
+      ltex.colorSpace = THREE.SRGBColorSpace;
+      ltex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      mat.uniforms.uLabel.value = ltex;
+    } catch (err) { /* keep the plain label look */ }
     var group = new THREE.Group();
     group.rotation.order = 'YXZ';
     group.rotation.x = -0.62;                        // pitch; yaw is rotation.y
@@ -717,7 +743,7 @@
           var dt = (performance.now() - settleT) / 1000;
           if (api.reducedMotion || dt > 0.45 || (Math.abs(vx) + Math.abs(vy)) < 0.02) { rafId = 0; render(); drawOverlay(); return; }
           group.rotation.y += vx * 0.016;
-          group.rotation.x = Math.max(-1.22, Math.min(1.22, group.rotation.x + vy * 0.016));
+          group.rotation.x = Math.max(-2.62, Math.min(2.62, group.rotation.x + vy * 0.016));
           vx *= 0.9; vy *= 0.9;
         }
         render();
@@ -744,9 +770,9 @@
       if (dragging === 2) {                          // move the light on its hemisphere
         lightAz += dx * 0.012;
         lightEl = Math.max(0.1, Math.min(0.62, lightEl - dy * 0.006)); // stays on screen
-      } else {                                       // tilt the disc: clamped pitch, free yaw
-        group.rotation.y += dx * 0.008; vx = dx * 0.5;
-        group.rotation.x = Math.max(-1.22, Math.min(1.22, group.rotation.x + dy * 0.008)); vy = dy * 0.5;
+      } else {                                       // tilt the disc: pitch to ±150° (past
+        group.rotation.y += dx * 0.008; vx = dx * 0.5; // 90° the label side comes around),
+        group.rotation.x = Math.max(-2.62, Math.min(2.62, group.rotation.x + dy * 0.008)); vy = dy * 0.5; // free yaw
       }
       render();                                      // uniforms fresh before sampling
       drawOverlay();                                 // measurement follows the tilt
