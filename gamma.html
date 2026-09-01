@@ -81,6 +81,9 @@
   .lmcard h3 { margin: 0 0 5px; font-size: 15px; color: #eff4fb; }
   .lmcard .e { font-size: 12.5px; color: #e278b4; margin: 0 0 7px; }
   .lmcard p { margin: 0; font-size: 13.5px; color: #9aa2b1; line-height: 1.6; }
+  .lmcard img { display: block; width: 100%; max-width: 520px; margin: 12px 0 6px;
+                border: 1px solid rgba(226,120,180,.3); }
+  .lmcard .credit { font-size: 11px; color: #5c6b7a; }
 
   .dark { border: 1px solid rgba(196,228,255,.14); padding: 15px 18px; margin: 0 0 22px; }
   .dark h2 { font-size: 13px; letter-spacing: .12em; color: #e278b4; margin: 0 0 9px; font-weight: 600; }
@@ -137,6 +140,7 @@
 
   <div class="lmcard" id="lmCard" hidden>
     <h3 id="lmName"></h3><div class="e num" id="lmE"></div><p id="lmWhy"></p>
+    <img id="lmImg" alt="" hidden><p class="credit" id="lmCredit" hidden></p>
   </div>
 
   <div class="dark">
@@ -183,9 +187,9 @@
     { e: 6.62e5, name: 'Cs-137', why: 'The signature line of cesium-137, the fingerprint by which fallout and orphaned medical sources are recognized.' },
     { e: 1.33e6, name: 'Co-60 sterilization', why: 'Cobalt-60’s gammas sterilize medical instruments and food by the pallet: intensity doing useful work.' },
     { e: 2.61e6, name: 'Tl-208, nature’s loudest line', why: 'The highest-energy gamma line common in nature, from thorium’s decay chain: it is in the background hum of every rock.' },
-    { e: 6.7e7, name: 'Pion bump, cosmic rays', why: 'Cosmic rays striking interstellar gas make neutral pions, which decay to gamma rays peaking near 70 MeV: the glow of the Milky Way’s disk.' },
-    { e: 1e9, name: 'The Fermi sky', why: 'At GeV energies the Fermi telescope maps thousands of pulsars and blazars: black-hole jets pointed straight at us.' },
-    { e: 1e12, name: 'Crab Nebula at 1 TeV', why: 'Too energetic to catch directly, TeV photons are seen by the blue flash they make striking the atmosphere. The Crab Nebula is the standard candle.' },
+    { e: 6.7e7, name: 'Pion bump, cosmic rays', why: 'Cosmic rays striking interstellar gas make neutral pions, which decay to gamma rays peaking near 70 MeV: the glow of the Milky Way’s disk. It happens to rock too — this is the actual Moon, photographed in gamma rays: cosmic rays striking the regolith make it glow.', img: 'gammaimg/gamma-moon.jpg', credit: 'The Moon in gamma rays · NASA / EGRET, Compton Gamma Ray Observatory' },
+    { e: 1e9, name: 'The Fermi sky', why: 'At GeV energies the Fermi telescope maps thousands of pulsars and blazars: black-hole jets pointed straight at us. Five years of that sky, whole: the red spine is the Milky Way\'s disk, every dot a distant engine.', img: 'gammaimg/fermi-sky.jpg', credit: 'Five-year all-sky map above 1 GeV · NASA / DOE / Fermi LAT Collaboration' },
+    { e: 1e12, name: 'Crab Nebula at 1 TeV', why: 'Too energetic to catch directly, TeV photons are seen by the blue flash they make striking the atmosphere. The Crab Nebula — a pulsar-driven wreck of a supernova seen in 1054 — is the standard candle every gamma-ray telescope is measured against.', img: 'gammaimg/crab.jpg', credit: 'Crab Nebula · NASA / ESA / Hubble, J. Hester and A. Loll' },
     { e: 1e14, name: '100 TeV: the sky goes dark', why: 'Above here, extragalactic gamma rays annihilate against background starlight en route. Only sources inside our galaxy can still be seen.' },
     { e: 1.4e15, name: 'LHAASO record, 1.4 PeV', why: 'The most energetic photon ever detected, caught in 2021 from within the Milky Way: a single quantum with the energy of a thrown ping-pong ball.' },
   ];
@@ -278,6 +282,9 @@
       document.getElementById('lmName').textContent = sel.name;
       document.getElementById('lmE').textContent = fmtE(sel.e);
       document.getElementById('lmWhy').textContent = sel.why;
+      const im = document.getElementById('lmImg'), cr = document.getElementById('lmCredit');
+      im.hidden = cr.hidden = !sel.img;
+      if (sel.img) { im.src = sel.img; im.alt = sel.name; cr.textContent = sel.credit; }
     } else card.hidden = true;
   }
 

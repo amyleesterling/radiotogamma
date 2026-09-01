@@ -50,6 +50,7 @@
   h2.group { font-size: 12px; letter-spacing: .14em; margin: 22px 0 9px; font-weight: 600; }
   h2.group.vision { color: #7ee0ff; }
   h2.group.heat { color: #ff9c6b; }
+  h2.group.alien { color: #7bff8e; }
   h2.group small { color: #6c7c8c; letter-spacing: 0; font-weight: 400; text-transform: none; font-size: 11.5px; }
 
   .sensechips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
@@ -64,6 +65,10 @@
   .sensechips.heatrow button:hover { color: #ff9c6b; border-color: rgba(255,120,80,.5); }
   .sensechips.heatrow button[aria-pressed="true"] { color: #ff9c6b; border-color: rgba(255,120,80,.75);
     background: rgba(255,120,80,.08); }
+  .sensechips.alienrow button { border-style: dashed; }
+  .sensechips.alienrow button:hover { color: #7bff8e; border-color: rgba(123,255,142,.5); }
+  .sensechips.alienrow button[aria-pressed="true"] { color: #7bff8e; border-color: rgba(123,255,142,.75);
+    background: rgba(123,255,142,.07); }
 
   .sensedesc { font-size: 14px; color: #cfe6e6; line-height: 1.6; margin: 14px 0 10px; min-height: 4.2em; }
   .sensedesc b { color: #ffd479; font-weight: 600; }
@@ -72,6 +77,7 @@
     vertical-align: 2px; }
   .modetag.vision { color: #7ee0ff; border: 1px solid rgba(126,224,255,.5); background: rgba(126,224,255,.07); }
   .modetag.heat { color: #ff9c6b; border: 1px solid rgba(255,120,80,.5); background: rgba(255,120,80,.07); }
+  .modetag.alien { color: #7bff8e; border: 1px dashed rgba(123,255,142,.5); background: rgba(123,255,142,.05); }
 
   svg.spec { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16);
              background: #05070c; }
@@ -111,7 +117,7 @@
     <a class="gamebar-back" href="index.html">← HOME</a>
     <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
     <a class="gamebar-back" href="lab.html">LIGHT LAB</a>
-    <a class="gamebar-back" href="gamma.html">GAMMA STRATOSPHERE</a>
+    <a class="gamebar-back" href="gamma.html">GAMMA ATTIC</a>
   </nav>
 </header>
 <div class="wrap">
@@ -127,6 +133,8 @@
   <div class="sensechips" id="chipsVision" role="group" aria-label="Animals with photoreceptive vision"></div>
   <h2 class="group heat">♨ RADIANT HEAT — absorbed and felt <small>(the band shown is what the target emits)</small></h2>
   <div class="sensechips heatrow" id="chipsHeat" role="group" aria-label="Animals that detect radiant heat"></div>
+  <h2 class="group alien">⟁ VISITOR <small>(one specimen; provenance unknown; claims self-reported)</small></h2>
+  <div class="sensechips alienrow" id="chipsAlien" role="group" aria-label="Visitors"></div>
 
   <p class="sensedesc" id="senseDesc"></p>
   <svg class="spec" id="zooSvg" viewBox="0 0 1000 170" role="img"
@@ -212,6 +220,8 @@
       d: 'Detects the radiant heat of skin: a 34 °C human glows across roughly <b>3–30 µm</b>, peaking near 9.4 µm, and female Aedes aegypti read that glow — alongside CO₂ and odor — from as far as ~70 cm, with TRPA1 and two opsins near the antennal tips. A tiny thermal-guidance missile, unfortunately powered by ankles.' },
     { m: 'h', lo: C/13e-6,   hi: C/8e-6,   name: 'Vampire bat',
       d: 'Heat-sensitive pits around the nose respond to surfaces warmer than about 29 °C — warm blood under thin skin, glowing near <b>8–13 µm</b> — via a specially tuned TRPV1 receptor. Mammals independently invented a face-mounted thermal targeting system.' },
+    { m: 'a', lo: C/0.21,    hi: C/1e-3,   name: 'The Visitor',
+      d: 'Claims to see <b>1 mm – 21 cm</b>. To its eyes the cosmic microwave background is daylight, every Wi-Fi router is a lamp left rudely on, and the 21 cm hydrogen line is its favorite color. Range self-reported and unverifiable; falls off the animal strip entirely, so it is drawn on the full spectrum above. Do not feed.' },
     { m: 'h', lo: C/30e-6,   hi: C/5e-6,   name: 'Pit viper', icon: 'senses/viper.png',
       d: 'Facial pits detect the radiant heat of warm-blooded prey glowing at <b>5–30 µm</b>, sharp enough to strike in total darkness. Not seen as color — absorbed and felt, four octaves below your red.' },
   ];
@@ -220,7 +230,10 @@
   const SZ_LO = 2e12, SZ_HI = 1.2e15;
   const fmtLam = f => {
     const l = C / f;
-    return l >= 1e-6 ? parseFloat((l * 1e6).toPrecision(3)) + ' µm' : Math.round(l * 1e9) + ' nm';
+    if (l >= 1e-2) return parseFloat((l * 100).toPrecision(3)) + ' cm';
+    if (l >= 1e-3) return parseFloat((l * 1e3).toPrecision(3)) + ' mm';
+    if (l >= 1e-6) return parseFloat((l * 1e6).toPrecision(3)) + ' µm';
+    return Math.round(l * 1e9) + ' nm';
   };
 
   const svg = document.getElementById('zooSvg');
@@ -242,7 +255,7 @@
   const zx = f => (Math.log10(f) - Math.log10(SZ_LO)) / (Math.log10(SZ_HI) - Math.log10(SZ_LO)) * OW;
 
   function buildChips() {
-    for (const [id, mode] of [['chipsVision', 'v'], ['chipsHeat', 'h']]) {
+    for (const [id, mode] of [['chipsVision', 'v'], ['chipsHeat', 'h'], ['chipsAlien', 'a']]) {
       const wrap = document.getElementById(id);
       ZOO.forEach((z, i) => {
         if (z.m !== mode) return;
@@ -261,14 +274,14 @@
     document.querySelectorAll('.sensechips button').forEach(b =>
       b.setAttribute('aria-pressed', String(+b.dataset.i === sel)));
     const z = ZOO[sel];
-    const heat = z.m === 'h';
+    const heat = z.m === 'h', alien = z.m === 'a';
     document.getElementById('senseDesc').innerHTML =
-      '<span class="modetag ' + (heat ? 'heat' : 'vision') + '">' +
-      (heat ? '♨ RADIANT HEAT' : '◉ VISION') + '</span>' + z.d;
+      '<span class="modetag ' + (alien ? 'alien' : heat ? 'heat' : 'vision') + '">' +
+      (alien ? '⟁ VISITOR' : heat ? '♨ RADIANT HEAT' : '◉ VISION') + '</span>' + z.d;
 
     svg.textContent = '';
-    const AC = heat ? '255,140,90' : '232,169,58';       // amber for eyes, ember for heat
-    const ACC = heat ? '#ff8c5a' : '#e8a93a';
+    const AC = alien ? '123,255,142' : heat ? '255,140,90' : '232,169,58';
+    const ACC = alien ? '#7bff8e' : heat ? '#ff8c5a' : '#e8a93a';
     BANDS.forEach(b => {
       el('rect', { x: ovX(b.lo), y: 0, width: ovX(b.hi) - ovX(b.lo), height: 16,
                    fill: 'rgb(' + b.col + ')', opacity: .3 }, svg);
@@ -291,6 +304,20 @@
     el('text', { x: 4, y: 96, 'font-size': 11, fill: '#6c7c8c' }, svg, fmtLam(SZ_LO));
     el('text', { x: OW - 4, y: 96, 'font-size': 11, fill: '#6c7c8c', 'text-anchor': 'end' }, svg, fmtLam(SZ_HI));
 
+    if (alien) {
+      // the visitor's band is off the animal strip: mark it on the full bar
+      const ax0 = ovX(z.lo), ax1 = ovX(z.hi);
+      el('rect', { x: ax0, y: -1, width: Math.max(ax1 - ax0, 4), height: 20, rx: 3,
+                   fill: 'rgba(' + AC + ',.14)', stroke: ACC, 'stroke-width': 2,
+                   'stroke-dasharray': '5 4' }, svg);
+      el('line', { x1: (ax0 + ax1) / 2, y1: 19, x2: (ax0 + ax1) / 2, y2: 116, stroke: 'rgba(' + AC + ',.5)',
+                   'stroke-dasharray': '3 4' }, svg);
+      el('text', { x: clamp((ax0 + ax1) / 2, 70, OW - 70), y: 134, 'font-size': 13, fill: '#a4ffb2',
+                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' – ' + fmtLam(z.hi));
+      el('text', { x: clamp((ax0 + ax1) / 2, 90, OW - 90), y: 154, 'font-size': 13.5, fill: '#cfd6e2',
+                   'text-anchor': 'middle', 'font-weight': 600 }, svg, 'THE VISITOR · SELF-REPORTED');
+      return;
+    }
     const x0 = zx(z.lo), x1 = zx(z.hi);
     el('rect', { x: x0, y: 40, width: Math.max(x1 - x0, 4), height: 42, rx: 4,
                  fill: 'rgba(' + AC + ',.15)', stroke: ACC, 'stroke-width': 2,
