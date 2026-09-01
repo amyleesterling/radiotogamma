@@ -346,6 +346,23 @@
     '  gl_FragColor=vec4(col,1.);}'
   ].join('\n');
   var VERT = 'varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+  // ---- beam shader: soft volumetric-looking shafts of light ----------------
+  // A thin open cylinder; alpha peaks where the tube faces the camera (glowing
+  // core) and feathers to nothing at the silhouette, fades along its length,
+  // and is brightest just off the impact point. Additive, so beams read as
+  // light, not wires. uRip drives a slow brightness ripple drifting along the
+  // beam (frozen when the interaction rAF is idle or under reduced motion).
+  var BVERT = 'varying vec2 vUv;varying vec3 vN,vW;void main(){vUv=uv;vN=normalMatrix*normal;vec4 mv=modelViewMatrix*vec4(position,1.);vW=mv.xyz;gl_Position=projectionMatrix*mv;}';
+  var BFRAG = [
+    'varying vec2 vUv;varying vec3 vN,vW;',
+    'uniform vec3 uCol;uniform float uA,uT,uRip,uF1;',
+    'void main(){',
+    '  float core=pow(abs(dot(normalize(vN),normalize(-vW))),1.7);',
+    '  float env=smoothstep(0.,.045,vUv.y)*(1.-smoothstep(.3*uF1,uF1,vUv.y));',
+    '  env*=1.+1.7*exp(-vUv.y*7.);',
+    '  float rip=1.-uRip*.22*(.5+.5*sin(vUv.y*34.-uT*6.));',
+    '  gl_FragColor=vec4(uCol*(uA*core*env*rip),1.);}'
+  ].join('\n');
   // ---- micro-surface patch shader: real displaced pit geometry -------------
   // Positions are in µm (patch local); the mesh is uniformly scaled so one
   // 1.6 µm track pitch equals the zoom's implied pitch in disc units.
@@ -497,6 +514,80 @@
         LR * Math.sin(lightEl),
         LR * Math.cos(lightEl) * Math.cos(lightAz));
     }
+    // ---- the bounce, made visible: a fan of real diffracted beams ----------
+    // One white shaft from the lamp to the impact point; there the orders
+    // leave along d·(sin_out − sin_in) = −mλ (d = 1.6 µm, grating vector
+    // radial, groove-parallel component mirrored) — the same equation the
+    // disc shader solves, so the fan re-aims exactly as the rainbow sweeps.
+    // Red (largest λ/d) bends farthest: the opposite of the prism.
+    var beamsOn = true, uTShared = { value: 0 };
+    var fan = new THREE.Group();
+    fan.visible = beamsOn;
+    group.add(fan);                                  // fan lives in disc-local space
+    var beamGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true).translate(0, 0.5, 0);
+    var coneGeo = new THREE.CylinderGeometry(0.4, 1, 1, 10, 1, true).translate(0, 0.5, 0);
+    function makeBeam(geo, f1) {
+      var m = new THREE.ShaderMaterial({
+        uniforms: {
+          uCol: { value: new THREE.Vector3(1, 1, 1) }, uA: { value: 0 }, uT: uTShared,
+          uRip: { value: api.reducedMotion ? 0 : 1 }, uF1: { value: f1 }
+        },
+        vertexShader: BVERT, fragmentShader: BFRAG, side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+      });
+      var mesh = new THREE.Mesh(geo, m);
+      mesh.renderOrder = 3; mesh.visible = false;
+      fan.add(mesh);
+      return mesh;
+    }
+    var inBeam = makeBeam(coneGeo, 1.04);            // lamp shaft: lit almost to the lamp
+    var m0Beam = makeBeam(beamGeo, 0.95);            // plain specular reflection (m = 0)
+    var BEAM_WLS = [640, 612, 584, 556, 528, 500, 470, 442];
+    var orderBeams = [];                             // m = 1 fan + a fainter m = 2 fan
+    for (var nb = 0; nb < BEAM_WLS.length * 2; nb++) orderBeams.push(makeBeam(beamGeo, 0.95));
+    var bloom = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: sprite.material.map, blending: THREE.AdditiveBlending, depthTest: false, opacity: 0.7 }));
+    bloom.scale.set(0.17, 0.17, 1);                  // soft pool of light at the impact point
+    fan.add(bloom);
+    var YUP = new THREE.Vector3(0, 1, 0), bdir = new THREE.Vector3();
+    function aim(mesh, x, y, z2, len, rad, col, amp) {
+      mesh.visible = amp > 0.004;
+      if (!mesh.visible) return;
+      mesh.quaternion.setFromUnitVectors(YUP, bdir.set(x, y, z2).normalize());
+      mesh.scale.set(rad, len, rad);
+      mesh.material.uniforms.uCol.value.set(col[0], col[1], col[2]);
+      mesh.material.uniforms.uA.value = amp;
+    }
+    function updateBeams(z) {                        // uLp must already be fresh
+      fan.visible = beamsOn;
+      if (!beamsOn) return;
+      uTShared.value = performance.now() / 1000;     // only advances while rendering
+      var Lp = mat.uniforms.uLp.value;
+      var dive = sm(Math.min(1, z.f * 1.6));         // impact migrates to the dive target,
+      var phi = Math.atan2(Lp.y, Lp.x) * (1 - dive); // so at max zoom the orders leave the
+      var cr = Math.cos(phi), sr = Math.sin(phi);    // pit landscape itself
+      fan.position.set(0.68 * cr, 0.68 * sr, 0);
+      var k = Math.max(0.02, z.dolly / 3.2);         // whole fan shrinks with the camera
+      fan.scale.setScalar(k);
+      var lx = Lp.x - fan.position.x, ly = Lp.y - fan.position.y, lz = Lp.z;
+      var ln = Math.hypot(lx, ly, lz) || 1;
+      var Lr = (lx * cr + ly * sr) / ln;             // sin(incidence) along the grating vector
+      var Lt = (-lx * sr + ly * cr) / ln, Lz = lz / ln;
+      var side = Lz >= 0 ? 1 : -1, up = Math.abs(Lz);
+      aim(inBeam, lx / ln, ly / ln, lz / ln, Math.min(ln / k, 60), 0.055, [1, 0.98, 0.9], 0.55);
+      var d0 = [(-Lr) * cr - (-Lt) * sr, (-Lr) * sr + (-Lt) * cr, Lz]; // mirror bounce
+      aim(m0Beam, d0[0], d0[1], d0[2], 1.5, 0.034, [1, 1, 1], 0.26 * Math.pow(up, 0.35));
+      var n = 0;
+      for (var m2 = 1; m2 <= 2; m2++) for (var w = 0; w < BEAM_WLS.length; w++) {
+        var lam = BEAM_WLS[w], mesh = orderBeams[n++];
+        var ur = Lr - m2 * lam / 1600, ut = -Lt;     // grating equation, per order and λ
+        var uz2 = 1 - ur * ur - ut * ut;             // <0: evanescent, no beam leaves
+        if (uz2 < 0.004) { mesh.visible = false; continue; }
+        aim(mesh, ur * cr - ut * sr, ur * sr + ut * cr, side * Math.sqrt(uz2),
+          1.65, 0.028, api.strip.wavelengthRGB(lam), (m2 === 1 ? 0.8 : 0.28) * Math.pow(up, 0.35));
+      }
+      bloom.material.opacity = 0.25 + 0.5 * up;
+    }
     var inv = new THREE.Matrix4(), tmp = new THREE.Vector3(), tgt = new THREE.Vector3();
     var DIR0 = new THREE.Vector3(0, 0.55, 3.1).normalize();
     var PITCH0 = 1.6e-6 / 0.06;                      // 1.6 µm track pitch, disc radius ≈ 60 mm
@@ -551,6 +642,7 @@
         patchMat.uniforms.uCp.value.copy(camera.position).applyMatrix4(inv);
         patchMat.uniforms.uNorm.value.setFromMatrix4(active.matrixWorld);
       }
+      updateBeams(z);                                // re-aim the fan off the fresh uLp
       renderer.render(scene, camera);
     }
     // ---- JS-side physics sampling (no pixel reads): ~8 disc points ---------
@@ -611,22 +703,7 @@
         octx.moveTo(s1[0] + px * 9, s1[1] + py * 9); octx.lineTo(s1[0] - px * 9, s1[1] - py * 9);
         octx.stroke();
       }
-      // tiny ray diagram: one white wave in, three colors out at their angles
-      var ox = W * 0.2, oy = H * 0.62;
-      octx.lineWidth = 1.4;
-      octx.strokeStyle = 'rgba(255,255,255,.7)';
-      octx.beginPath(); octx.moveTo(ox - 52, oy - 84); octx.lineTo(ox, oy); octx.stroke();
-      octx.globalCompositeOperation = 'lighter';
-      var out = [[650, 0.62], [550, 0.44], [470, 0.28]]; // red bends farthest
-      for (var c = 0; c < out.length; c++) {
-        var th = -Math.PI / 2 + out[c][1];
-        octx.strokeStyle = rgba(api.strip.wavelengthRGB(out[c][0]), 0.85);
-        octx.beginPath(); octx.moveTo(ox, oy);
-        octx.lineTo(ox + Math.cos(th) * 92, oy + Math.sin(th) * 92);
-        octx.stroke();
-      }
-      octx.globalCompositeOperation = 'source-over';
-    }
+    }                                                // (the ray story is the 3D fan itself)
     // ---- interaction: drag tilts the disc, or grabs the light --------------
     var dragging = 0;                                // 0 none, 1 tilt, 2 light
     var lastX = 0, lastY = 0, vx = 0, vy = 0, rafId = 0, settleT = 0;
@@ -687,6 +764,16 @@
     zoomInput.addEventListener('input', function () {
       zoomLabel.textContent = zoomText(zoomInput.value / 1000);
       render(); drawOverlay(); updateStrip();
+    });
+    var beamBtn = document.createElement('button');  // pure mirror-shine view on demand
+    beamBtn.type = 'button';
+    beamBtn.textContent = 'SHOW THE BEAM';
+    beamBtn.setAttribute('aria-pressed', 'true');
+    controls.appendChild(beamBtn);
+    beamBtn.addEventListener('click', function () {
+      beamsOn = !beamsOn;
+      beamBtn.setAttribute('aria-pressed', String(beamsOn));
+      render();
     });
     function resize() {
       var rect = canvas.getBoundingClientRect();
