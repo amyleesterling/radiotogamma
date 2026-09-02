@@ -276,11 +276,19 @@
   .wavectl { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; flex-wrap: wrap; font-size: 12.5px; color: #8b98a8; }
   .wavectl select { font: inherit; font-size: 12.5px; background: #04070a; color: #cfe6e6; border: 1px solid rgba(196,228,255,.2); padding: 6px 8px; }
 
+  .skyread { font-size: 14px; color: #cfe6e6; line-height: 1.6; margin: 10px 0 0; }
+  .skyread b.a { color: #7ee0ff; } .skyread b.b { color: #e8a93a; }
+  .skyread .num { color: #eff4fb; }
   .stories li { margin: 0 0 6px; } .stories ul { list-style: none; margin: 0 0 10px; padding: 0; }
   .stories button { font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; background: none; color: #cfe6e6;
     border: 1px solid rgba(196,228,255,.14); padding: 9px 12px; width: 100%; }
   .stories button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
 
+  .octaveplay { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 14px; }
+  .octaveplay .octlabel { font-size: 13px; color: #9aa2b1; margin-right: 4px; }
+  .octaveplay .ctl { color: #ffd479; border-color: rgba(232,169,58,.4); }
+  .octaveplay .ctl:hover, .octaveplay .ctl[aria-pressed="true"] { color: #ffe6a8; border-color: #e8a93a; background: rgba(232,169,58,.1); }
+  .octaveplay .octnote { flex-basis: 100%; font-size: 11.5px; color: #5c6b7a; }
   .stepladder { display: grid; grid-template-columns: max-content max-content 1fr; gap: 7px 18px;
                 margin: 14px 0; font-size: 13px; }
   .stepladder span:nth-child(3n+1) { color: #a07cff; text-align: right; }
@@ -418,6 +426,7 @@ beam power      P = photons per second × energy per photon</pre>
     <button class="ctl" data-layer="matter" type="button" aria-pressed="false">Matter</button>
     <button class="ctl" data-layer="wave" type="button" aria-pressed="false">Wave view</button>
     <button class="ctl" data-layer="senses" type="button" aria-pressed="false">Senses</button>
+    <button class="ctl" data-layer="sky" type="button" aria-pressed="false">Sky</button>
     <button class="ctl" data-layer="stories" type="button" aria-pressed="false">Stories</button>
     <button class="ctl" id="tourBtn" type="button" style="color:#ffd479; border-color: rgba(232,169,58,.5)">✦ Guided tour</button>
   </div>
@@ -466,6 +475,22 @@ beam power      P = photons per second × energy per photon</pre>
        <a href="senses.html" style="color:#7ee0ff">Meet the whole spectral zoo →</a></p>
   </div>
 
+  <div class="panel" id="panelSky" hidden>
+    <h3>What gets through the air</h3>
+    <svg class="spec" id="skySvg" viewBox="0 0 1000 210" role="img"
+         aria-label="Fraction of light reaching the ground across the spectrum, with markers A and B"></svg>
+    <p class="skyread" id="skyRead"></p>
+    <p class="note">Roughly what a clear sky at sea level lets down to the ground. Two doors are open:
+       the <b>radio window</b> (the ionosphere turns back anything below about 10 MHz, and water vapour
+       and oxygen close it again past about 30 GHz), and the <b>optical window</b> with a few
+       infrared side doors between the water-vapour bands. Ozone shuts the door at 300 nm, and from
+       there up the air itself absorbs everything: ultraviolet, X-rays and gamma rays are astronomy
+       from orbit. Above about 100 GeV the gamma rays come back into reach from the ground, caught
+       by the blue Cherenkov flash they make in the air. A dry mountaintop opens the millimetre
+       and infrared cracks wider, which is why those telescopes live on Mauna Kea and the Chajnantor
+       plateau, and why the infrared one that matters most went to space.</p>
+  </div>
+
   <div class="panel stories" id="panelStories" hidden>
     <h3>Stories</h3>
     <ul id="storyList"></ul>
@@ -480,6 +505,13 @@ beam power      P = photons per second × energy per photon</pre>
        vibrates 440 times a second, and the next A up, at 880, is the same note one octave higher.
        Frequency works the same way everywhere, so the natural unit of the spectrum is not
        "plus so many hertz" but "doubled so many times". Radio to gamma is 53 doublings, stacked.</p>
+    <div class="octaveplay" role="group" aria-label="Hear one octave">
+      <span class="octlabel">Hear one doubling:</span>
+      <button class="ctl" type="button" data-hz="440">▶ A₄ · <span class="num">440 Hz</span></button>
+      <button class="ctl" type="button" data-hz="880">▶ A₅ · <span class="num">880 Hz</span></button>
+      <button class="ctl" type="button" data-glide="1">▶ the doubling, swept</button>
+      <span class="octnote">Sound, not light: a pressure wave in air borrowing the spectrum's vocabulary.</span>
+    </div>
     <p>Doubling hides its own size. To feel it, take one walking step — <b>0.75 m</b> — and double
        it once per octave. The named bands are marked at the octave where each begins:</p>
     <div class="stepladder num">
@@ -641,7 +673,7 @@ beam power      P = photons per second × energy per photon</pre>
     if (f.length === 2 && isFinite(f[0]) && isFinite(f[1]) && f[1] - f[0] > 0.01)
       { S.focLo = clamp(f[0], F0, F1); S.focHi = clamp(f[1], F0, F1); }
     const layer = p.get('layer');
-    if (['matter','wave','stories','senses'].includes(layer)) S.layer = layer;
+    if (['matter','wave','stories','senses','sky'].includes(layer)) S.layer = layer;
   }
 
   // ---- svg helpers --------------------------------------------------------
@@ -664,6 +696,7 @@ beam power      P = photons per second × energy per photon</pre>
     focSvg.setAttribute('viewBox', '0 0 ' + OW + ' 150');
     matterSvg.setAttribute('viewBox', '0 0 ' + OW + ' 190');
     sensesSvg.setAttribute('viewBox', '0 0 ' + OW + ' 170');
+    skySvg.setAttribute('viewBox', '0 0 ' + OW + ' 210');
   }
   const ovX  = f => S.linear ? (f / FMAX) * OW : (log(f) - F0) / (F1 - F0) * OW;
   const focX = f => (log(f) - S.focLo) / (S.focHi - S.focLo) * OW;
@@ -672,7 +705,7 @@ beam power      P = photons per second × energy per photon</pre>
 
   // ---- dom refs -----------------------------------------------------------
   const $ = id => document.getElementById(id);
-  const ovSvg = $('ovSvg'), focSvg = $('focSvg'), matterSvg = $('matterSvg'), sensesSvg = $('sensesSvg');
+  const ovSvg = $('ovSvg'), focSvg = $('focSvg'), matterSvg = $('matterSvg'), sensesSvg = $('sensesSvg'), skySvg = $('skySvg');
   const chA = $('chA'), chB = $('chB');
 
   // ---- overview -----------------------------------------------------------
@@ -999,6 +1032,112 @@ beam power      P = photons per second × energy per photon</pre>
        sel.name.toUpperCase() + (heat ? ' · TARGET EMISSION' : ''));
   }
 
+  // ---- the sky layer: atmospheric transmission ---------------------------
+  // Fraction of light reaching sea level under a clear sky, as (log10 Hz,
+  // fraction) knots, interpolated linearly in log frequency. Coarse on
+  // purpose: the ionospheric cutoff, the 22/183 GHz water and 60/118 GHz
+  // oxygen lines, the far-infrared wall, the 3-5 and 8-13 µm windows, the
+  // J/H/K near-infrared windows between water bands, the optical window,
+  // and the ozone edge at 300 nm. Everything above is absorbed by the air.
+  const TRANS = [
+    [4, 0], [6.8, 0], [7.0, .05], [7.3, .5], [7.6, .95], [8, 1], [10, 1], [10.35, .85], [10.5, .95],
+    [10.7, .5], [10.78, 0], [10.85, .4], [10.95, .8], [11.02, .4], [11.07, .05], [11.12, .4], [11.15, .7],
+    [11.22, .3], [11.26, 0], [11.3, .3], [11.35, .45], [11.45, .25], [11.5, .15], [11.6, .05], [11.8, .02],
+    [12, 0], [13.0, 0], [13.2, .05], [13.3, .3], [13.4, .8], [13.55, .8], [13.62, .3], [13.68, .05],
+    [13.8, .1], [13.85, .05], [13.9, .85], [13.97, .5], [14.0, .1], [14.06, .5], [14.13, .9], [14.18, .5],
+    [14.2, .2], [14.24, .6], [14.26, .9], [14.3, .4], [14.32, .1], [14.36, .6], [14.38, .9], [14.45, .8],
+    [14.5, .75], [14.6, .85], [14.75, .85], [14.9, .6], [14.98, .3], [15.0, .05], [15.05, 0], [20, 0],
+  ];
+  function transAt(hz) {
+    const d = log(hz);
+    for (let i = 1; i < TRANS.length; i++) {
+      if (d <= TRANS[i][0]) {
+        const [d0, t0] = TRANS[i - 1], [d1, t1] = TRANS[i];
+        return t0 + (t1 - t0) * (d - d0) / Math.max(d1 - d0, 1e-9);
+      }
+    }
+    return 0;
+  }
+  // labels carry a priority: on a narrow screen only the high ones survive,
+  // and any label that would collide with an already-placed neighbour on its
+  // row drops to the next row or is skipped
+  const SKY_LABELS = [                              // [log10 Hz, text, kind, priority]
+    [5.6, 'ionosphere turns it back', 'wall', 2], [9.0, 'RADIO WINDOW', 'open', 3],
+    [11.3, 'water vapour, oxygen', 'wall', 1], [12.6, 'water vapour, CO₂', 'wall', 2],
+    [14.1, 'IR doors', 'open', 1], [14.78, 'OPTICAL', 'open', 3],
+    [15.5, 'ozone', 'wall', 1], [17.6, 'the air itself', 'wall', 3],
+  ];
+  const SKY_TELESCOPES = [                          // [log10 Hz, text, priority]
+    [8.6, 'dishes on the ground', 3], [11.55, 'mountaintop mm arrays', 1], [13.9, 'JWST, in orbit', 2],
+    [14.75, 'eyes', 2], [15.5, 'Hubble UV', 1], [17.6, 'Chandra · Fermi, in orbit', 3], [19.5, 'Cherenkov arrays >100 GeV', 2],
+  ];
+  function placeLabels(items, rowsY, minPriority, make) {
+    const taken = rowsY.map(() => []);            // placed [start, end] spans per row
+    for (const it of items.slice().sort((p, q) => q.pri - p.pri)) {  // important labels claim room first
+      if (it.pri < minPriority) continue;
+      const wpx = it.text.length * 5.9, half = wpx / 2;
+      const lx = clamp(it.x, half + 2, OW - half - 2);
+      const a = lx - half - 8, z = lx + half + 8;
+      const row = taken.findIndex(spans => spans.every(([s0, s1]) => z < s0 || a > s1));
+      if (row < 0) continue;
+      taken[row].push([a, z]);
+      make(it, lx, rowsY[row]);
+    }
+  }
+  function renderSky() {
+    if (S.layer !== 'sky') return;
+    skySvg.textContent = '';
+    const x = f => (log(f) - F0) / (F1 - F0) * OW;
+    const xd = d => (d - F0) / (F1 - F0) * OW;
+    BANDS.forEach(b => el('rect', { x: x(b.lo), y: 0, width: x(b.hi) - x(b.lo), height: 14,
+                                    fill: `rgb(${b.col})`, opacity: .3 }, skySvg));
+    const Y0 = 132, HGT = 96;                       // the transmission plot: baseline and height
+    const defs = el('defs', {}, skySvg);
+    const grad = el('linearGradient', { id: 'skyfill', x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#7ec8ff', 'stop-opacity': .55 }, grad);
+    el('stop', { offset: '100%', 'stop-color': '#7ec8ff', 'stop-opacity': .08 }, grad);
+    el('rect', { x: 0, y: Y0 - HGT, width: OW, height: HGT, fill: 'rgba(196,228,255,.03)' }, skySvg);
+    let d = 'M0 ' + Y0;
+    for (const [ld, t] of TRANS) d += ' L' + xd(ld).toFixed(1) + ' ' + (Y0 - HGT * t).toFixed(1);
+    d += ' L' + OW + ' ' + Y0 + ' Z';
+    el('path', { d, fill: 'url(#skyfill)' }, skySvg);
+    let dl = '';
+    TRANS.forEach(([ld, t], i) => { dl += (i ? ' L' : 'M') + xd(ld).toFixed(1) + ' ' + (Y0 - HGT * t).toFixed(1); });
+    el('path', { d: dl, fill: 'none', stroke: '#7ec8ff', 'stroke-width': 1.4 }, skySvg);
+    el('line', { x1: 0, x2: OW, y1: Y0, y2: Y0, stroke: 'rgba(196,228,255,.25)' }, skySvg);
+    el('text', { x: 4, y: Y0 - HGT + 10, 'font-size': 10, fill: '#6c7c8c' }, skySvg, OW < 560 ? '100%' : '100% reaches the ground');
+    el('text', { x: 4, y: Y0 - 4, 'font-size': 10, fill: '#6c7c8c' }, skySvg, '0%');
+    const minPri = OW < 560 ? 3 : OW < 800 ? 2 : 1;
+    placeLabels(SKY_LABELS.filter(l => l[2] === 'open').map(l => ({ x: xd(l[0]), text: l[1], pri: l[3] })),
+      [Y0 - HGT - 6], minPri, (it, lx, y) =>
+        el('text', { x: lx, y, 'font-size': 10.5, fill: '#7ec8ff', 'text-anchor': 'middle', 'letter-spacing': '.08em' }, skySvg, it.text));
+    placeLabels(SKY_LABELS.filter(l => l[2] === 'wall').map(l => ({ x: xd(l[0]), text: l[1], pri: l[3] })),
+      [Y0 - HGT / 2 + 4, Y0 - HGT / 2 + 20], minPri, (it, lx, y) =>
+        el('text', { x: lx, y, 'font-size': 10.5, fill: '#8b98a8', 'text-anchor': 'middle' }, skySvg, it.text));
+    placeLabels(SKY_TELESCOPES.map(l => ({ x: xd(l[0]), text: l[1], pri: l[2] })),
+      [Y0 + 20, Y0 + 33], minPri, (it, lx, y) => {
+        el('line', { x1: it.x, x2: it.x, y1: Y0, y2: y - 9, stroke: '#3a4756' }, skySvg);
+        el('text', { x: lx, y, 'font-size': 9.5, fill: '#6c7c8c', 'text-anchor': 'middle' }, skySvg, it.text);
+      });
+    // decade ticks along the baseline
+    for (let dd = F0; dd <= F1; dd += 4)
+      el('text', { x: clamp(xd(dd), 2, OW - 2), y: 206, 'font-size': 10, fill: '#6c7c8c',
+                   'text-anchor': dd === F0 ? 'start' : dd === F1 ? 'end' : 'middle' }, skySvg, freq(Math.pow(10, dd)));
+    // the markers, standing on the curve
+    const parts = [];
+    for (const [m, f, col] of [['a', S.aHz, '#7ee0ff'], ['b', S.bHz, '#e8a93a']]) {
+      const t = transAt(f), mx = x(f), my = Y0 - HGT * t;
+      el('line', { x1: mx, x2: mx, y1: 14, y2: Y0, stroke: col, 'stroke-width': 1.5, opacity: .8 }, skySvg);
+      el('circle', { cx: mx, cy: my, r: 5, fill: col, stroke: '#04070a', 'stroke-width': 1.5 }, skySvg);
+      const pct = Math.round(t * 100);
+      const verdict = t >= .8 ? 'the sky is open' : t >= .2 ? 'partly through: haze, altitude and weather decide'
+        : t > 0 ? 'mostly blocked' : 'blocked: this is astronomy from orbit';
+      parts.push('<b class="' + m + '">' + m.toUpperCase() + ' · ' + nameOf(m) + '</b>: <span class="num">' + pct +
+                 '%</span> reaches the ground, ' + verdict + '.');
+    }
+    $('skyRead').innerHTML = parts.join(' ');
+  }
+
   // ---- readouts -----------------------------------------------------------
   function renderComposer() {
     for (const [ch, m] of [[chA, 'a'], [chB, 'b']]) {
@@ -1217,7 +1356,7 @@ beam power      P = photons per second × energy per photon</pre>
   function render() {
     syncWidth();
     renderComposer(); renderSentence(); renderTable(); renderScale(); renderPower();
-    renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderWaveText();
+    renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderSky(); renderWaveText();
     encodeState();
     pokeWave();
   }
@@ -1416,6 +1555,7 @@ beam power      P = photons per second × energy per photon</pre>
     layerBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.layer === S.layer)));
     $('panelMatter').hidden = S.layer !== 'matter';
     $('panelSenses').hidden = S.layer !== 'senses';
+    $('panelSky').hidden = S.layer !== 'sky';
     $('panelWave').hidden = S.layer !== 'wave';
     $('panelStories').hidden = S.layer !== 'stories';
   }
@@ -1442,6 +1582,35 @@ beam power      P = photons per second × energy per photon</pre>
   $('surprise').addEventListener('click', () => {
     const others = STORIES.filter(s => !(s.a === S.aId && s.b === S.bId));
     playStory(others[Math.floor(Math.random() * others.length)]);
+  });
+
+  // ---- the audible octave: one doubling you can hear ----------------------
+  // Web Audio, created on the first press (browsers require a gesture). A
+  // soft triangle wave with a short envelope; the sweep is a true exponential
+  // glide from 440 to 880, so every moment of it is a fixed fraction of an
+  // octave per second.
+  let actx = null;
+  function playTone(f0, f1, dur, btn) {
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    if (actx.state === 'suspended') actx.resume();
+    const t0 = actx.currentTime, osc = actx.createOscillator(), g = actx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(f0, t0);
+    if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(f1, t0 + dur - 0.08);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.03);
+    g.gain.setValueAtTime(0.22, t0 + dur - 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g).connect(actx.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.02);
+    btn.setAttribute('aria-pressed', 'true');
+    osc.onended = () => btn.setAttribute('aria-pressed', 'false');
+  }
+  document.querySelectorAll('.octaveplay button').forEach(b => {
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => b.dataset.glide
+      ? playTone(440, 880, 1.8, b)
+      : playTone(+b.dataset.hz, +b.dataset.hz, 0.9, b));
   });
 
   // ---- self-tests (?test=1) ---------------------------------------------------
@@ -1573,7 +1742,7 @@ beam power      P = photons per second × energy per photon</pre>
     else addEventListener('load', () => setTimeout(goLayer, 60), { once: true });
   }
   if (wantTest) selfTest();
-  addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); });
+  addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderSky(); });
 })();
 </script>
 <script src="share.js"></script>

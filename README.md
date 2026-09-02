@@ -12,11 +12,11 @@ in the CD, the 42° droplet cone, Rayleigh's 1/λ⁴ in the sky.
 
 | Page | What it does |
 | --- | --- |
-| `index.html` | The wave instrument: two markers on a 10 kHz to 100 EHz bar, live wave lanes, a magnified visible band with a sunset lab, and the apple exhibit (frequency dial × power dial → thermal and molecular verdicts). |
-| `observatory.html` | Pick any two landmarks, or type a value, and compare frequency, wavelength, period and photon energy. Focus lens, lockstep explorer, equal-power photon counts, matter / wave / senses / stories layers, a guided tour, and the octave ladder from one footstep to the Oort cloud. State lives in the URL. |
-| `lab.html` + `lab/*.js` | The Light Lab: prism, CD (3D with three.js, 2D fallback), garden-hose rainbow, and build-a-sky. Predict-first quiz. |
+| `index.html` | The wave instrument: two markers on a 10 kHz to 100 EHz bar that snap to the observatory's landmarks, live wave lanes, a magnified visible band with a sunset lab, the apple exhibit (frequency dial × power dial → thermal and molecular verdicts), and the temperature dial (Planck's glow across the bar, Wien's peak, Stefan–Boltzmann power, twenty-five presets from a dilution fridge to the one-second-old universe). |
+| `observatory.html` | Pick any two landmarks, or type a value, and compare frequency, wavelength, period and photon energy. Focus lens, lockstep explorer, equal-power photon counts, matter / wave / senses / sky (atmospheric transmission) / stories layers, a guided tour, an audible octave, and the octave ladder from one footstep to the Oort cloud. State lives in the URL. |
+| `lab.html` + `lab/*.js` | The Light Lab: prism, CD (3D with three.js and a computed wave sheet at the bottom of the dive, 2D fallback), garden-hose rainbow, build-a-sky, and a draining soap film (thin-film interference). Predict-first quiz. |
 | `gamma.html` | The Gamma Attic: an energy ruler from 100 keV to 3 PeV with real landmarks. |
-| `senses.html` | The Spectral Zoo: who senses what, split honestly into vision, radiant heat, field senses, and an X-ray footnote. |
+| `senses.html` | The Spectral Zoo: who senses what, split honestly into vision, radiant heat, field senses, a polarization wing, and an X-ray footnote. |
 
 ## Layout
 
