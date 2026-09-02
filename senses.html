@@ -19,28 +19,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<link rel="stylesheet" href="site.css">
 <style>
-  html, body { margin: 0; padding: 0; }
-  body { background: #04070a; color: #cfe6e6;
-         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-         -webkit-font-smoothing: antialiased; }
-  .num, svg text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-  .gamebar { display: flex; flex-direction: column; gap: 10px; padding: 11px 18px;
-             border-radius: 0; border-left: 0; border-right: 0; border-top: 0;
-             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  .gamebar a { text-decoration: none; }
-  .gbrand { display: flex; align-items: center; gap: 11px; }
-  .gamebar-icon { width: 27px; height: 27px; flex: none; }
-  .gbnav { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
-  .gbnav .gamebar-back { text-align: center; font-size: 12px; letter-spacing: .08em; padding: 7px 6px; }
-  .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
-                  border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
-                  padding: 7px 12px; align-self: center; white-space: nowrap; }
-  .gamebar-share { background: none; font: inherit; cursor: pointer; }
-  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
-  .gamebar-name { font-size: 19px; font-weight: 600; letter-spacing: .06em;
-                  color: rgb(var(--bar-accent)); white-space: nowrap; }
 
   .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
   h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
@@ -192,6 +172,7 @@
      <a href="observatory.html?layer=senses">Observatory</a>.</p>
 </div>
 
+<script src="spectrum-data.js"></script>
 <script>
 (() => {
   'use strict';
@@ -206,36 +187,9 @@
   const F0 = 4, F1 = 20;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
-  // mode: 'v' = photoreceptive vision, 'h' = radiant heat.
-  // lo/hi are frequencies; for heat-sensers they bound the TARGET's emission.
-  const ZOO = [
-    { m: 'v', lo: C/750e-9,  hi: C/380e-9, name: 'Your eye', icon: 'senses/human.png',
-      d: 'Sees <b>380–750 nm</b>. One octave of the whole spectrum — the sliver everything else on this page is measured against.' },
-    { m: 'v', lo: C/650e-9,  hi: C/300e-9, name: 'Honeybee', icon: 'senses/bee.png',
-      d: 'Sees <b>300–650 nm</b> — the human window shifted up a notch. Flowers paint ultraviolet landing stripes for bees; deep red is invisible to them.' },
-    { m: 'v', lo: C/700e-9,  hi: C/350e-9, name: 'Songbird', icon: 'senses/bird.png',
-      d: 'Sees <b>350–700 nm</b> with four cone types to your three — the fourth tuned to ultraviolet. Many birds wear UV plumage other birds can see and you cannot.' },
-    { m: 'v', lo: C/720e-9,  hi: C/300e-9, name: 'Mantis shrimp', icon: 'senses/shrimp.png',
-      d: 'Sees <b>300–720 nm</b> through twelve photoreceptor classes — and reads polarized light on top, a second channel of the same photons. The most elaborate eye hardware known, on a shrimp.' },
-    { m: 'v', lo: C/700e-9,  hi: C/305e-9, name: 'Reindeer', icon: 'senses/reindeer.png',
-      d: 'Sees down to roughly <b>300–320 nm</b>: reindeer lenses pass ultraviolet that human lenses block, and their retinas respond to it. Lichen, fur and urine all pop against UV-bright snow — a large, familiar mammal living in a wider world than yours.' },
-    { m: 'v', lo: C/650e-9,  hi: C/310e-9, name: 'House mouse', icon: 'senses/mouse.png',
-      d: 'The pantry goblin is a partly ultraviolet animal: mouse S-opsin peaks near <b>360 nm</b>, the lens transmits UV, and neurons in mouse visual cortex answer patterned UV stimuli.' },
-    { m: 'v', lo: C/1020e-9, hi: C/930e-9, name: 'Nile tilapia', icon: 'senses/tilapia.png',
-      d: 'The near-infrared bridge: behavioral experiments found eye-mediated responses at <b>930–1020 nm</b>, just beyond your red edge — photoreception, not felt warmth. Zebrafish and guppies answer around 845–910 nm; green swordtails reach roughly 825–845 nm.' },
-    { m: 'h', lo: C/100e-6,  hi: C/750e-9, name: 'Your skin', icon: 'senses/hand.png',
-      d: 'Detects radiant heat across roughly <b>750 nm – 100 µm</b>. Hold a palm toward a fire and you are absorbing its infrared and reading the warming — imaging, crudely, with no picture.' },
-    { m: 'h', lo: C/4e-6,    hi: C/2.4e-6, name: 'Fire beetle', icon: 'senses/beetle.png',
-      d: 'Melanophila beetles carry infrared organs on the thorax most sensitive near <b>2.4–4 µm</b> — the radiation of a forest fire. Absorbed heat mechanically clicks tiny sensilla, steering them toward freshly burned trees, where they breed. The mid-infrared desert, colonized.' },
-    { m: 'h', lo: C/30e-6,   hi: C/3e-6,   name: 'Mosquito (female Aedes)', icon: 'senses/mosquito.png',
-      d: 'Detects the radiant heat of skin: a 34 °C human glows across roughly <b>3–30 µm</b>, peaking near 9.4 µm, and female Aedes aegypti read that glow — alongside CO₂ and odor — from as far as ~70 cm, with TRPA1 and two opsins near the antennal tips. A tiny thermal-guidance missile, unfortunately powered by ankles.' },
-    { m: 'h', lo: C/13e-6,   hi: C/8e-6,   name: 'Vampire bat', icon: 'senses/bat.png',
-      d: 'Heat-sensitive pits around the nose respond to surfaces warmer than about 29 °C — warm blood under thin skin, glowing near <b>8–13 µm</b> — via a specially tuned TRPV1 receptor. Mammals independently invented a face-mounted thermal targeting system.' },
-    { m: 'a', lo: C/0.21,    hi: C/1e-3,   name: 'The Visitor',
-      d: 'Claims to see <b>1 mm – 21 cm</b>. To its eyes the cosmic microwave background is daylight, every Wi-Fi router is a lamp left rudely on, and the 21 cm hydrogen line is its favorite color. Range self-reported and unverifiable; falls off the animal strip entirely, so it is drawn on the full spectrum above. Do not feed.' },
-    { m: 'h', lo: C/30e-6,   hi: C/5e-6,   name: 'Pit viper', icon: 'senses/viper.png',
-      d: 'Facial pits detect the radiant heat of warm-blooded prey glowing at <b>5–30 µm</b>, sharp enough to strike in total darkness. Not seen as color — absorbed and felt, four octaves below your red.' },
-  ];
+  // the creatures live in spectrum-data.js so the Observatory's Senses layer
+  // and this page can never disagree about a wavelength
+  const ZOO = window.SPECTRUM_DATA.ZOO;
   let sel = 0;
 
   const SZ_LO = 2e12, SZ_HI = 1.2e15;

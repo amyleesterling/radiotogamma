@@ -19,40 +19,14 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<link rel="stylesheet" href="site.css">
 <style>
-  html, body { margin: 0; padding: 0; }
-  body {
-    background: #04070a; color: #cfe6e6;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .gamebar {
-    display: flex; flex-direction: column; gap: 10px;
-    padding: 11px 18px; border-radius: 0;
-    border-left: 0; border-right: 0; border-top: 0;
-    font-family: inherit;
-  }
-    .gamebar a { text-decoration: none; }
-  .gbrand { display: flex; align-items: center; gap: 11px; }
-  .gamebar-icon { width: 27px; height: 27px; flex: none; }
-  .gbnav { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
-  .gbnav .gamebar-back { text-align: center; font-size: 12px; letter-spacing: .08em; padding: 7px 6px; }
-  .gamebar-back {
-    font-size: 13px; letter-spacing: .12em;
-    color: rgb(var(--holo-dim, 154 162 177));
-    border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
-    padding: 7px 12px; align-self: center; white-space: nowrap;
-  }
-  .gamebar-share { background: none; font: inherit; cursor: pointer; }
-  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
-  .gamebar-name {
-    font-size: 19px; font-weight: 600; letter-spacing: .06em;
-    color: rgb(var(--bar-accent)); white-space: nowrap;
-  }
 
   .wrap { max-width: 760px; margin: 0 auto; padding: 26px 20px 60px; }
-  h1 { font-size: 20px; color: #7ee0ff; margin: 0 0 6px; font-weight: 600; }
+  .specval, .specticks, .specmark::after, .specband span, .lane-tag, .specwavenote,
+  .speclabel, .applepanel-tag, .applebadge, .trylab, .visfun summary, .applestat .specval {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
   .sub { font-size: 13.5px; color: #9aa2b1; margin: 0 0 22px; }
   .sub b { color: #eff4fb; font-weight: 600; }
 
@@ -295,8 +269,6 @@
   @media (max-width: 679px) { .appleouts { grid-template-columns: 1fr; } }
   .applesets { margin: 14px 0 6px; }
 
-  /* the three header items outgrow a phone side by side; wrapping keeps the
-     observatory link on screen instead of clipped off the right edge */
 </style>
 </head>
 <body>
@@ -484,7 +456,7 @@
     { lo: 3e19, hi: 1e20, name: 'gamma', col: 'rgba(226,120,180,.20)' },
   ];
   const PRESETS = [
-    ['Separator, gold band', 18e6], ['FM radio', 100e6], ['Wifi', 2.4e9],
+    ['FM radio', 100e6], ['Wifi', 2.4e9],
     ['Microwave oven', 2.45e9], ['Body heat', 3e13], ['Red laser', C / 633e-9],
     ['Green laser', C / 532e-9], ['Blue laser', C / 450e-9],
     ['Sunburn, UVB', C / 300e-9], ['Dental x-ray', 3e18],
@@ -528,6 +500,15 @@
     if (r < 1000) return r < 10 ? r.toFixed(2) : String(Math.round(r));
     for (const [d, w] of BIG) if (r >= d) { const v = r / d; return (v < 10 ? v.toFixed(1) : Math.round(v)) + ' ' + w; }
     return String(Math.round(r));
+  }
+
+  // a marker is a slider to assistive tech: range and position in log10 Hz,
+  // the spoken value in real units
+  function ariaSlider(m, f, lo, hi) {
+    m.setAttribute('aria-valuemin', lo.toFixed(2));
+    m.setAttribute('aria-valuemax', hi.toFixed(2));
+    m.setAttribute('aria-valuenow', Math.log10(f).toFixed(2));
+    m.setAttribute('aria-valuetext', freq(f).replace(/<[^>]+>/g, ''));
   }
 
   // both bars share the painters; a bar narrower than the full window passes
@@ -631,9 +612,8 @@
     } else bandZone.hidden = true;
     mV.style.display = inVis ? '' : 'none';
     if (inVis) { mV.style.left = (vX(fB) * 100) + '%'; mV.dataset.tag = 'B'; }
-    for (const [m, f] of [[mA, fA], [mB, fB]]) {
-      m.setAttribute('aria-valuetext', freq(f).replace(/<[^>]+>/g, ''));
-    }
+    ariaSlider(mA, fA, F0, F1); ariaSlider(mB, fB, F0, F1);
+    if (inVis) ariaSlider(mV, fB, Math.log10(VIS_LO), Math.log10(VIS_HI));
     const vA = visualHz(fA), vB = visualHz(fB);
     const visR = (Math.max(vA, vB) / Math.min(vA, vB)).toFixed(vA === vB ? 0 : 1);
     waveNote.innerHTML = 'On screen: A ' + vA.toFixed(2) + '/s, B ' + vB.toFixed(2) +
@@ -845,7 +825,7 @@
     infrared:   [0.85, 'is soaked up right at the surface'],
     visible:    [0.60, 'is partly reflected'],
     UV:         [0.80, 'is absorbed in the peel'],
-    'x-ray':    [0.30, 'partly deposits through the flesh'],
+    'x-ray':    [0.70, 'deposits most of its energy through the flesh'],
     gamma:      [0.10, 'mostly passes through, some deposits'],
   };
 
@@ -928,13 +908,13 @@
   // one photo per exposure stage; the procedural drawing below stays as the
   // fallback for any stage whose photo has not loaded yet
   const appleImg = new Image();
-  appleImg.src = 'apple.png';
+  appleImg.src = 'apple.webp';
   // 'cook' wears the browned photo, 'ion' the see-through one (a sterilizing
   // dose leaves the outside looking fine, which is exactly its point);
   // 'gone' is procedural only: there is no photo of an apple that is not there
   const STAGE_IMGS = { plain: appleImg };
-  for (const [k, src] of [['warm', 'apple-warm.png'], ['cook', 'apple-burn.png'],
-                          ['ion', 'apple-xray.png'], ['char', 'apple-char.png']]) {
+  for (const [k, src] of [['warm', 'apple-warm.webp'], ['cook', 'apple-burn.webp'],
+                          ['ion', 'apple-xray.webp'], ['char', 'apple-char.webp']]) {
     const im = new Image(); im.src = src; STAGE_IMGS[k] = im;
   }
   STAGE_IMGS.warm2 = STAGE_IMGS.warm;
@@ -1077,7 +1057,7 @@
 
   function renderApple() {
     markApple.style.left = (aX(fApple) * 100) + '%';
-    markApple.setAttribute('aria-valuetext', freq(fApple).replace(/<[^>]+>/g, ''));
+    ariaSlider(markApple, fApple, AF0, F1);
 
     const P = applePow;
     const E = P * EXPOSE_S;

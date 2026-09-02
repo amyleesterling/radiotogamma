@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Gamma Attic</title>
-<meta name="description" content="Thirty-five octaves above visible light: an energy ruler through the strangest floor of the spectrum.">
+<meta name="description" content="The top floor of the spectrum is 35 octaves tall: an energy ruler from nuclear medicine to the most energetic photon ever caught.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Radio to Gamma">
 <meta property="og:title" content="The Gamma Attic · Radio to Gamma">
-<meta property="og:description" content="Thirty-five octaves above visible light: an energy ruler through the strangest floor of the spectrum.">
+<meta property="og:description" content="The top floor of the spectrum is 35 octaves tall: an energy ruler from nuclear medicine to the most energetic photon ever caught.">
 <meta property="og:url" content="https://radiotogamma.com/gamma.html">
 <meta property="og:image" content="https://radiotogamma.com/og-card.jpg">
 <meta property="og:image:width" content="1200">
@@ -19,28 +19,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<link rel="stylesheet" href="site.css">
 <style>
-  html, body { margin: 0; padding: 0; }
-  body { background: #04070a; color: #cfe6e6;
-         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-         -webkit-font-smoothing: antialiased; }
-  .num, svg text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-  .gamebar { display: flex; flex-direction: column; gap: 10px; padding: 11px 18px;
-             border-radius: 0; border-left: 0; border-right: 0; border-top: 0;
-             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .gamebar a { text-decoration: none; }
-  .gbrand { display: flex; align-items: center; gap: 11px; }
-  .gamebar-icon { width: 27px; height: 27px; flex: none; }
-  .gbnav { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
-  .gbnav .gamebar-back { text-align: center; font-size: 12px; letter-spacing: .08em; padding: 7px 6px; }
-  .gamebar-back { font-size: 13px; letter-spacing: .12em; color: rgb(var(--holo-dim, 154 162 177));
-                  border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
-                  padding: 7px 12px; align-self: center; white-space: nowrap; }
-  .gamebar-share { background: none; font: inherit; cursor: pointer; }
-  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
-  .gamebar-name { font-size: 19px; font-weight: 600; letter-spacing: .06em;
-                  color: rgb(var(--bar-accent)); white-space: nowrap; }
 
   .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
   h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
@@ -150,8 +130,9 @@
        the view: over intergalactic distances, gamma rays annihilate against the cosmic background
        light. So the highest floors are structurally sound but unvisited: allowed by the physics,
        unreached by the sources, and hidden by the sky.</p>
-    <p>One PeV photon carries about the kinetic energy of a thrown ping-pong ball,
-       packed into a single quantum of light.</p>
+    <p>One PeV photon carries about 1.6 × 10⁻⁴ joules: the kinetic energy of a ping-pong ball
+       rolling across a table at a third of a meter per second, or of a thousand flying
+       mosquitoes, packed into a single quantum of light.</p>
   </div>
 </div>
 
@@ -191,7 +172,7 @@
     { e: 1e9, name: 'The Fermi sky', why: 'At GeV energies the Fermi telescope maps thousands of pulsars and blazars: black-hole jets pointed straight at us. Five years of that sky, whole: the red spine is the Milky Way\'s disk, every dot a distant engine.', img: 'gammaimg/fermi-sky.jpg', credit: 'Five-year all-sky map above 1 GeV · NASA / DOE / Fermi LAT Collaboration' },
     { e: 1e12, name: 'Crab Nebula at 1 TeV', why: 'Too energetic to catch directly, TeV photons are seen by the blue flash they make striking the atmosphere. The Crab Nebula — a pulsar-driven wreck of a supernova seen in 1054 — is the standard candle every gamma-ray telescope is measured against.', img: 'gammaimg/crab.jpg', credit: 'Crab Nebula · NASA / ESA / Hubble, J. Hester and A. Loll' },
     { e: 1e14, name: '100 TeV: the sky goes dark', why: 'Above here, extragalactic gamma rays annihilate against background starlight en route. Only sources inside our galaxy can still be seen.' },
-    { e: 1.4e15, name: 'LHAASO record, 1.4 PeV', why: 'The most energetic photon ever detected, caught in 2021 from within the Milky Way: a single quantum with the energy of a thrown ping-pong ball.' },
+    { e: 1.4e15, name: 'LHAASO record, 1.4 PeV', why: 'The most energetic photon ever detected, caught in 2021 from within the Milky Way: a single quantum carrying the kinetic energy of a ping-pong ball rolling slowly across a table.' },
   ];
 
   const svg = document.getElementById('atticSvg');

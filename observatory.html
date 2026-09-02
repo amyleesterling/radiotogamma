@@ -19,38 +19,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
+<link rel="stylesheet" href="site.css">
 <style>
-  html, body { margin: 0; padding: 0; }
-  body {
-    background: #04070a; color: #cfe6e6;
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  .mono, .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-  .gamebar {
-    display: flex; flex-direction: column; gap: 10px;
-    padding: 11px 18px; border-radius: 0;
-    border-left: 0; border-right: 0; border-top: 0;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-    .gamebar a { text-decoration: none; }
-  .gbrand { display: flex; align-items: center; gap: 11px; }
-  .gamebar-icon { width: 27px; height: 27px; flex: none; }
-  .gbnav { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
-  .gbnav .gamebar-back { text-align: center; font-size: 12px; letter-spacing: .08em; padding: 7px 6px; }
-  .gamebar-back {
-    font-size: 13px; letter-spacing: .12em;
-    color: rgb(var(--holo-dim, 154 162 177));
-    border: 1px solid rgb(var(--holo-line, 196 228 255) / .18);
-    padding: 7px 12px; align-self: center; white-space: nowrap;
-  }
-  .gamebar-share { background: none; font: inherit; cursor: pointer; }
-  .gamebar-back:hover { color: rgb(var(--bar-accent)); border-color: rgb(var(--bar-accent) / .6); }
-  .gamebar-name {
-    font-size: 19px; font-weight: 600; letter-spacing: .06em;
-    color: rgb(var(--bar-accent)); white-space: nowrap;
-  }
 
   .wrap { max-width: 1120px; margin: 0 auto; padding: 30px 20px 70px; }
   h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; letter-spacing: .02em; }
@@ -234,7 +204,6 @@
   .ovnote.linear { color: #e8a93a; }
   #focSvg { cursor: crosshair; }
   .focnote { font-size: 12px; color: #5c6b7a; margin: 6px 0 26px; }
-  svg text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   .handlehit { cursor: grab; }
   .handlehit:focus { outline: none; }
   .handlehit:focus-visible + .handleline { stroke-width: 4; }
@@ -952,20 +921,10 @@ beam power      P = photons per second × energy per photon</pre>
     });
   }
 
-  const SENSES = [
-    { lo: C / 750e-9, hi: C / 380e-9, name: 'Your eye', icon: 'senses/human.png',
-      desc: 'Sees <b>380–750 nm</b>. One octave of the whole spectrum — the sliver everything else on this page is measured against.' },
-    { lo: C / 100e-6, hi: C / 750e-9, name: 'Your skin', icon: 'senses/hand.png',
-      desc: 'Feels <b>750 nm – 100 µm</b> as radiant warmth. Hold a palm toward a fire and you are imaging its infrared — crudely, but honestly.' },
-    { lo: C / 650e-9, hi: C / 300e-9, name: 'Honeybee', icon: 'senses/bee.png',
-      desc: 'Sees <b>300–650 nm</b> — the human window shifted up a notch. Flowers paint ultraviolet landing stripes for bees; deep red is invisible to them.' },
-    { lo: C / 700e-9, hi: C / 350e-9, name: 'Songbird', icon: 'senses/bird.png',
-      desc: 'Sees <b>350–700 nm</b> with four cone types to your three — the fourth tuned to ultraviolet. Many birds wear UV plumage other birds can see and you cannot.' },
-    { lo: C / 720e-9, hi: C / 300e-9, name: 'Mantis shrimp', icon: 'senses/shrimp.png',
-      desc: 'Sees <b>300–720 nm</b> through twelve photoreceptor classes — plus polarized light. The most elaborate eye hardware known, on a shrimp.' },
-    { lo: C / 30e-6,  hi: C / 5e-6,   name: 'Pit viper', icon: 'senses/viper.png',
-      desc: 'Heat pits image <b>5–30 µm</b> — the infrared glow of warm-blooded prey in total darkness. A second pair of eyes, four octaves below yours.' },
-  ];
+  // six creatures from the shared zoo, in the order the chips appear; the
+  // full cast with its heat and field wings lives on senses.html
+  const OBS_ZOO = ['human', 'skin', 'bee', 'bird', 'shrimp', 'viper'];
+  const SENSES = OBS_ZOO.map(id => window.SPECTRUM_DATA.ZOO.find(z => z.id === id));
   let senseSel = 0;
   // the zoomed window all these senses live inside: far infrared up to near UV
   const SZ_LO = 2e12, SZ_HI = 1.2e15;
@@ -987,7 +946,7 @@ beam power      P = photons per second × energy per photon</pre>
     });
     [...chips.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === senseSel)));
     const sel = SENSES[senseSel];
-    document.getElementById('senseDesc').innerHTML = sel.desc;
+    document.getElementById('senseDesc').innerHTML = sel.d;
 
     sensesSvg.textContent = '';
     const zx = f => (Math.log10(f) - Math.log10(SZ_LO)) / (Math.log10(SZ_HI) - Math.log10(SZ_LO)) * OW;
@@ -1020,8 +979,10 @@ beam power      P = photons per second × energy per photon</pre>
     el('text', { x: OW - 4, y: 96, 'font-size': 11, fill: '#6c7c8c', 'text-anchor': 'end' }, sensesSvg, fmtLam(SZ_HI));
     // the selected creature's range, highlighted
     const x0 = zx(sel.lo), x1 = zx(sel.hi);
+    const heat = sel.m === 'h';
     el('rect', { x: x0, y: 40, width: Math.max(x1 - x0, 4), height: 42, rx: 4,
-                 fill: 'rgba(232,169,58,.15)', stroke: '#e8a93a', 'stroke-width': 2 }, sensesSvg);
+                 fill: 'rgba(232,169,58,.15)', stroke: '#e8a93a', 'stroke-width': 2,
+                 'stroke-dasharray': heat ? '6 4' : 'none' }, sensesSvg);
     el('line', { x1: x0, y1: 82, x2: x0, y2: 104, stroke: 'rgba(232,169,58,.6)' }, sensesSvg);
     el('line', { x1: x1, y1: 82, x2: x1, y2: 104, stroke: 'rgba(232,169,58,.6)' }, sensesSvg);
     if (x1 - x0 > 110) {
@@ -1034,7 +995,8 @@ beam power      P = photons per second × energy per photon</pre>
                    'text-anchor': 'middle' }, sensesSvg, fmtLam(sel.lo) + ' – ' + fmtLam(sel.hi));
     }
     el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 146, 'font-size': 13.5, fill: '#cfd6e2',
-                 'text-anchor': 'middle', 'font-weight': 600 }, sensesSvg, sel.name.toUpperCase());
+                 'text-anchor': 'middle', 'font-weight': 600 }, sensesSvg,
+       sel.name.toUpperCase() + (heat ? ' · TARGET EMISSION' : ''));
   }
 
   // ---- readouts -----------------------------------------------------------

@@ -1,24 +1,16 @@
-three.module.min.js and three.core.min.js are copied unmodified from
-C:\Users\amyle\microns\vendor\three\ , which is the same build that ships on
-amyleesterling.github.io/microns. Three.js is MIT, copyright the Three.js
-authors.
+three.module.min.js and three.core.min.js are the official three.js build,
+copied unmodified from release r184. Three.js is MIT, copyright the Three.js authors.
+https://github.com/mrdoob/three.js
 
-Loaded through an import map, the way microns does it:
-  <script type="importmap">
-  {"imports":{"three":"../../vendor/three/three.module.min.js"}}
-  </script>
+HDRLoader.js and RGBELoader.js are the matching loaders from the same
+release's examples/jsm/loaders/, copied unmodified.
 
-Do not edit these files.
+Nothing else from three.js ships with this site. The only consumer is
+lab/cd.js, which dynamic-imports three.module.min.js and HDRLoader.js when
+the CD experiment mounts, so the library never loads on pages that do not
+need it, and the 2D canvas version of the disc stays as the fallback where
+WebGL is unavailable. The studio HDRI it lights the disc with is described
+in env/SOURCE.txt.
 
-addons/loaders/GLTFLoader.js and addons/utils/{BufferGeometryUtils,SkeletonUtils}.js
-come from the same microns vendor folder, unmodified.
-
-games/dust-off/danny.glb is derived from Amy's Meshy export
-"Meshy_AI_Kindly_Doctor_biped_Animation_Walking_withSkin.glb". Two changes,
-both made by scripts/optimise_glb.py and both deliberate:
-  * the 2048 square PNG albedo is resampled to a 512 JPEG, which takes the file
-    from 6.12 MB to 0.34 MB with no change to geometry, skin or animation
-  * the Meshy emissive trap is removed: emissiveFactor was [1,1,1] with an
-    emissive texture pointing at the SAME image as the albedo, so every surface
-    self-illuminated. Specular colour was also boosted to 2.0. Both are back to
-    neutral so the model responds to the scene lighting instead of glowing.
+Do not edit these files. To upgrade, replace all four together from one
+three.js release.
