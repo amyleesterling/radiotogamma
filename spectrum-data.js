@@ -156,21 +156,55 @@ window.SPECTRUM_DATA = (() => {
   // length in meters; each marker's wavelength is compared against the nearest
   // object in log space, with the honest ratio stated rather than hidden.
   const SCALE_OBJECTS = [
-    { id: 'city',      name: 'a city',            size: 5e3,    img: 'scale/city.png' },
-    { id: 'person',    name: 'a person',          size: 1.7,    img: 'scale/person.png' },
-    { id: 'apple',     name: 'an apple',          size: 0.08,   img: 'apple.png' },
-    { id: 'finger',    name: 'a finger’s width',  size: 0.016,  img: 'scale/finger.png' },
-    { id: 'sand',      name: 'a grain of sand',   size: 5e-4,   img: 'scale/sand.png' },
-    { id: 'cell',      name: 'a living cell',     size: 1.5e-5, img: 'scale/cell.png' },
-    { id: 'bacterium', name: 'a bacterium',       size: 2e-6,   img: 'scale/bacterium.png' },
-    { id: 'virus',     name: 'a virus',           size: 1e-7,   img: 'scale/virus.png' },
-    { id: 'dna',       name: 'a DNA double helix, across', size: 2e-9, img: 'scale/dna.png' },
-    { id: 'atom',      name: 'an atom',           size: 1e-10,  img: 'scale/atom.png' },
+    { id: 'city',      name: 'a city',            size: 5e3,    img: 'scale/city.webp' },
+    { id: 'person',    name: 'a person',          size: 1.7,    img: 'scale/person.webp' },
+    { id: 'apple',     name: 'an apple',          size: 0.08,   img: 'apple.webp' },
+    { id: 'finger',    name: 'a finger’s width',  size: 0.016,  img: 'scale/finger.webp' },
+    { id: 'sand',      name: 'a grain of sand',   size: 5e-4,   img: 'scale/sand.webp' },
+    { id: 'cell',      name: 'a living cell',     size: 1.5e-5, img: 'scale/cell.webp' },
+    { id: 'bacterium', name: 'a bacterium',       size: 2e-6,   img: 'scale/bacterium.webp' },
+    { id: 'virus',     name: 'a virus',           size: 1e-7,   img: 'scale/virus.webp' },
+    { id: 'dna',       name: 'a DNA double helix, across', size: 2e-9, img: 'scale/dna.webp' },
+    { id: 'atom',      name: 'an atom',           size: 1e-10,  img: 'scale/atom.webp' },
     // an atomic nucleus (~10 fm) sits below any wavelength in the displayed
     // 10 kHz–100 EHz window — it is here so the ladder keeps its footing if
     // the window ever grows, and as a reminder the spectrum does not end here
-    { id: 'nucleus',   name: 'an atomic nucleus', size: 1e-14,  img: 'scale/nucleus.png' },
+    { id: 'nucleus',   name: 'an atomic nucleus', size: 1e-14,  img: 'scale/nucleus.webp' },
   ];
 
-  return { LANDMARKS, STORIES, SCALE_OBJECTS };
+  // The spectral zoo: who senses what. m is the mode: 'v' photoreceptive
+  // vision, 'h' radiant heat absorbed and felt, 'a' the visitor. lo/hi are
+  // frequencies; for the heat-sensers they bound what the TARGET emits.
+  // senses.html shows the whole zoo; the Observatory's Senses layer shows the
+  // subset it names by id, so both pages draw from one list.
+  const ZOO = [
+    { id: 'human', m: 'v', lo: C/750e-9,  hi: C/380e-9, name: 'Your eye', icon: 'senses/human.png',
+      d: 'Sees <b>380–750 nm</b>. One octave of the whole spectrum — the sliver everything else on this page is measured against.' },
+    { id: 'bee', m: 'v', lo: C/650e-9,  hi: C/300e-9, name: 'Honeybee', icon: 'senses/bee.png',
+      d: 'Sees <b>300–650 nm</b> — the human window shifted up a notch. Flowers paint ultraviolet landing stripes for bees; deep red is invisible to them.' },
+    { id: 'bird', m: 'v', lo: C/700e-9,  hi: C/350e-9, name: 'Songbird', icon: 'senses/bird.png',
+      d: 'Sees <b>350–700 nm</b> with four cone types to your three — the fourth tuned to ultraviolet. Many birds wear UV plumage other birds can see and you cannot.' },
+    { id: 'shrimp', m: 'v', lo: C/720e-9,  hi: C/300e-9, name: 'Mantis shrimp', icon: 'senses/shrimp.png',
+      d: 'Sees <b>300–720 nm</b> through twelve photoreceptor classes — and reads polarized light on top, a second channel of the same photons. The most elaborate eye hardware known, on a shrimp.' },
+    { id: 'reindeer', m: 'v', lo: C/700e-9,  hi: C/305e-9, name: 'Reindeer', icon: 'senses/reindeer.png',
+      d: 'Sees down to roughly <b>300–320 nm</b>: reindeer lenses pass ultraviolet that human lenses block, and their retinas respond to it. Lichen, fur and urine all pop against UV-bright snow — a large, familiar mammal living in a wider world than yours.' },
+    { id: 'mouse', m: 'v', lo: C/650e-9,  hi: C/310e-9, name: 'House mouse', icon: 'senses/mouse.png',
+      d: 'The pantry goblin is a partly ultraviolet animal: mouse S-opsin peaks near <b>360 nm</b>, the lens transmits UV, and neurons in mouse visual cortex answer patterned UV stimuli.' },
+    { id: 'tilapia', m: 'v', lo: C/1020e-9, hi: C/930e-9, name: 'Nile tilapia', icon: 'senses/tilapia.png',
+      d: 'The near-infrared bridge: behavioral experiments found eye-mediated responses at <b>930–1020 nm</b>, just beyond your red edge — photoreception, not felt warmth. Zebrafish and guppies answer around 845–910 nm; green swordtails reach roughly 825–845 nm.' },
+    { id: 'skin', m: 'h', lo: C/100e-6,  hi: C/750e-9, name: 'Your skin', icon: 'senses/hand.png',
+      d: 'Detects radiant heat across roughly <b>750 nm – 100 µm</b>. Hold a palm toward a fire and you are absorbing its infrared and reading the warming — imaging, crudely, with no picture.' },
+    { id: 'beetle', m: 'h', lo: C/4e-6,    hi: C/2.4e-6, name: 'Fire beetle', icon: 'senses/beetle.png',
+      d: 'Melanophila beetles carry infrared organs on the thorax most sensitive near <b>2.4–4 µm</b> — the radiation of a forest fire. Absorbed heat mechanically clicks tiny sensilla, steering them toward freshly burned trees, where they breed. The mid-infrared desert, colonized.' },
+    { id: 'mosquito', m: 'h', lo: C/30e-6,   hi: C/3e-6,   name: 'Mosquito (female Aedes)', icon: 'senses/mosquito.png',
+      d: 'Detects the radiant heat of skin: a 34 °C human glows across roughly <b>3–30 µm</b>, peaking near 9.4 µm, and female Aedes aegypti read that glow — alongside CO₂ and odor — from as far as ~70 cm, with TRPA1 and two opsins near the antennal tips. A tiny thermal-guidance missile, unfortunately powered by ankles.' },
+    { id: 'bat', m: 'h', lo: C/13e-6,   hi: C/8e-6,   name: 'Vampire bat', icon: 'senses/bat.png',
+      d: 'Heat-sensitive pits around the nose respond to surfaces warmer than about 29 °C — warm blood under thin skin, glowing near <b>8–13 µm</b> — via a specially tuned TRPV1 receptor. Mammals independently invented a face-mounted thermal targeting system.' },
+    { id: 'visitor', m: 'a', lo: C/0.21,    hi: C/1e-3,   name: 'The Visitor',
+      d: 'Claims to see <b>1 mm – 21 cm</b>. To its eyes the cosmic microwave background is daylight, every Wi-Fi router is a lamp left rudely on, and the 21 cm hydrogen line is its favorite color. Range self-reported and unverifiable; falls off the animal strip entirely, so it is drawn on the full spectrum above. Do not feed.' },
+    { id: 'viper', m: 'h', lo: C/30e-6,   hi: C/5e-6,   name: 'Pit viper', icon: 'senses/viper.png',
+      d: 'Facial pits detect the radiant heat of warm-blooded prey glowing at <b>5–30 µm</b>, sharp enough to strike in total darkness. Not seen as color — absorbed and felt, four octaves below your red.' },
+  ];
+
+  return { LANDMARKS, STORIES, SCALE_OBJECTS, ZOO };
 })();
