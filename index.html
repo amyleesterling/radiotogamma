@@ -83,6 +83,9 @@
      the rainbow button but got more visible next to it. The bar's own 24px
      bottom margin has room for the letter. */
   .specvisbar .specmark::after { top: auto; bottom: -20px; }
+  .specbar .lmdot { position: absolute; bottom: 2px; width: 3px; height: 3px; margin-left: -1.5px;
+                    border-radius: 50%; background: rgba(239,244,251,.55); pointer-events: none; }
+  .specmeta b { color: #eff4fb; font-weight: 600; }
   .specmark.a { background: #7ee0ff; color: #7ee0ff; }
   .specmark.b { background: #e8a93a; color: #e8a93a; }
 
@@ -256,6 +259,26 @@
   .applestat .specval { font-size: 19px; }
   @media (max-width: 559px) { .applestats { grid-template-columns: 1fr; } }
 
+  /* dial three: the glow. The orb wears the blackbody colour; the slider runs
+     black through ember, white and blue-white, the way a heated thing does. */
+  .glowcap { margin-top: 34px; }
+  .glowrow { display: flex; gap: 18px; align-items: center; margin: 0 0 6px; }
+  .gloworb { width: 72px; height: 72px; border-radius: 50%; flex: none; background: #0a0c10;
+             border: 1px solid rgba(196,228,255,.18); transition: box-shadow .2s, background .2s; }
+  .glowctl { flex: 1; min-width: 0; }
+  .glowctl input[type=range]::-webkit-slider-runnable-track {
+    background: linear-gradient(90deg, #06080d, #3a1010 38%, #ff5a1f 56%, #ffd9a0 70%, #ffffff 80%, #9fc4ff); }
+  .glowctl input[type=range]::-moz-range-track {
+    background: linear-gradient(90deg, #06080d, #3a1010 38%, #ff5a1f 56%, #ffd9a0 70%, #ffffff 80%, #9fc4ff); }
+  .glowctl input[type=range]::-webkit-slider-thumb {
+    background: radial-gradient(circle at 34% 30%, #ffffff, #ffe2a8 45%, #ff8a3a 90%); }
+  .glowctl input[type=range]::-moz-range-thumb {
+    background: radial-gradient(circle at 34% 30%, #ffffff, #ffe2a8 45%, #ff8a3a 90%); }
+  .glowbar { height: 64px; }
+  .glowbar canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .specmark.glow { background: #ffd479; color: #ffd479; }
+  .applestat.g { border-left: 3px solid #ffd479; }
+  .glownote { margin: 0 0 12px; }
   .appleouts { flex: 1 1 260px; min-width: 240px; display: grid;
                grid-template-columns: 1fr 1fr; gap: 10px; }
   .applepanel { border: 1px solid rgba(196,228,255,.14); padding: 10px 12px; min-width: 0; }
@@ -373,6 +396,15 @@
       </div>
       <a class="trylab" href="lab.html#exp-sky">→ RUN THIS EXPERIMENT IN THE LIGHT LAB</a>
     </details>
+    <details>
+      <summary>Blow a soap bubble</summary>
+      <p>No pigment, no prism, no grating. A soap film is a few hundred nanometres thick, so
+      light reflecting off its back surface returns a fraction of a wavelength behind light
+      reflecting off the front. Colours whose waves land in step show; colours that land out of
+      step cancel. The swirl is the thickness of the film, made visible, and the black patch that
+      spreads just before it pops is the film gone thinner than any colour can survive.</p>
+      <a class="trylab" href="lab.html#exp-film">→ WATCH ONE DRAIN IN THE LIGHT LAB</a>
+    </details>
   </div>
   </div>
 
@@ -428,6 +460,38 @@
     Please do not eat any irradiated apples!
   </p>
 
+  <p class="cap glowcap">Everything warm glows. Dial three is temperature. Every object above absolute zero
+     radiates across this whole bar, and one number decides where the glow peaks:</p>
+  <div class="glowrow">
+    <div class="gloworb" id="glowOrb" aria-hidden="true"></div>
+    <div class="glowctl applepow">
+      <input type="range" id="glowT" min="0" max="1000" value="500"
+             aria-label="Temperature, from one millikelvin to ten billion kelvin">
+      <p class="applepowline" id="glowLine"></p>
+    </div>
+  </div>
+  <div class="specscroll">
+    <div class="specbar glowbar" id="glowBar">
+      <canvas id="glowCurve"></canvas>
+      <div class="specmark glow" id="markGlow" tabindex="0" role="slider" aria-label="Peak of the glow"></div>
+    </div>
+    <div class="specticks" id="glowTicks"></div>
+  </div>
+  <div class="applestats">
+    <div class="applestat g"><div class="speclabel">PEAK OF THE GLOW</div>
+      <div class="specval" id="glowPeak"></div><div class="specmeta" id="glowPeakMeta"></div></div>
+    <div class="applestat e"><div class="speclabel">RADIATED, PER SQUARE METRE</div>
+      <div class="specval" id="glowPow"></div><div class="specmeta" id="glowPowMeta"></div></div>
+  </div>
+  <p class="applenote glownote" id="glowNote"></p>
+  <div class="specpresets applesets" id="glowPresets"></div>
+  <p class="applecaveat">
+    Planck's law, drawn per unit wavelength and scaled to its own peak; the marker sits at Wien's
+    λ<sub>max</sub> = 2.898 mm·K ÷ T. Counted per unit frequency instead, the peak lands 1.76× lower,
+    which is why the cosmic microwave background is quoted both at 1.06 mm and at 160 GHz: the same
+    glow, sliced two ways. Radiated power is Stefan–Boltzmann, σT⁴, for a perfect emitter.
+  </p>
+
   <p class="colophon">Everything on this site runs the real physics in miniature: Planck's
      E&nbsp;=&nbsp;hf behind every readout, Snell and dispersion in the prism, the grating
      equation on a real 1.6&nbsp;µm track pitch in the CD, the 42° droplet cone, Rayleigh's
@@ -437,6 +501,7 @@
   <p class="colophon" style="border-top:0; padding-top:0; margin-top:10px">Built by Amy Robinson Sterling
      <a href="https://x.com/amyneurons" style="color:#7ee0ff">@amyneurons</a>, with Fable and Sol.</p>
 </div>
+<script src="spectrum-data.js"></script>
 <script>
 // Every figure here is derived from the two marker positions, so the readouts
 // and the ratio cannot drift apart from one another.
@@ -455,12 +520,24 @@
     { lo: 3e16, hi: 3e19, name: 'x-ray', col: 'rgba(126,224,255,.16)' },
     { lo: 3e19, hi: 1e20, name: 'gamma', col: 'rgba(226,120,180,.20)' },
   ];
-  const PRESETS = [
-    ['FM radio', 100e6], ['Wifi', 2.4e9],
-    ['Microwave oven', 2.45e9], ['Body heat', 3e13], ['Red laser', C / 633e-9],
-    ['Green laser', C / 532e-9], ['Blue laser', C / 450e-9],
-    ['Sunburn, UVB', C / 300e-9], ['Dental x-ray', 3e18],
-  ];
+  // the landmarks are the observatory's, read from spectrum-data.js, so a
+  // name or a frequency can never differ between the two pages
+  const { LANDMARKS } = window.SPECTRUM_DATA;
+  const lmById = Object.fromEntries(LANDMARKS.map(l => [l.id, l]));
+  const PRESETS = ['fm-radio', 'wifi', 'microwave-oven', 'body-heat', 'red-laser', 'dust-off',
+                   'blue-laser', 'uvb', 'dental-xray'].map(id => [lmById[id].name, lmById[id].hz]);
+  // the landmark a frequency sits on, if it sits on one
+  const lmAt = f => LANDMARKS.find(l => Math.abs(Math.log10(f / l.hz)) < 0.002) || null;
+  // Dragging on a sixteen-decade bar is coarse (a marker is two pixels wide),
+  // so a marker released within a few pixels of a landmark settles onto it
+  // and the readout names it. Keyboard steps never snap.
+  function snapF(f, hostEl) {
+    const w = hostEl.getBoundingClientRect().width || 700;
+    const radius = 7 / w * (F1 - F0);              // seven pixels, in decades
+    let best = null, bd = radius;
+    for (const l of LANDMARKS) { const d = Math.abs(Math.log10(f / l.hz)); if (d < bd) { bd = d; best = l; } }
+    return best ? best.hz : f;
+  }
 
   const bar = document.getElementById('specBar');
   const vis = document.getElementById('specVis');
@@ -476,7 +553,7 @@
   const vF = x => Math.pow(10, Math.log10(VIS_LO) + clamp(x, 0, 1) * (Math.log10(VIS_HI) - Math.log10(VIS_LO)));
 
   const FU = [[1e18,'EHz'],[1e15,'PHz'],[1e12,'THz'],[1e9,'GHz'],[1e6,'MHz'],[1e3,'kHz'],[1,'Hz']];
-  const WU = [[1e3,'km'],[1,'m'],[1e-2,'cm'],[1e-3,'mm'],[1e-6,'µm'],[1e-9,'nm'],[1e-12,'pm']];
+  const WU = [[1e3,'km'],[1,'m'],[1e-2,'cm'],[1e-3,'mm'],[1e-6,'µm'],[1e-9,'nm'],[1e-12,'pm'],[1e-15,'fm']];
   // h/e, so E = f * this is straight to eV without a separate joule step
   const EV_PER_HZ = 4.135667696e-15;
   const EU = [[1e9,'GeV'],[1e6,'MeV'],[1e3,'keV'],[1,'eV'],[1e-3,'meV'],[1e-6,'µeV']];
@@ -549,6 +626,14 @@
   }
   paintBands(bar);
   paintTicks(document.getElementById('specTicks'));
+  // every landmark leaves a dot along the foot of the bar: the things a
+  // marker can settle on, and a hint of how crowded the top decades are
+  for (const l of LANDMARKS) {
+    const d = document.createElement('i');
+    d.className = 'lmdot'; d.title = l.name;
+    d.style.left = (toX(l.hz) * 100) + '%';
+    bar.appendChild(d);
+  }
 
   // The heading names the bands the two markers are actually sitting in, low
   // to high, so it rides along as you drag. Amy caught it stuck on "Radio to
@@ -565,19 +650,18 @@
     mA.style.left = (toX(fA) * 100) + '%'; mA.dataset.tag = 'A';
     mB.style.left = (toX(fB) * 100) + '%'; mB.dataset.tag = 'B';
     valA.innerHTML = freq(fA); valB.innerHTML = freq(fB);
-    metaA.innerHTML = bandOf(fA) + ', ' + wave(fA) + ', ' + energy(fA) + ' per photon';
-    metaB.innerHTML = bandOf(fB) + ', ' + wave(fB) + ', ' + energy(fB) + ' per photon';
+    const lA = lmAt(fA), lB = lmAt(fB);
+    metaA.innerHTML = (lA ? '<b>' + lA.name + '</b> · ' : '') + bandOf(fA) + ', ' + wave(fA) + ', ' + energy(fA) + ' per photon';
+    metaB.innerHTML = (lB ? '<b>' + lB.name + '</b> · ' : '') + bandOf(fB) + ', ' + wave(fB) + ', ' + energy(fB) + ' per photon';
     const r = ratio(Math.max(fA, fB) / Math.min(fA, fB));
     valR.textContent = r;
     // the opening line names what the markers actually sit on, so the first
     // screen is a statement, not an A/B abstraction
     const PRETTY = { 'Green laser': 'green laser light', 'Sunlight': 'sunlight',
-                     'Red laser': 'red laser light', 'Blue laser': 'blue laser light' };
-    const nameFor = f => {
-      for (const [n, pf] of PRESETS)
-        if (Math.abs(Math.log10(f / pf)) < 0.002) return PRETTY[n] || n;
-      return null;
-    };
+                     'Red laser': 'red laser light', 'Blue laser': 'blue laser light',
+                     'Human body heat': 'your body heat', 'Campfire': 'a campfire',
+                     'Supernova': 'a supernova', 'Lightning (radio crackle)': 'lightning\u2019s radio crackle' };
+    const nameFor = f => { const l = lmAt(f); return l ? (PRETTY[l.name] || l.name) : null; };
     const nA = nameFor(fA), nB = nameFor(fB);
     document.getElementById('subLine').innerHTML = (nA && nB
       ? '<b>' + nA + '</b> and <b>' + nB + '</b> are the same phenomenon, <b>' + r + '</b>&times; apart in frequency.'
@@ -761,14 +845,14 @@
     visBand.addEventListener('click', e => { e.stopPropagation(); openVisible(); });
   }
 
-  grab(mA, bar, (x, f) => { fA = clamp(f != null ? f : toF(x), 1e4, 1e20); }, () => fA);
-  grab(mB, bar, (x, f) => { fB = clamp(f != null ? f : toF(x), 1e4, 1e20); }, () => fB);
+  grab(mA, bar, (x, f) => { fA = clamp(f != null ? f : snapF(toF(x), bar), 1e4, 1e20); }, () => fA);
+  grab(mB, bar, (x, f) => { fB = clamp(f != null ? f : snapF(toF(x), bar), 1e4, 1e20); }, () => fB);
   grab(mV, vis, (x, f) => { fB = clamp(f != null ? f : vF(x), VIS_LO, VIS_HI); }, () => fB);
 
   const nearer = (f) => Math.abs(Math.log10(f / fA)) < Math.abs(Math.log10(f / fB));
   bar.addEventListener('pointerdown', (e) => {
     const r = bar.getBoundingClientRect();
-    const f = toF((e.clientX - r.left) / r.width);
+    const f = snapF(toF((e.clientX - r.left) / r.width), bar);
     if (nearer(f)) fA = f; else fB = f;
     render();
   });
@@ -1178,6 +1262,183 @@
     }
     range.addEventListener('input', upd);
     upd();
+  })();
+
+  // ---- dial three: everything warm glows -----------------------------------
+  // One temperature; Planck's law draws the glow across the bar, Wien's law
+  // places the peak, Stefan-Boltzmann counts the power. The orb shows what
+  // the eye would see, which below the Draper point (798 K) is nothing.
+  (() => {
+    const K_B = 1.380649e-23, WIEN = 2.897771955e-3, SIGMA = 5.670374419e-8;
+    const T_LO = 1e-3, T_HI = 1e10;                   // slider range, kelvin
+    const T_DEC = Math.log10(T_HI / T_LO);
+    const bar = document.getElementById('glowBar');
+    const mark = document.getElementById('markGlow');
+    const slider = document.getElementById('glowT');
+    const curve = document.getElementById('glowCurve');
+    const cctx = curve.getContext('2d');
+    paintBands(bar, toX, false);
+    paintTicks(document.getElementById('glowTicks'));
+    let T = 5772, presetName = null, presetWhy = null;
+
+    const GLOW_PRESETS = [
+      ['Dilution fridge', 0.01, 'the coldest floor of a quantum computer, ten millikelvin: even that glows, peaking at 1 GHz in the radio.'],
+      ['Boomerang Nebula', 1, 'the coldest natural place known, a gas cloud 5,000 light-years away, one degree above absolute zero.'],
+      ['Cosmic microwave background', 2.725, 'the afterglow of the Big Bang: the whole sky glows at this temperature, peaking in the microwave.'],
+      ['Liquid helium', 4.2, 'the coolant around every superconducting magnet, in MRI scanners and the LHC alike.'],
+      ['Pluto', 44, 'Pluto\u2019s surface on an ordinary day, glowing in the far infrared.'],
+      ['Liquid nitrogen', 77, 'cold enough to shatter a rose, and still radiating.'],
+      ['Dry ice', 195, 'solid carbon dioxide; the fog is water freezing out of the air around it.'],
+      ['Ice water', 273, 'zero on the Celsius scale, and 273 degrees of glow above absolute zero.'],
+      ['You', 310, 'skin temperature: you glow in the infrared, peaking near 9 µm, at about 500 watts from every square metre of skin.'],
+      ['Boiling water', 373, 'a kettle at the boil, radiating a little over a kilowatt per square metre.'],
+      ['Pizza oven', 750, 'a wood-fired dome: just short of the Draper point, where a hot thing first glows visibly in the dark.'],
+      ['Lava', 1400, 'basalt fresh from a vent: the orange you see is the visible tail of a glow that is mostly infrared.'],
+      ['Candle flame', 1800, 'glowing soot particles; the yellow is thermal, the blue base is chemistry.'],
+      ['Filament bulb', 2700, 'a tungsten filament: warm white to the eye, and about 95% of its output is infrared.'],
+      ['Betelgeuse', 3500, 'a red supergiant, cool as stars go, peaking just below the visible band.'],
+      ['The Sun', 5772, 'the surface: the peak sits in the middle of the visible band, and eyes evolved to use it.'],
+      ['Sirius', 9940, 'the brightest star in the night sky, blue-white, peaking in the near ultraviolet.'],
+      ['Rigel', 12100, 'a blue supergiant; most of its light is ultraviolet you will never see.'],
+      ['Lightning channel', 30000, 'the air inside a lightning bolt for a few microseconds: five times the Sun\u2019s surface.'],
+      ['Hottest stars', 45000, 'O-type stars: the visible light is the tail, the glow itself is ultraviolet.'],
+      ['Neutron star surface', 1e6, 'a young neutron star, glowing in soft X-rays.'],
+      ['Solar corona', 2e6, 'the Sun\u2019s outer atmosphere, hundreds of times hotter than the surface below it, which is why the corona is photographed in X-rays.'],
+      ['Solar core', 1.57e7, 'where the fusion happens; a photon born here takes many thousands of years to reach the surface.'],
+      ['Galaxy cluster gas', 5e7, 'the thin gas between the galaxies of a cluster, seen by X-ray telescopes as a glowing halo.'],
+      ['Universe at one second', 1e10, 'the entire cosmos, one second after the Big Bang, glowing in gamma rays.'],
+    ];
+
+    const fPeak = t => C * t / WIEN;                  // Wien: lambda_max = b / T
+    const tOf = f => WIEN * f / C;
+    const sliderT = v => Math.pow(10, Math.log10(T_LO) + (v / 1000) * T_DEC);
+    const sliderV = t => Math.round((Math.log10(t) - Math.log10(T_LO)) / T_DEC * 1000);
+    const fmtT = t => t < 0.1 ? num(t * 1000) + ' <span class="u">mK</span>'
+      : t < 10 ? parseFloat(t.toPrecision(4)) + ' <span class="u">K</span>'
+      : t < 1e4 ? Math.round(t).toLocaleString('en-US') + ' <span class="u">K</span>'
+      : t < 1e6 ? Math.round(t).toLocaleString('en-US') + ' <span class="u">K</span>'
+      : t < 1e9 ? num(t / 1e6) + ' million <span class="u">K</span>'
+      : num(t / 1e9) + ' billion <span class="u">K</span>';
+    const PU2 = [[1e12,'TW'],[1e9,'GW'],[1e6,'MW'],[1e3,'kW'],[1,'W'],[1e-3,'mW'],[1e-6,'µW'],[1e-9,'nW'],[1e-12,'pW']];
+
+    // the colour a glowing body shows the eye (Tanner Helland's fit, good from
+    // 1000 K to 40 000 K); below the Draper point it is simply dark
+    function bbRGB(t) {
+      if (t < 700) return [0, 0, 0];
+      const tt = clamp(t, 1000, 40000) / 100;
+      let r, g, b;
+      if (tt <= 66) {
+        r = 255; g = 99.4708025861 * Math.log(tt) - 161.1195681661;
+        b = tt <= 19 ? 0 : 138.5177312231 * Math.log(tt - 10) - 305.0447927307;
+      } else {
+        r = 329.698727446 * Math.pow(tt - 60, -0.1332047592);
+        g = 288.1221695283 * Math.pow(tt - 60, -0.0755148492); b = 255;
+      }
+      const k = t < 1000 ? 0.12 + 0.88 * (t - 700) / 300 : 1;   // the first dull red
+      return [r, g, b].map(v => clamp(v, 0, 255) * k);
+    }
+
+    // Planck's B_lambda, in log space so nothing overflows, scaled to its peak
+    function planckRel(f, t) {
+      const lam = C / f, lamMax = WIEN / t;
+      const u = 6.62607015e-34 * C / (lam * K_B * t), um = 6.62607015e-34 * C / (lamMax * K_B * t);
+      const lnE = x => x > 50 ? x : Math.log(Math.expm1(x));
+      return Math.exp(-5 * Math.log(lam / lamMax) - lnE(u) + lnE(um));
+    }
+    function drawCurve() {
+      const r = curve.getBoundingClientRect();
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      curve.width = Math.round(r.width * dpr); curve.height = Math.round(r.height * dpr);
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const W = r.width, Hh = r.height;
+      cctx.clearRect(0, 0, W, Hh);
+      const rgb = bbRGB(T);
+      const lit = rgb[0] + rgb[1] + rgb[2] > 30;
+      const col = lit ? rgb.map(Math.round).join(',') : '232,169,58';   // ember tint for the invisible glow
+      const g = cctx.createLinearGradient(0, 0, 0, Hh);
+      g.addColorStop(0, 'rgba(' + col + ',' + (lit ? .75 : .45) + ')');
+      g.addColorStop(1, 'rgba(' + col + ',.05)');
+      cctx.beginPath(); cctx.moveTo(0, Hh);
+      for (let x = 0; x <= W; x += 1) {
+        const rel = planckRel(toF(x / W), T);
+        cctx.lineTo(x, Hh - 3 - (Hh - 6) * rel);
+      }
+      cctx.lineTo(W, Hh); cctx.closePath();
+      cctx.fillStyle = g; cctx.fill();
+      cctx.strokeStyle = 'rgba(' + col + ',' + (lit ? .95 : .7) + ')'; cctx.lineWidth = 1.5;
+      cctx.beginPath();
+      for (let x = 0; x <= W; x += 1) {
+        const y = Hh - 3 - (Hh - 6) * planckRel(toF(x / W), T);
+        if (x === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
+      }
+      cctx.stroke();
+    }
+
+    function seeNote(t, band) {
+      if (t < 700) return 'Invisible: all of this glow is ' + band + (t > 250
+        ? ', and skin can feel it as warmth.' : ', far too faint and too long for a body to feel.');
+      if (t < 1000) return 'A faint deep red in a dark room. The Draper point, where a hot thing first shows a glow, is 798 K.';
+      if (t < 2000) return 'Red to orange, like a stove coil: the eye sees only the short tail of a glow that is mostly infrared.';
+      if (t < 4000) return 'Yellow-white, the colour of a filament or a cool star.';
+      if (t < 7500) return 'White. This is sunlight, and the visible band sits right at the peak.';
+      if (t < 30000) return 'Blue-white. Hotter than the Sun, and most of the glow has already moved into the ultraviolet.';
+      return 'Blue-white to the eye, but the eye is catching the far tail: the glow itself peaks in ' + band + '.';
+    }
+
+    function glowRender() {
+      const f = fPeak(T), onBar = f >= 1e4 && f <= 1e20;
+      mark.style.display = onBar ? '' : 'none';
+      if (onBar) {
+        mark.style.left = (toX(f) * 100) + '%'; mark.dataset.tag = 'peak';
+        ariaSlider(mark, f, F0, F1);
+      }
+      slider.value = sliderV(T);
+      drawCurve();
+      const band = bandOf(f);
+      const rgb = bbRGB(T), orb = document.getElementById('glowOrb');
+      if (rgb[0] + rgb[1] + rgb[2] > 30) {
+        const c = rgb.map(Math.round).join(',');
+        orb.style.background = 'radial-gradient(circle at 36% 32%, rgba(255,255,255,.55), rgba(' + c + ',1) 45%, rgba(' + c + ',.75) 100%)';
+        orb.style.boxShadow = '0 0 28px 8px rgba(' + c + ',.55), 0 0 60px 20px rgba(' + c + ',.18)';
+        orb.style.borderColor = 'rgba(' + c + ',.6)';
+      } else {
+        orb.style.background = '#0a0c10';
+        orb.style.boxShadow = 'none';
+        orb.style.borderColor = 'rgba(196,228,255,.18)';
+      }
+      document.getElementById('glowLine').innerHTML = '<b>' + fmtT(T) + '</b>' + (presetName ? ' · ' + presetName : '') +
+        (onBar ? '' : ' · the peak has left the right edge of this bar');
+      document.getElementById('glowPeak').innerHTML = wave(f);
+      document.getElementById('glowPeakMeta').innerHTML = freq(f) + ' · ' + band;
+      const P = SIGMA * Math.pow(T, 4);
+      // past the unit ladders (a ten-billion-kelvin fireball radiates 5.7e32 W/m²) fall back to powers of ten
+      document.getElementById('glowPow').innerHTML = (P >= 1e15 || P < 1e-12) ? sci(P) + ' <span class="u">W</span>/m²' : unit(P, PU2, 'W') + '/m²';
+      const sunRatio = P / (SIGMA * Math.pow(5772, 4));
+      const rword = v => v >= 1e18 ? sci(v) : ratio(v);
+      document.getElementById('glowPowMeta').innerHTML = sunRatio >= 0.5
+        ? rword(sunRatio) + '× the Sun\u2019s surface'
+        : '1/' + rword(1 / sunRatio) + ' of the Sun\u2019s surface';
+      document.getElementById('glowNote').innerHTML = seeNote(T, band) + (presetWhy ? ' <span class="applecaveat" style="display:inline">' + presetName + ': ' + presetWhy + '</span>' : '');
+    }
+    function setT(t, name, why) {
+      T = clamp(t, T_LO, T_HI); presetName = name || null; presetWhy = why || null;
+      glowRender();
+    }
+    slider.addEventListener('input', () => setT(sliderT(+slider.value)));
+    grab(mark, bar, (x, f) => { setT(tOf(f != null ? f : toF(x))); }, () => fPeak(T), glowRender);
+    bar.addEventListener('pointerdown', (e) => {
+      const r = bar.getBoundingClientRect();
+      setT(tOf(toF((e.clientX - r.left) / r.width)));
+    });
+    const presets = document.getElementById('glowPresets');
+    for (const [n, t, why] of GLOW_PRESETS) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = n;
+      b.addEventListener('click', () => setT(t, n, why));
+      presets.appendChild(b);
+    }
+    new ResizeObserver(drawCurve).observe(curve);
+    setT(5772, 'The Sun', GLOW_PRESETS.find(p => p[0] === 'The Sun')[2]);
   })();
 })();
 </script>
