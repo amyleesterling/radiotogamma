@@ -135,6 +135,17 @@
   .exp .controls button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
   .exp .controls button[aria-pressed="true"] { color: #7ee0ff; border-color: rgba(126,224,255,.6);
     background: rgba(126,224,255,.08); }
+  .exp .controls button[hidden] { display: none; }
+  /* the CD's payoff: three beats of prose under the stage, each fading in as
+     the dive reaches the pits and then the waves; never drawn over the scene */
+  .cdwhy { margin: 12px 0 0; max-width: 70ch; }
+  .cdwhy[hidden] { display: none; }
+  .cdwhy p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; color: #9aa2b1;
+             opacity: 0; transform: translateY(4px); transition: opacity .5s ease, transform .5s ease; }
+  .cdwhy p.on { opacity: 1; transform: none; }
+  .cdwhy b { color: #eff4fb; font-weight: 600; }
+  .cdwhy .num { color: #7ee0ff; margin-left: 6px; white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .cdwhy p { transition: none; } }
   .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 26px; max-width: 70ch; }
 </style>
 </head>
