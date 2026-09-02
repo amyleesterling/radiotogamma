@@ -80,6 +80,7 @@
            background: rgba(196,150,255,.04); padding: 13px 16px; margin: 0 0 30px; }
   .polar h2 { font-size: 12px; letter-spacing: .12em; color: #c88fff; margin: 0 0 7px; font-weight: 600; }
   .polar p { margin: 0; font-size: 13px; color: #9aa2b1; line-height: 1.6; max-width: 74ch; }
+  .polar p b { color: #cfe6e6; }
   .xray { border: 1px solid rgba(226,120,180,.35); border-left: 3px solid #e278b4;
           background: repeating-linear-gradient(45deg, rgba(226,120,180,.04) 0 8px, rgba(226,120,180,.09) 8px 10px);
           padding: 13px 16px; margin: 0 0 26px; }
@@ -87,8 +88,12 @@
   .xray p { margin: 0; font-size: 13px; color: #9aa2b1; line-height: 1.6; max-width: 74ch; }
   .xray .fcicon, .polar .fcicon { height: 62px; width: auto; float: right; margin: 0 0 8px 10px;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
-  .polar .fcpair { float: right; display: flex; gap: 6px; margin: 0 0 8px 10px; }
-  .polar .fcpair .fcicon { float: none; margin: 0; }
+  .polar > p { margin: 0 0 14px; }
+  .polar .fieldcard { border-color: rgba(200,143,255,.28); border-left-color: #c88fff;
+                      background: rgba(200,143,255,.04); }
+  .polar .skyline { display: inline-block; margin-top: 6px; font-size: 12px; letter-spacing: .08em;
+    color: #c88fff; text-decoration: none; border: 1px solid rgba(200,143,255,.35); padding: 6px 10px; }
+  .polar .skyline:hover { border-color: #c88fff; background: rgba(200,143,255,.08); }
   .xray b { color: #cfe6e6; }
 
   .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 26px; max-width: 74ch; }
@@ -131,9 +136,8 @@
        aria-label="The selected creature's range highlighted on the spectrum"></svg>
   <p class="zoonote">The top bar is the whole spectrum, radio to gamma; the gold window wedges down into
      a magnified strip running from the far infrared to the near ultraviolet, where every creature on
-     this page lives. Polarization is a second property of light rather than a wider band — cuttlefish
-     read polarization contrast, and bees, ants, butterflies and dung beetles steer by polarized
-     skylight. The mantis shrimp carries that flag here.</p>
+     this page lives. Polarization is a second property of light rather than a wider band, so it
+     gets its own wing below.</p>
 
   <div class="fields">
     <h2>⌁ FIELDS — electromagnetic senses with no wavelength</h2>
@@ -155,6 +159,39 @@
            pairs in cryptochrome proteins of the eye, which would make the compass something a bird
            <em>sees</em>.</p></div>
     </div>
+  </div>
+
+  <div class="polar">
+    <h2>⟋ POLARIZATION — a second property of the same photons</h2>
+    <p>Light is a wave in the electric field, and that field swings <em>across</em> the direction of
+       travel: up-and-down, side-to-side, or any angle between. That angle is polarization, and nothing
+       in a human eye registers it. The sky is full of it all the same. Air scatters sunlight most
+       strongly at right angles to the sun (the same 1/λ⁴ scattering that makes it blue), and light
+       scattered through a right angle comes out almost fully polarized, so a great ring of polarized
+       sky runs 90° from the sun all day. Some eyes read that ring as a compass; some read polarization
+       the way yours reads colour.</p>
+    <div class="fieldcards">
+      <div class="fieldcard"><img class="fcicon" src="senses/cuttlefish.png" alt="Cuttlefish" loading="lazy"><h3>Cuttlefish</h3>
+        <p>Colour-blind, and yet it sees a channel you cannot: cuttlefish tell polarization angles apart
+           to about <b>1°</b>, the finest polarization vision measured in any animal. Transparent prey
+           that vanish in plain light stand out in polarization contrast, and the skin can flash
+           polarized patterns invisible to most of the reef.</p></div>
+      <div class="fieldcard"><img class="fcicon" src="senses/dungbeetle.png" alt="Dung beetle" loading="lazy"><h3>Dung beetle</h3>
+        <p>Rolls its ball in a dead-straight line away from the pile by reading the polarization pattern
+           of the sky through a special strip along the top of each eye. The first animal shown to steer
+           by <b>polarized moonlight</b>, a million times fainter than the day sky; on moonless nights it
+           switches to the glow of the Milky Way.</p></div>
+      <div class="fieldcard"><img class="fcicon" src="senses/shrimp.png" alt="Mantis shrimp" loading="lazy"><h3>Mantis shrimp</h3>
+        <p>Reads linear polarization like the cuttlefish, and then goes one further: the only animal known
+           to detect <b>circular</b> polarization, light whose field corkscrews as it travels. It uses the
+           channel for private signalling, and its eye has been copied into camera filters.</p></div>
+      <div class="fieldcard"><img class="fcicon" src="senses/bee.png" alt="Honeybee" loading="lazy"><h3>Honeybee &amp; desert ant</h3>
+        <p>Karl von Frisch found in 1949 that bees steer by the sky's polarization when the sun is hidden;
+           a patch of blue sky is enough. Desert ants of the genus <em>Cataglyphis</em> run the same
+           compass to walk hundreds of metres out over featureless sand and straight back to a
+           centimetre-wide nest hole.</p></div>
+    </div>
+    <a class="skyline" href="lab.html#exp-sky">→ THE SCATTERING THAT POLARIZES THE SKY, IN THE LIGHT LAB</a>
   </div>
 
   <div class="xray">
