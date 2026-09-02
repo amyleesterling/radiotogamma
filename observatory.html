@@ -297,6 +297,15 @@
     background: radial-gradient(circle at 34% 30%, #ffffff, #ffd2cc 45%, #ff6b5e 90%);
     border: 2px solid #eff4fb; cursor: grab; box-shadow: 0 0 14px rgba(255,107,94,.85); }
   .shift input[type=range]:focus-visible { outline: 2px solid #ff6b5e; outline-offset: 4px; }
+  .shiftwave { position: relative; height: 96px; border: 1px solid rgba(196,228,255,.16); background: #05070c; margin: 0 0 6px; }
+  .shiftwave canvas { display: block; width: 100%; height: 100%; }
+  .shiftwave .lane-tag { position: absolute; left: 8px; top: 7px; font-size: 10.5px; letter-spacing: .08em; color: #cfd6e2; }
+  .shiftwave .lane-tag.o { top: auto; bottom: 7px; color: #ff6b5e; }
+  .shiftverdict { font-size: 13.5px; color: #9aa2b1; line-height: 1.6; margin: 0 0 12px; }
+  .shiftverdict b { color: #cfe6e6; font-weight: 600; }
+  .shiftstopnote { font-size: 12.5px; color: #8b98a8; margin: 6px 0 12px; min-height: 1.2em; }
+  .shiftruler { color: #ff6b5e; border-color: rgba(255,107,94,.45); margin: 0 0 12px; }
+  .shiftruler:hover { color: #ffb3a7; border-color: #ff6b5e; background: rgba(255,107,94,.08); }
   .shiftline { font-size: 13px; color: #8b98a8; margin: 0 0 8px; }
   .shiftline b { color: #eff4fb; font-weight: 600; }
   .shiftread { font-size: 14px; color: #cfe6e6; line-height: 1.6; margin: 10px 0 10px; }
@@ -528,10 +537,18 @@ beam power      P = photons per second × energy per photon</pre>
     <input type="range" id="shiftZ" min="0" max="1000" value="0"
            aria-label="Redshift, from here to the first light of the universe">
     <p class="shiftline" id="shiftLine"></p>
+    <div class="shiftwave">
+      <span class="lane-tag e">AS IT LEFT</span>
+      <span class="lane-tag o">AS IT ARRIVES</span>
+      <canvas id="shiftWave" aria-hidden="true"></canvas>
+    </div>
     <svg class="spec" id="shiftSvg" viewBox="0 0 1000 120" role="img"
          aria-label="The emitted wave and where it arrives on the spectrum after redshift"></svg>
     <p class="shiftread" id="shiftRead"></p>
+    <p class="shiftverdict" id="shiftVerdict"></p>
     <div class="sensechips shiftstops" id="shiftStops" role="group" aria-label="Places in the past"></div>
+    <p class="shiftstopnote" id="shiftStopNote"></p>
+    <button class="ctl shiftruler" id="shiftRuler" type="button">PUT IT ON THE RULER · A = as it left, B = as it arrives</button>
     <p class="note">Redshift is not a colour filter. Space itself has expanded while the light was in
        transit, and every wave in it stretched by the same factor, 1 + z, so a line emitted at one
        wavelength arrives at that wavelength times 1 + z, and its frequency and photon energy fall by
@@ -704,6 +721,7 @@ beam power      P = photons per second × energy per photon</pre>
     p.set('b', S.bId || S.bHz.toExponential(6));
     if (S.focLo > F0 + 1e-6 || S.focHi < F1 - 1e-6) p.set('focus', S.focLo.toFixed(3) + '_' + S.focHi.toFixed(3));
     if (S.layer) p.set('layer', S.layer);
+    if (S.layer === 'shift') { p.set('z', fmtZ(shiftZ)); if (shiftSrc) p.set('src', shiftSrc); }
     history.replaceState(null, '', '?' + p.toString());
   }
   function decodeState() {
@@ -722,6 +740,9 @@ beam power      P = photons per second × energy per photon</pre>
       { S.focLo = clamp(f[0], F0, F1); S.focHi = clamp(f[1], F0, F1); }
     const layer = p.get('layer');
     if (['matter','wave','stories','senses','sky','shift'].includes(layer)) S.layer = layer;
+    const z = parseFloat(p.get('z')), src = parseInt(p.get('src'), 10);
+    if (isFinite(z) && z >= 0 && z <= Z_MAX) shiftZ = z;
+    if (isFinite(src) && src >= 0 && src < SHIFT_SOURCES.length) shiftSrc = src;
   }
 
   // ---- svg helpers --------------------------------------------------------
@@ -1253,35 +1274,102 @@ beam power      P = photons per second × energy per photon</pre>
       el('path', { d: 'M' + (xo + 1) + ' 24 l8 -4 v8 z', fill: '#ff6b5e' }, shiftSvg);
       el('text', { x: (xr + xo) / 2, y: 18, 'font-size': 10.5, fill: '#ff6b5e', 'text-anchor': 'middle' }, shiftSvg, '×' + ratioWord(k) + ' longer');
     }
+    // the two labels share a row when the lines are far apart and step aside
+    // for each other when the shift is small
+    const close = z > 0.002 && xr - xo < 110;
     el('line', { x1: xr, x2: xr, y1: 30, y2: 80, stroke: '#eff4fb', 'stroke-width': 2 }, shiftSvg);
-    el('text', { x: clamp(xr, 30, OW - 30), y: 112, 'font-size': 10.5, fill: '#eff4fb', 'text-anchor': 'middle' }, shiftSvg, 'emitted · ' + wave(fRest));
+    el('text', { x: clamp(xr + (close ? 6 : 0), 30, OW - 4), y: 104, 'font-size': 10.5, fill: '#eff4fb',
+                 'text-anchor': close ? 'start' : 'middle' }, shiftSvg, 'as it left · ' + wave(fRest));
     if (z > 0.002) {
       el('line', { x1: xo, x2: xo, y1: 30, y2: 80, stroke: '#ff6b5e', 'stroke-width': 2.5 }, shiftSvg);
-      el('text', { x: clamp(xo, 30, OW - 30), y: 102, 'font-size': 10.5, fill: '#ff6b5e', 'text-anchor': 'middle', 'font-weight': 600 }, shiftSvg, 'arrives · ' + wave(fObs));
+      el('text', { x: clamp(xo - (close ? 6 : 0), 4, OW - 30), y: 104, 'font-size': 10.5, fill: '#ff6b5e',
+                   'text-anchor': close ? 'end' : 'middle', 'font-weight': 600 }, shiftSvg, 'arrives · ' + wave(fObs));
     }
     const bandR = BANDS.find(b => fRest >= b.lo && fRest < b.hi), bandO = BANDS.find(b => fObs >= b.lo && fObs < b.hi);
     const bn = b => b ? b.name : 'below the radio end of this bar';
     const tl = lookback(z), age = AGE_NOW - tl;
     $('shiftRead').innerHTML = z <= 0.002
       ? 'Light leaves ' + src.who + ' at <b>' + wave(fRest) + '</b>, ' + bn(bandR) + '. From here, nothing stretches it: this is the line as emitted.'
-      : 'Light leaves ' + src.who + ' at <b>' + wave(fRest) + '</b> (' + bn(bandR) + '). It arrives <b class="z">' +
+      : 'Light leaves ' + src.who + ' at <b>' + wave(fRest) + '</b> (' + bn(bandR) + '). It arrives at <b class="z">' +
         wave(fObs) + '</b>, ' + bn(bandO) + ': stretched <b>' + ratioWord(k) + '×</b> by the expansion of space during <b>' +
         gyr(tl) + '</b> of travel. When it left, the universe was <b>' + gyr(age) + '</b> old.';
+    // who can catch it, and what the stretch cost each photon
+    $('shiftVerdict').innerHTML = z <= 0.002 ? '' :
+      'Each photon arrives with <b>1/' + ratioWord(k) + '</b> of the energy it set out with; the stretch is paid for in energy. ' +
+      'At ' + wave(fObs) + ', <b>' + Math.round(transAt(fObs) * 100) + '%</b> gets through the air, and this is ' + catcher(fObs) + '.';
+    const stop = SHIFT_STOPS.find(st => Math.abs(Math.log1p(st[0]) - Math.log1p(z)) < 0.005);
+    $('shiftStopNote').textContent = stop ? stop[1] + ': ' + stop[2] : '';
+    $('shiftZ').setAttribute('aria-valuetext', 'z = ' + fmtZ(z) + ', ' + ratioWord(k) + ' times longer');
+    drawShiftWave(k);
+  }
+  // which instrument catches light arriving at this wavelength
+  function catcher(f) {
+    const lam = C / f;
+    if (lam < 300e-9) return 'ultraviolet: Hubble\u2019s job, from orbit';
+    if (lam < 1e-6) return 'the optical window: telescopes on the ground, and eyes';
+    if (lam < 5e-6) return 'near-infrared: JWST\u2019s NIRCam territory, which is why the telescope built to find the first galaxies sees infrared';
+    if (lam < 28e-6) return 'mid-infrared: JWST\u2019s MIRI, cooled to 7 K so its own glow does not drown the signal';
+    if (lam < 1e-3) return 'the far-infrared and sub-millimetre: ALMA on the Chajnantor plateau, or a cold telescope in space';
+    return 'radio: the same dishes that map the microwave background and hunt the 21 cm line';
+  }
+  // the wave itself, before and after: the same train of crests, stretched.
+  // Past a few dozen-fold the arriving wave is longer than the box, so the
+  // lane shows the part of one crest that fits and says so.
+  const shiftCanvas = $('shiftWave'), shiftCtx = shiftCanvas.getContext('2d');
+  function drawShiftWave(k) {
+    const r = shiftCanvas.getBoundingClientRect();
+    if (!r.width) return;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    shiftCanvas.width = Math.round(r.width * dpr); shiftCanvas.height = Math.round(r.height * dpr);
+    shiftCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = r.width, Hh = r.height;
+    shiftCtx.clearRect(0, 0, W, Hh);
+    const lane = (y0, h, cycles, col, width) => {
+      const amp = h * 0.32, mid = y0 + h / 2;
+      shiftCtx.beginPath();
+      for (let px = 0; px <= W; px += 1) {
+        const y = mid - Math.sin(px / W * cycles * TAU) * amp;
+        if (px === 0) shiftCtx.moveTo(px, y); else shiftCtx.lineTo(px, y);
+      }
+      shiftCtx.strokeStyle = col; shiftCtx.lineWidth = width; shiftCtx.stroke();
+    };
+    const N = 7;                                     // crests in the box as emitted
+    lane(0, Hh / 2, N, 'rgba(239,244,251,.9)', 1.6);
+    lane(Hh / 2, Hh / 2, N / k, '#ff6b5e', 2);
+    // captions sit top-right of each lane, clear of the lane tags at the left
+    shiftCtx.font = '10.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    shiftCtx.textAlign = 'right'; shiftCtx.fillStyle = '#8b98a8';
+    shiftCtx.fillText(N + ' crests', W - 8, 16);
+    shiftCtx.fillStyle = '#ffb3a7';
+    const nc = N / k;
+    shiftCtx.fillText(nc >= 1 ? nc.toFixed(nc < 10 ? 1 : 0) + ' crests'
+      : (W < 520 ? '1 crest = ' + ratioWord(k / N) + '× this box' : 'one crest would be ' + ratioWord(k / N) + '× wider than this box'),
+      W - 8, Hh / 2 + 16);
   }
   function initShift() {
     const sel = $('shiftSrc');
     SHIFT_SOURCES.forEach((s, i) => { const o = document.createElement('option'); o.value = i; o.textContent = s.name; sel.appendChild(o); });
-    sel.addEventListener('change', () => { shiftSrc = +sel.value; renderShift(); });
-    $('shiftZ').addEventListener('input', () => { shiftZ = zOfSlider(+$('shiftZ').value); renderShift(); });
+    sel.value = shiftSrc;
+    sel.addEventListener('change', () => { shiftSrc = +sel.value; renderShift(); encodeState(); });
+    $('shiftZ').addEventListener('input', () => { shiftZ = zOfSlider(+$('shiftZ').value); renderShift(); encodeState(); });
     const stops = $('shiftStops');
     for (const [z, name, note] of SHIFT_STOPS) {
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = name; b.title = note; b.dataset.z = z;
-      b.addEventListener('click', () => { shiftZ = z; renderShift(); });
+      b.addEventListener('click', () => { shiftZ = z; renderShift(); encodeState(); });
       stops.appendChild(b);
     }
+    // the whole page becomes the comparison: A is the line as it left, B as it arrives
+    $('shiftRuler').addEventListener('click', () => {
+      const src = SHIFT_SOURCES[shiftSrc];
+      setMarker('a', src.hz, src.hz === byId['h-alpha'].hz ? 'h-alpha' : undefined);
+      setMarker('b', src.hz / (1 + shiftZ));
+      setFocus(F0, F1);
+      render();
+      scrollTo({ top: 0, behavior: reduced.matches ? 'auto' : 'smooth' });
+    });
+    new ResizeObserver(() => drawShiftWave(1 + shiftZ)).observe(shiftCanvas);
   }
-  initShift();
 
   // ---- readouts -----------------------------------------------------------
   function renderComposer() {
@@ -1871,6 +1959,7 @@ beam power      P = photons per second × energy per photon</pre>
   tourBtn.addEventListener('click', () => { ti = 0; tOverlay.hidden = false; tourStep(); });
 
   decodeState();
+  initShift();
   applyLayer();
   render();
   // a shared link that names a layer should land the reader on that layer,
