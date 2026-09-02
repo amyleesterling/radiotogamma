@@ -276,6 +276,33 @@
   .wavectl { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; flex-wrap: wrap; font-size: 12.5px; color: #8b98a8; }
   .wavectl select { font: inherit; font-size: 12.5px; background: #04070a; color: #cfe6e6; border: 1px solid rgba(196,228,255,.2); padding: 6px 8px; }
 
+  .shiftctl { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 13px; color: #9aa2b1; margin: 0 0 8px; }
+  .shiftctl label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+  .shiftctl select { font: inherit; font-size: 13px; background: #04070a; color: #cfe6e6; border: 1px solid rgba(196,228,255,.2);
+                     padding: 6px 8px; max-width: 100%; min-width: 0; }
+  .shift input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 40px;
+    margin: 0 0 2px; background: transparent; cursor: ew-resize; touch-action: pan-y; }
+  .shift input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 4px;
+    background: linear-gradient(90deg, #eff4fb, #ff6b5e 45%, #7a2d1a 80%, #2a1610);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
+  .shift input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
+    width: 28px; height: 28px; border-radius: 50%; margin-top: -10px;
+    background: radial-gradient(circle at 34% 30%, #ffffff, #ffd2cc 45%, #ff6b5e 90%);
+    border: 2px solid #eff4fb; cursor: grab;
+    box-shadow: 0 0 14px rgba(255,107,94,.85), 0 3px 8px rgba(0,0,0,.6); }
+  .shift input[type=range]::-moz-range-track { height: 8px; border-radius: 4px;
+    background: linear-gradient(90deg, #eff4fb, #ff6b5e 45%, #7a2d1a 80%, #2a1610); }
+  .shift input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 30%, #ffffff, #ffd2cc 45%, #ff6b5e 90%);
+    border: 2px solid #eff4fb; cursor: grab; box-shadow: 0 0 14px rgba(255,107,94,.85); }
+  .shift input[type=range]:focus-visible { outline: 2px solid #ff6b5e; outline-offset: 4px; }
+  .shiftline { font-size: 13px; color: #8b98a8; margin: 0 0 8px; }
+  .shiftline b { color: #eff4fb; font-weight: 600; }
+  .shiftread { font-size: 14px; color: #cfe6e6; line-height: 1.6; margin: 10px 0 10px; }
+  .shiftread b { color: #eff4fb; font-weight: 600; }
+  .shiftread b.z { color: #ff6b5e; }
+  .shiftstops button:hover, .shiftstops button[aria-pressed="true"] { color: #ffb3a7; border-color: rgba(255,107,94,.7); background: rgba(255,107,94,.08); }
   .skyread { font-size: 14px; color: #cfe6e6; line-height: 1.6; margin: 10px 0 0; }
   .skyread b.a { color: #7ee0ff; } .skyread b.b { color: #e8a93a; }
   .skyread .num { color: #eff4fb; }
@@ -427,6 +454,7 @@ beam power      P = photons per second × energy per photon</pre>
     <button class="ctl" data-layer="wave" type="button" aria-pressed="false">Wave view</button>
     <button class="ctl" data-layer="senses" type="button" aria-pressed="false">Senses</button>
     <button class="ctl" data-layer="sky" type="button" aria-pressed="false">Sky</button>
+    <button class="ctl" data-layer="shift" type="button" aria-pressed="false">Redshift</button>
     <button class="ctl" data-layer="stories" type="button" aria-pressed="false">Stories</button>
     <button class="ctl" id="tourBtn" type="button" style="color:#ffd479; border-color: rgba(232,169,58,.5)">✦ Guided tour</button>
   </div>
@@ -489,6 +517,26 @@ beam power      P = photons per second × energy per photon</pre>
        by the blue Cherenkov flash they make in the air. A dry mountaintop opens the millimetre
        and infrared cracks wider, which is why those telescopes live on Mauna Kea and the Chajnantor
        plateau, and why the infrared one that matters most went to space.</p>
+  </div>
+
+  <div class="panel shift" id="panelShift" hidden>
+    <h3>Redshift: space stretches the wave on the way</h3>
+    <div class="shiftctl">
+      <label>Light leaves as
+        <select id="shiftSrc"></select></label>
+    </div>
+    <input type="range" id="shiftZ" min="0" max="1000" value="0"
+           aria-label="Redshift, from here to the first light of the universe">
+    <p class="shiftline" id="shiftLine"></p>
+    <svg class="spec" id="shiftSvg" viewBox="0 0 1000 120" role="img"
+         aria-label="The emitted wave and where it arrives on the spectrum after redshift"></svg>
+    <p class="shiftread" id="shiftRead"></p>
+    <div class="sensechips shiftstops" id="shiftStops" role="group" aria-label="Places in the past"></div>
+    <p class="note">Redshift is not a colour filter. Space itself has expanded while the light was in
+       transit, and every wave in it stretched by the same factor, 1 + z, so a line emitted at one
+       wavelength arrives at that wavelength times 1 + z, and its frequency and photon energy fall by
+       the same factor. The lookback times come from the standard cosmology (flat, H₀ = 67.7 km/s/Mpc,
+       Ω<sub>m</sub> = 0.31), which puts the universe at 13.8 billion years old.</p>
   </div>
 
   <div class="panel stories" id="panelStories" hidden>
@@ -673,7 +721,7 @@ beam power      P = photons per second × energy per photon</pre>
     if (f.length === 2 && isFinite(f[0]) && isFinite(f[1]) && f[1] - f[0] > 0.01)
       { S.focLo = clamp(f[0], F0, F1); S.focHi = clamp(f[1], F0, F1); }
     const layer = p.get('layer');
-    if (['matter','wave','stories','senses','sky'].includes(layer)) S.layer = layer;
+    if (['matter','wave','stories','senses','sky','shift'].includes(layer)) S.layer = layer;
   }
 
   // ---- svg helpers --------------------------------------------------------
@@ -697,6 +745,7 @@ beam power      P = photons per second × energy per photon</pre>
     matterSvg.setAttribute('viewBox', '0 0 ' + OW + ' 190');
     sensesSvg.setAttribute('viewBox', '0 0 ' + OW + ' 170');
     skySvg.setAttribute('viewBox', '0 0 ' + OW + ' 210');
+    shiftSvg.setAttribute('viewBox', '0 0 ' + OW + ' 120');
   }
   const ovX  = f => S.linear ? (f / FMAX) * OW : (log(f) - F0) / (F1 - F0) * OW;
   const focX = f => (log(f) - S.focLo) / (S.focHi - S.focLo) * OW;
@@ -705,7 +754,7 @@ beam power      P = photons per second × energy per photon</pre>
 
   // ---- dom refs -----------------------------------------------------------
   const $ = id => document.getElementById(id);
-  const ovSvg = $('ovSvg'), focSvg = $('focSvg'), matterSvg = $('matterSvg'), sensesSvg = $('sensesSvg'), skySvg = $('skySvg');
+  const ovSvg = $('ovSvg'), focSvg = $('focSvg'), matterSvg = $('matterSvg'), sensesSvg = $('sensesSvg'), skySvg = $('skySvg'), shiftSvg = $('shiftSvg');
   const chA = $('chA'), chB = $('chB');
 
   // ---- overview -----------------------------------------------------------
@@ -1138,6 +1187,102 @@ beam power      P = photons per second × energy per photon</pre>
     $('skyRead').innerHTML = parts.join(' ');
   }
 
+  // ---- the redshift layer: one line, stretched by the expansion --------------
+  // Lookback time from flat LambdaCDM (H0 = 67.7, Omega_m = 0.31, a whisper of
+  // radiation so the CMB lands at the right age), integrated in ln(1+z).
+  const H0 = 67.7, OM = 0.31, OR = 9e-5, OL = 1 - OM - OR, T_H = 977.8 / H0;   // Gyr
+  const Ez = z => Math.sqrt(OR * Math.pow(1 + z, 4) + OM * Math.pow(1 + z, 3) + OL);
+  // age of the universe at redshift z, integrated upward from z so the early
+  // times keep their precision (the CMB is 380,000 years, a 3e-5 sliver of the
+  // total that a lookback subtraction would lose); lookback is the remainder
+  function ageAt(z) {                               // Gyr
+    const L0 = Math.log1p(z), L1 = Math.log(1e9), n = 1500; let sum = 0;
+    for (let i = 0; i < n; i++) sum += 1 / Ez(Math.expm1(L0 + (L1 - L0) * (i + 0.5) / n));
+    return T_H * sum * (L1 - L0) / n;
+  }
+  const AGE_NOW = ageAt(0);
+  const lookback = z => AGE_NOW - ageAt(z);
+  const SHIFT_SOURCES = [
+    { name: 'the red hydrogen line, 656 nm', hz: C / 656.3e-9, who: 'a galaxy\u2019s glowing hydrogen' },
+    { name: 'the ultraviolet hydrogen line, 122 nm', hz: C / 121.6e-9, who: 'the Lyman-alpha line of a young galaxy' },
+    { name: 'a sunlike star\u2019s peak, 500 nm', hz: C / 500e-9, who: 'the glow of an ordinary star' },
+    { name: 'the first light, a 3,000 K glow peaking at 0.97 µm', hz: C / 0.966e-6, who: 'the fog of the early universe at last scattering' },
+    { name: 'the 21 cm hydrogen line, 1.42 GHz', hz: 1.42040575e9, who: 'cold hydrogen gas between the first stars' },
+  ];
+  const SHIFT_STOPS = [                             // [z, name, note]
+    [0, 'Here', 'no stretch: the light as it left'],
+    [0.0037, 'Virgo cluster', 'our nearest big cluster of galaxies, 54 million light-years'],
+    [0.023, 'Coma cluster', 'a thousand galaxies, 320 million light-years'],
+    [0.158, '3C 273', 'the first quasar identified, in 1963: its lines were found sitting 16% too red'],
+    [1, 'z = 1', 'half the age of the universe ago'],
+    [2, 'Cosmic noon', 'when the universe made stars fastest'],
+    [6, 'End of reionization', 'the fog of neutral hydrogen finally burned off'],
+    [10.6, 'GN-z11', 'a galaxy Hubble found and JWST confirmed, 430 million years after the Big Bang'],
+    [14.32, 'JADES-GS-z14-0', 'the most distant galaxy confirmed, seen 290 million years after the Big Bang'],
+    [1090, 'The first light', 'the cosmic microwave background: the universe at 380,000 years old'],
+  ];
+  const Z_MAX = 1090;
+  let shiftZ = 0, shiftSrc = 0;
+  const zOfSlider = v => Math.expm1(Math.log1p(Z_MAX) * v / 1000);
+  const sliderOfZ = z => Math.round(Math.log1p(z) / Math.log1p(Z_MAX) * 1000);
+  const fmtZ = z => z < 0.01 ? z.toFixed(4) : z < 1 ? z.toFixed(3) : z < 100 ? z.toFixed(2) : String(Math.round(z));
+  const gyr = t => t < 0.001 ? Math.round(t * 1e6).toLocaleString('en-US') + ' years'
+    : t < 1 ? Math.round(t * 1000) + ' million years' : t.toFixed(t < 10 ? 2 : 1) + ' billion years';
+  function renderShift() {
+    if (S.layer !== 'shift') return;
+    const src = SHIFT_SOURCES[shiftSrc], z = shiftZ, k = 1 + z;
+    const fRest = src.hz, fObs = fRest / k;
+    $('shiftZ').value = sliderOfZ(z);
+    $('shiftLine').innerHTML = 'Redshift <b>z = ' + fmtZ(z) + '</b>: every wave arrives <b>' + ratioWord(k) + '×</b> longer' +
+      (z > 0 ? ', after ' + gyr(lookback(z)) + ' in transit' : '');
+    [...$('shiftStops').children].forEach(b => b.setAttribute('aria-pressed', String(Math.abs(Math.log1p(+b.dataset.z) - Math.log1p(z)) < 0.005)));
+    // the bar: bands, the emitted line, the arriving line, and the stretch between
+    shiftSvg.textContent = '';
+    const x = f => (log(f) - F0) / (F1 - F0) * OW;
+    BANDS.forEach(b => {
+      const x0 = x(b.lo), x1 = x(b.hi);
+      el('rect', { x: x0, y: 40, width: x1 - x0, height: 34, fill: `rgb(${b.col})`, opacity: b.name === 'visible' ? .6 : .22 }, shiftSvg);
+      if (x1 - x0 > 46) el('text', { x: x0 + 6, y: 61, 'font-size': 11, fill: 'rgba(239,244,251,.7)' }, shiftSvg, b.short);
+    });
+    for (let d = F0; d <= F1; d += 4)
+      el('text', { x: clamp(x(Math.pow(10, d)), 2, OW - 2), y: 90, 'font-size': 10, fill: '#6c7c8c',
+                   'text-anchor': d === F0 ? 'start' : d === F1 ? 'end' : 'middle' }, shiftSvg, freq(Math.pow(10, d)));
+    const xr = x(fRest), xo = x(Math.max(fObs, FMIN));
+    if (xr - xo > 8) {
+      el('line', { x1: xr - 4, x2: xo + 6, y1: 24, y2: 24, stroke: '#ff6b5e', 'stroke-width': 1.5 }, shiftSvg);
+      el('path', { d: 'M' + (xo + 1) + ' 24 l8 -4 v8 z', fill: '#ff6b5e' }, shiftSvg);
+      el('text', { x: (xr + xo) / 2, y: 18, 'font-size': 10.5, fill: '#ff6b5e', 'text-anchor': 'middle' }, shiftSvg, '×' + ratioWord(k) + ' longer');
+    }
+    el('line', { x1: xr, x2: xr, y1: 30, y2: 80, stroke: '#eff4fb', 'stroke-width': 2 }, shiftSvg);
+    el('text', { x: clamp(xr, 30, OW - 30), y: 112, 'font-size': 10.5, fill: '#eff4fb', 'text-anchor': 'middle' }, shiftSvg, 'emitted · ' + wave(fRest));
+    if (z > 0.002) {
+      el('line', { x1: xo, x2: xo, y1: 30, y2: 80, stroke: '#ff6b5e', 'stroke-width': 2.5 }, shiftSvg);
+      el('text', { x: clamp(xo, 30, OW - 30), y: 102, 'font-size': 10.5, fill: '#ff6b5e', 'text-anchor': 'middle', 'font-weight': 600 }, shiftSvg, 'arrives · ' + wave(fObs));
+    }
+    const bandR = BANDS.find(b => fRest >= b.lo && fRest < b.hi), bandO = BANDS.find(b => fObs >= b.lo && fObs < b.hi);
+    const bn = b => b ? b.name : 'below the radio end of this bar';
+    const tl = lookback(z), age = AGE_NOW - tl;
+    $('shiftRead').innerHTML = z <= 0.002
+      ? 'Light leaves ' + src.who + ' at <b>' + wave(fRest) + '</b>, ' + bn(bandR) + '. From here, nothing stretches it: this is the line as emitted.'
+      : 'Light leaves ' + src.who + ' at <b>' + wave(fRest) + '</b> (' + bn(bandR) + '). It arrives <b class="z">' +
+        wave(fObs) + '</b>, ' + bn(bandO) + ': stretched <b>' + ratioWord(k) + '×</b> by the expansion of space during <b>' +
+        gyr(tl) + '</b> of travel. When it left, the universe was <b>' + gyr(age) + '</b> old.';
+  }
+  function initShift() {
+    const sel = $('shiftSrc');
+    SHIFT_SOURCES.forEach((s, i) => { const o = document.createElement('option'); o.value = i; o.textContent = s.name; sel.appendChild(o); });
+    sel.addEventListener('change', () => { shiftSrc = +sel.value; renderShift(); });
+    $('shiftZ').addEventListener('input', () => { shiftZ = zOfSlider(+$('shiftZ').value); renderShift(); });
+    const stops = $('shiftStops');
+    for (const [z, name, note] of SHIFT_STOPS) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = name; b.title = note; b.dataset.z = z;
+      b.addEventListener('click', () => { shiftZ = z; renderShift(); });
+      stops.appendChild(b);
+    }
+  }
+  initShift();
+
   // ---- readouts -----------------------------------------------------------
   function renderComposer() {
     for (const [ch, m] of [[chA, 'a'], [chB, 'b']]) {
@@ -1356,7 +1501,7 @@ beam power      P = photons per second × energy per photon</pre>
   function render() {
     syncWidth();
     renderComposer(); renderSentence(); renderTable(); renderScale(); renderPower();
-    renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderSky(); renderWaveText();
+    renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderSky(); renderShift(); renderWaveText();
     encodeState();
     pokeWave();
   }
@@ -1556,6 +1701,7 @@ beam power      P = photons per second × energy per photon</pre>
     $('panelMatter').hidden = S.layer !== 'matter';
     $('panelSenses').hidden = S.layer !== 'senses';
     $('panelSky').hidden = S.layer !== 'sky';
+    $('panelShift').hidden = S.layer !== 'shift';
     $('panelWave').hidden = S.layer !== 'wave';
     $('panelStories').hidden = S.layer !== 'stories';
   }
@@ -1742,7 +1888,7 @@ beam power      P = photons per second × energy per photon</pre>
     else addEventListener('load', () => setTimeout(goLayer, 60), { once: true });
   }
   if (wantTest) selfTest();
-  addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderSky(); });
+  addEventListener('resize', () => { syncWidth(); renderOverview(); renderFocus(); renderMatter(); renderSenses(); renderSky(); renderShift(); });
 })();
 </script>
 <script src="share.js"></script>
