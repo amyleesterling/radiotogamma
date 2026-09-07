@@ -201,7 +201,7 @@ window.SPECTRUM_DATA = (() => {
     { id: 'bat', m: 'h', lo: C/13e-6,   hi: C/8e-6,   name: 'Vampire bat', icon: 'senses/bat.png',
       d: 'Heat-sensitive pits around the nose respond to surfaces warmer than about 29 °C — warm blood under thin skin, glowing near <b>8–13 µm</b> — via a specially tuned TRPV1 receptor. Mammals independently invented a face-mounted thermal targeting system.' },
     { id: 'visitor', m: 'a', lo: C/0.21,    hi: C/1e-3,   name: 'The Visitor',
-      d: 'Claims to see <b>1 mm – 21 cm</b>. To its eyes the cosmic microwave background is daylight, every Wi-Fi router is a lamp left rudely on, and the 21 cm hydrogen line is its favorite color. Range self-reported and unverifiable; falls off the animal strip entirely, so it is drawn on the full spectrum above. Do not feed.' },
+      d: 'Claims to see <b>1 mm – 21 cm</b>. To its eyes the cosmic microwave background is daylight, every Wi-Fi router is a lamp left rudely on, and the 21 cm hydrogen line is its favorite color. Range self-reported and unverifiable; falls off the animal strip entirely, so it is drawn on the whole-spectrum bar below. Do not feed.' },
     { id: 'viper', m: 'h', lo: C/30e-6,   hi: C/5e-6,   name: 'Pit viper', icon: 'senses/viper.png',
       d: 'Facial pits detect the radiant heat of warm-blooded prey glowing at <b>5–30 µm</b>, sharp enough to strike in total darkness. Not seen as color — absorbed and felt, four octaves below your red.' },
   ];

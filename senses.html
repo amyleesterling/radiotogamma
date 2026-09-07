@@ -124,23 +124,25 @@
      sees red or violet. For the heat-sensers, the highlighted band below is the radiation their
      <em>target</em> emits: a warm body, a wildfire, an ankle.</p>
 
-  <h2 class="group vision">◉ VISION — photoreception</h2>
+  <h2 class="group vision">◉ VISION · photoreception</h2>
   <div class="sensechips" id="chipsVision" role="group" aria-label="Animals with photoreceptive vision"></div>
-  <h2 class="group heat">♨ RADIANT HEAT — absorbed and felt <small>(the band shown is what the target emits)</small></h2>
+  <h2 class="group heat">♨ RADIANT HEAT · absorbed and felt <small>(the band shown is what the target emits)</small></h2>
   <div class="sensechips heatrow" id="chipsHeat" role="group" aria-label="Animals that detect radiant heat"></div>
   <h2 class="group alien">⟁ VISITOR <small>(one specimen; provenance unknown; claims self-reported)</small></h2>
   <div class="sensechips alienrow" id="chipsAlien" role="group" aria-label="Visitors"></div>
 
+  <div id="zooFigure">
   <p class="sensedesc" id="senseDesc"></p>
-  <svg class="spec" id="zooSvg" viewBox="0 0 1000 170" role="img"
-       aria-label="The selected creature's range highlighted on the spectrum"></svg>
-  <p class="zoonote">The top bar is the whole spectrum, radio to gamma; the gold window wedges down into
-     a magnified strip running from the far infrared to the near ultraviolet, where every creature on
-     this page lives. Polarization is a second property of light rather than a wider band, so it
-     gets its own wing below.</p>
+  <svg class="spec" id="zooSvg" viewBox="0 0 1000 182" role="img"
+       aria-label="The selected creature's range, shown first as a close-up and then placed on the whole spectrum"></svg>
+  <p class="zoonote">The strip on top is the close-up, far infrared to near ultraviolet, where every
+     creature on this page lives. It funnels down to the bar underneath, which is the whole spectrum
+     from radio to gamma, and the gold window there is the sliver the close-up covers. Polarization is
+     a second property of light rather than a wider band, so it gets its own wing below.</p>
+  </div>
 
   <div class="fields">
-    <h2>⌁ FIELDS — electromagnetic senses with no wavelength</h2>
+    <h2>⌁ FIELDS · electromagnetic senses with no wavelength</h2>
     <p>Static and slowly changing electric or magnetic fields are electromagnetic, certainly — but they
        are not propagating light, so they have no place on a wavelength ruler. Assigning a shark a
        wavelength range would be physics wearing a counterfeit mustache. These senses get their own wing:</p>
@@ -215,11 +217,17 @@
   'use strict';
   const C = 299792458;
   const VIS_LO = 4e14, VIS_HI = 7.9e14;
+  // n / s: the full name, and a short form for when the band is too narrow to
+  // spell it out. The bar carried no labels at all before, which made it a
+  // coloured stripe rather than a scale.
   const BANDS = [
-    { lo: 1e4, hi: 3e8, col: '74,150,224' }, { lo: 3e8, hi: 3e11, col: '74,200,224' },
-    { lo: 3e11, hi: VIS_LO, col: '196,96,64' }, { lo: VIS_LO, hi: VIS_HI, col: '255,255,255' },
-    { lo: VIS_HI, hi: 3e16, col: '138,96,230' }, { lo: 3e16, hi: 3e19, col: '126,224,255' },
-    { lo: 3e19, hi: 1e20, col: '226,120,180' },
+    { lo: 1e4, hi: 3e8, col: '74,150,224', n: 'RADIO', s: 'RADIO' },
+    { lo: 3e8, hi: 3e11, col: '74,200,224', n: 'MICROWAVE', s: 'MICRO' },
+    { lo: 3e11, hi: VIS_LO, col: '196,96,64', n: 'INFRARED', s: 'IR' },
+    { lo: VIS_LO, hi: VIS_HI, col: '255,255,255', n: 'VISIBLE', s: '' },
+    { lo: VIS_HI, hi: 3e16, col: '138,96,230', n: 'ULTRAVIOLET', s: 'UV' },
+    { lo: 3e16, hi: 3e19, col: '126,224,255', n: 'X-RAY', s: 'X' },
+    { lo: 3e19, hi: 1e20, col: '226,120,180', n: 'GAMMA', s: 'γ' },
   ];
   const F0 = 4, F1 = 20;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -250,8 +258,17 @@
   let OW = 1000;
   function syncWidth() {
     OW = svg.clientWidth || 1000;
-    svg.setAttribute('viewBox', '0 0 ' + OW + ' 170');
+    svg.setAttribute('viewBox', '0 0 ' + OW + ' ' + VH);
   }
+
+  // Layout, top to bottom: the close-up first, because that is the part with
+  // the animal in it, then the funnel, then the whole spectrum underneath so
+  // you can place what you just looked at.
+  const VH = 182;
+  const STRIP_Y = 20, STRIP_H = 36;          // the magnified animal strip
+  const BRACK_Y = 16, BRACK_H = 44;          // the creature's band, straddling it
+  const FULL_Y = 136, FULL_H = 22;           // radio to gamma, its own bar
+  const fits = (t, w, fs) => t && t.length * fs * 0.62 <= w - 4;
 
   const ovX = f => (Math.log10(f) - F0) / (F1 - F0) * OW;
   const zx = f => (Math.log10(f) - Math.log10(SZ_LO)) / (Math.log10(SZ_HI) - Math.log10(SZ_LO)) * OW;
@@ -266,10 +283,21 @@
         if (z.icon) b.innerHTML = '<img src="' + z.icon + '" alt="" loading="lazy">';
         b.appendChild(document.createTextNode(z.name));
         b.dataset.i = i;
-        b.addEventListener('click', () => { sel = i; render(); });
+        b.addEventListener('click', () => { sel = i; render(); revealFigure(); });
         wrap.appendChild(b);
       });
     }
+  }
+
+  // On a phone the three chip rows push the figure below the fold, so tapping a
+  // creature updated a picture the reader could not see. Scrolls only when the
+  // figure is not already on screen, and never on first paint.
+  function revealFigure() {
+    const fig = document.getElementById('zooFigure');
+    const r = fig.getBoundingClientRect();
+    if (r.top >= 0 && r.bottom <= innerHeight) return;
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    fig.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'nearest' });
   }
 
   function render() {
@@ -284,57 +312,72 @@
     svg.textContent = '';
     const AC = alien ? '123,255,142' : heat ? '255,140,90' : '232,169,58';
     const ACC = alien ? '#7bff8e' : heat ? '#ff8c5a' : '#e8a93a';
-    BANDS.forEach(b => {
-      el('rect', { x: ovX(b.lo), y: 0, width: ovX(b.hi) - ovX(b.lo), height: 16,
-                   fill: 'rgb(' + b.col + ')', opacity: .3 }, svg);
-    });
     const wx0 = ovX(SZ_LO), wx1 = ovX(SZ_HI);
-    el('rect', { x: wx0, y: 0, width: wx1 - wx0, height: 16, fill: 'none', stroke: ACC, 'stroke-width': 1.5 }, svg);
-    el('line', { x1: wx0, y1: 16, x2: 0, y2: 44, stroke: 'rgba(' + AC + ',.35)', 'stroke-dasharray': '3 3' }, svg);
-    el('line', { x1: wx1, y1: 16, x2: OW, y2: 44, stroke: 'rgba(' + AC + ',.35)', 'stroke-dasharray': '3 3' }, svg);
+
+    // ---- 1. the close-up, first, because the animal is in it -------------
     BANDS.forEach(b => {
       const lo = Math.max(b.lo, SZ_LO), hi = Math.min(b.hi, SZ_HI);
       if (hi <= lo) return;
-      el('rect', { x: zx(lo), y: 44, width: zx(hi) - zx(lo), height: 34, fill: 'rgb(' + b.col + ')', opacity: .4 }, svg);
+      el('rect', { x: zx(lo), y: STRIP_Y, width: zx(hi) - zx(lo), height: STRIP_H,
+                   fill: 'rgb(' + b.col + ')', opacity: .4 }, svg);
     });
     const defs = el('defs', {}, svg);
     const grad = el('linearGradient', { id: 'zooVis' }, defs);
     [['0%','#c92a2a'],['18%','#f08c00'],['36%','#ffd43b'],['54%','#37b24d'],['72%','#1098ad'],['86%','#3b5bdb'],['100%','#9c36b5']]
       .forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, grad));
-    el('rect', { x: zx(VIS_LO), y: 44, width: zx(VIS_HI) - zx(VIS_LO), height: 34,
+    el('rect', { x: zx(VIS_LO), y: STRIP_Y, width: zx(VIS_HI) - zx(VIS_LO), height: STRIP_H,
                  fill: 'url(#zooVis)', opacity: .85 }, svg);
-    el('text', { x: 4, y: 96, 'font-size': 11, fill: '#6c7c8c' }, svg, fmtLam(SZ_LO));
-    el('text', { x: OW - 4, y: 96, 'font-size': 11, fill: '#6c7c8c', 'text-anchor': 'end' }, svg, fmtLam(SZ_HI));
+    el('text', { x: 4, y: 12, 'font-size': 11, fill: '#6c7c8c' }, svg, fmtLam(SZ_LO));
+    el('text', { x: OW - 4, y: 12, 'font-size': 11, fill: '#6c7c8c', 'text-anchor': 'end' }, svg, fmtLam(SZ_HI));
+
+    // ---- 2. the funnel: that whole strip is this sliver ------------------
+    const SB = STRIP_Y + STRIP_H;
+    el('polygon', { points: [0, SB, OW, SB, wx1, FULL_Y, wx0, FULL_Y].join(' '),
+                    fill: 'rgba(' + AC + ',.05)' }, svg);
+    el('line', { x1: 0, y1: SB, x2: wx0, y2: FULL_Y, stroke: 'rgba(' + AC + ',.3)', 'stroke-dasharray': '3 3' }, svg);
+    el('line', { x1: OW, y1: SB, x2: wx1, y2: FULL_Y, stroke: 'rgba(' + AC + ',.3)', 'stroke-dasharray': '3 3' }, svg);
+
+    // ---- 3. the whole spectrum, its own bar, and labelled ----------------
+    BANDS.forEach(b => {
+      const x = ovX(b.lo), w = ovX(b.hi) - ovX(b.lo);
+      el('rect', { x, y: FULL_Y, width: w, height: FULL_H, fill: 'rgb(' + b.col + ')', opacity: .35 }, svg);
+      const t = fits(b.n, w, 9) ? b.n : fits(b.s, w, 9) ? b.s : null;
+      if (t) el('text', { x: x + w / 2, y: FULL_Y + FULL_H + 14, 'font-size': 9, fill: '#6c7c8c',
+                          'text-anchor': 'middle', 'letter-spacing': '.08em' }, svg, t);
+    });
+    el('rect', { x: wx0, y: FULL_Y - 2, width: wx1 - wx0, height: FULL_H + 4, fill: 'none',
+                 stroke: ACC, 'stroke-width': 1.5 }, svg);
 
     if (alien) {
-      // the visitor's band is off the animal strip: mark it on the full bar
-      const ax0 = ovX(z.lo), ax1 = ovX(z.hi);
-      el('rect', { x: ax0, y: -1, width: Math.max(ax1 - ax0, 4), height: 20, rx: 3,
-                   fill: 'rgba(' + AC + ',.14)', stroke: ACC, 'stroke-width': 2,
+      // the visitor's band is off the animal strip entirely, so it is marked
+      // on the whole-spectrum bar and labelled up in the close-up's gutter
+      const ax0 = ovX(z.lo), ax1 = ovX(z.hi), axm = (ax0 + ax1) / 2;
+      el('rect', { x: ax0, y: FULL_Y - 4, width: Math.max(ax1 - ax0, 4), height: FULL_H + 8, rx: 3,
+                   fill: 'rgba(' + AC + ',.16)', stroke: ACC, 'stroke-width': 2,
                    'stroke-dasharray': '5 4' }, svg);
-      el('line', { x1: (ax0 + ax1) / 2, y1: 19, x2: (ax0 + ax1) / 2, y2: 116, stroke: 'rgba(' + AC + ',.5)',
+      el('line', { x1: axm, y1: FULL_Y - 4, x2: axm, y2: 110, stroke: 'rgba(' + AC + ',.5)',
                    'stroke-dasharray': '3 4' }, svg);
-      el('text', { x: clamp((ax0 + ax1) / 2, 70, OW - 70), y: 134, 'font-size': 13, fill: '#a4ffb2',
-                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' – ' + fmtLam(z.hi));
-      el('text', { x: clamp((ax0 + ax1) / 2, 90, OW - 90), y: 154, 'font-size': 13.5, fill: '#cfd6e2',
+      el('text', { x: clamp(axm, 70, OW - 70), y: 82, 'font-size': 13, fill: '#a4ffb2',
+                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' to ' + fmtLam(z.hi));
+      el('text', { x: clamp(axm, 90, OW - 90), y: 102, 'font-size': 13.5, fill: '#cfd6e2',
                    'text-anchor': 'middle', 'font-weight': 600 }, svg, 'THE VISITOR · SELF-REPORTED');
       return;
     }
     const x0 = zx(z.lo), x1 = zx(z.hi);
-    el('rect', { x: x0, y: 40, width: Math.max(x1 - x0, 4), height: 42, rx: 4,
+    el('rect', { x: x0, y: BRACK_Y, width: Math.max(x1 - x0, 4), height: BRACK_H, rx: 4,
                  fill: 'rgba(' + AC + ',.15)', stroke: ACC, 'stroke-width': 2,
                  'stroke-dasharray': heat ? '6 4' : 'none' }, svg);
-    el('line', { x1: x0, y1: 82, x2: x0, y2: 104, stroke: 'rgba(' + AC + ',.6)' }, svg);
-    el('line', { x1: x1, y1: 82, x2: x1, y2: 104, stroke: 'rgba(' + AC + ',.6)' }, svg);
+    el('line', { x1: x0, y1: BRACK_Y + BRACK_H, x2: x0, y2: 68, stroke: 'rgba(' + AC + ',.6)' }, svg);
+    el('line', { x1: x1, y1: BRACK_Y + BRACK_H, x2: x1, y2: 68, stroke: 'rgba(' + AC + ',.6)' }, svg);
     const lab = heat ? '#ffb28f' : '#ffd479';
     if (x1 - x0 > 110) {
-      el('text', { x: clamp(x0, 34, OW - 34), y: 122, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.lo));
-      el('text', { x: clamp(x1, 34, OW - 34), y: 122, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.hi));
+      el('text', { x: clamp(x0, 34, OW - 34), y: 82, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.lo));
+      el('text', { x: clamp(x1, 34, OW - 34), y: 82, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.hi));
     } else {
-      el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 122, 'font-size': 13, fill: lab,
-                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' – ' + fmtLam(z.hi));
+      el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 82, 'font-size': 13, fill: lab,
+                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' to ' + fmtLam(z.hi));
     }
-    el('text', { x: clamp((x0 + x1) / 2, 80, OW - 80), y: 146, 'font-size': 13.5, fill: '#cfd6e2',
+    el('text', { x: clamp((x0 + x1) / 2, 80, OW - 80), y: 102, 'font-size': 13.5, fill: '#cfd6e2',
                  'text-anchor': 'middle', 'font-weight': 600 }, svg,
        z.name.toUpperCase() + (heat ? ' · TARGET EMISSION' : ''));
   }

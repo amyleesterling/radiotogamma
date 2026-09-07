@@ -465,7 +465,7 @@ beam power      P = photons per second × energy per photon</pre>
     <button class="ctl" data-layer="sky" type="button" aria-pressed="false">Sky</button>
     <button class="ctl" data-layer="shift" type="button" aria-pressed="false">Redshift</button>
     <button class="ctl" data-layer="stories" type="button" aria-pressed="false">Stories</button>
-    <button class="ctl" id="tourBtn" type="button" style="color:#ffd479; border-color: rgba(232,169,58,.5)">✦ Guided tour</button>
+    <button class="ctl" id="tourBtn" type="button" style="color:#ffd479; border-color: rgba(232,169,58,.5)">✦ Quiz: five questions</button>
   </div>
 
   <div class="panel" id="panelMatter" hidden>
@@ -481,21 +481,30 @@ beam power      P = photons per second × energy per photon</pre>
     <div class="wavebox">
       <span class="lane-tag a" id="waveTagA">A</span>
       <span class="lane-tag b" id="waveTagB">B</span>
-      <span class="badge">COMPRESSED ILLUSTRATION — NOT TO SCALE</span>
+      <span class="badge">WIDTH = THE WINDOW · SPEED COMPRESSED</span>
       <canvas id="waveCanvas"></canvas>
     </div>
     <div class="wavectl">
       <label for="obsWin">Observation window:</label>
       <select id="obsWin">
-        <option value="1">1 s</option><option value="1e-3">1 ms</option>
-        <option value="1e-6">1 µs</option><option value="1e-9" selected>1 ns</option>
-        <option value="1e-12">1 ps</option><option value="1e-15">1 fs</option>
+        <option value="1">1 s (second)</option>
+        <option value="1e-3">1 ms (millisecond)</option>
+        <option value="1e-6">1 µs (microsecond)</option>
+        <option value="1e-9" selected>1 ns (nanosecond)</option>
+        <option value="1e-12">1 ps (picosecond)</option>
+        <option value="1e-15">1 fs (femtosecond)</option>
+        <option value="1e-18">1 as (attosecond)</option>
+        <option value="1e-21">1 zs (zeptosecond)</option>
+        <option value="1e-24">1 ys (yoctosecond)</option>
       </select>
       <span id="obsText" class="num"></span>
     </div>
-    <p class="note">Speeds are compressed into a watchable range and cycle counts are mapped logarithmically —
-       no screen or clock can literally display both ends of a sixteen-decade range at once. Waves too dense
-       to resolve dissolve into a smear, which is the honest picture: too fast to see is a blur, not a strobe.</p>
+    <p class="note" id="waveNote"></p>
+    <p class="note">The width of the box is the window you picked, so the number of cycles drawn is
+       literally frequency times window. Only the animation speed is compressed: nothing can be shown
+       moving at 10<sup>23</sup> cycles a second. A wave too dense to resolve dissolves into a smear,
+       which is the honest picture, because too fast to see is a blur rather than a strobe. Pick a
+       shorter window and the fast lane slows into a wave while the slow lane flattens to a line.</p>
   </div>
 
   <div class="panel" id="panelSenses" hidden>
@@ -629,7 +638,8 @@ beam power      P = photons per second × energy per photon</pre>
   // ---- formatters (unit tables carried over from the wave instrument) ----
   const FU = [[1e18,'EHz'],[1e15,'PHz'],[1e12,'THz'],[1e9,'GHz'],[1e6,'MHz'],[1e3,'kHz'],[1,'Hz']];
   const WU = [[1e3,'km'],[1,'m'],[1e-2,'cm'],[1e-3,'mm'],[1e-6,'µm'],[1e-9,'nm'],[1e-12,'pm']];
-  const TU = [[1,'s'],[1e-3,'ms'],[1e-6,'µs'],[1e-9,'ns'],[1e-12,'ps'],[1e-15,'fs'],[1e-18,'as']];
+  const TU = [[1,'s'],[1e-3,'ms'],[1e-6,'µs'],[1e-9,'ns'],[1e-12,'ps'],[1e-15,'fs'],[1e-18,'as'],
+              [1e-21,'zs'],[1e-24,'ys']];
   const EU = [[1e9,'GeV'],[1e6,'MeV'],[1e3,'keV'],[1,'eV'],[1e-3,'meV'],[1e-6,'µeV'],[1e-9,'neV']];
   const num = v => v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : String(Math.round(v));
   const num5 = v => String(parseFloat(v.toPrecision(5)));   // 563.52, not 564
@@ -1516,8 +1526,15 @@ beam power      P = photons per second × energy per photon</pre>
   let waveW = 0, waveH = 0, waveDpr = 1, waveRAF = 0, waveOnScreen = false;
   const WAVE_HZ_MIN = 0.2, WAVE_HZ_MAX = 6;
   const visualHz = f => WAVE_HZ_MIN + (log(f) - F0) / (F1 - F0) * (WAVE_HZ_MAX - WAVE_HZ_MIN);
-  const CYC_LO = 1.2, CYC_HI = 240, RES_LO = 3.2, RES_HI = 7;
-  const cyclesAt = f => CYC_LO * Math.pow(CYC_HI / CYC_LO, (log(f) - F0) / (F1 - F0));
+  const RES_LO = 3.2, RES_HI = 7;
+  // The box is exactly as wide as the observation window, so a wave of f hertz
+  // completes f × win cycles across it. Nothing is mapped or compressed here:
+  // that count is the one number the control exists to change, and an earlier
+  // version mapped it logarithmically instead, which left the dropdown moving
+  // a sentence while the picture sat still. Clamped only where the count stops
+  // being drawable at all: a flat line below, a solid smear above.
+  let obsWin = 1e-9;
+  const cyclesAt = f => Math.min(4e6, Math.max(1e-4, f * obsWin));
   const SMEAR_STOPS = [0, .08, .2, .35, .5, .65, .8, .92, 1];
   function smear(mid, amp, color, alpha) {
     const g = waveCtx.createLinearGradient(0, mid - amp, 0, mid + amp);
@@ -1577,12 +1594,27 @@ beam power      P = photons per second × energy per photon</pre>
   new IntersectionObserver(en => { waveOnScreen = en[0].isIntersecting; pokeWave(); }).observe(waveCanvas);
   document.addEventListener('visibilitychange', pokeWave);
   reduced.addEventListener('change', pokeWave);
+  // 0.56 reads; 5.64e-1 does not, and a fraction of a cycle is exactly the
+  // case a reader most needs to understand
+  const cycText = n => n >= 1000 ? bigCount(n) : n >= 1 ? num(n)
+    : n >= 0.01 ? n.toFixed(2) : n.toExponential(2);
+  // what the lane actually looks like at this window, in the same words the
+  // reader would use for it
+  function laneReads(f) {
+    const n = f * obsWin, lim = (waveW || 900) / RES_LO;
+    if (n >= lim) return 'is too dense to draw and reads as a smear';
+    if (n < 0.35) return 'has no time to finish a cycle and flattens to a bobbing line';
+    return 'draws ' + cycText(n) + ' cycles';
+  }
   function renderWaveText() {
     $('waveTagA').textContent = 'A · ' + nameOf('a');
     $('waveTagB').textContent = 'B · ' + nameOf('b');
-    const win = +$('obsWin').value;
-    const cyc = f => { const n = f * win; return n >= 1000 ? bigCount(n) : n >= 1 ? num(n) : n.toExponential(2); };
-    $('obsText').textContent = 'in that window: A completes ' + cyc(S.aHz) + ' cycles, B completes ' + cyc(S.bHz) + '.';
+    obsWin = +$('obsWin').value;
+    $('obsText').textContent = 'in that window: A completes ' + cycText(S.aHz * obsWin) +
+      ' cycles, B completes ' + cycText(S.bHz * obsWin) + ' cycles.';
+    const rA = laneReads(S.aHz), rB = laneReads(S.bHz);
+    $('waveNote').textContent = 'Across this box, ' + nameOf('a') + ' ' + rA + '. ' +
+      (rA === rB ? 'The same for ' + nameOf('b') + '.' : nameOf('b') + ' ' + rB + '.');
   }
 
   // ---- master render -------------------------------------------------------
@@ -1797,7 +1829,8 @@ beam power      P = photons per second × energy per photon</pre>
     S.layer = S.layer === b.dataset.layer ? null : b.dataset.layer;
     applyLayer(); render();
   }));
-  $('obsWin').addEventListener('change', renderWaveText);
+  // the window drives the picture, not just the sentence under it
+  $('obsWin').addEventListener('change', () => { renderWaveText(); pokeWave(); });
 
   // ---- stories ---------------------------------------------------------------
   function playStory(s) {
@@ -1878,7 +1911,7 @@ beam power      P = photons per second × energy per photon</pre>
 
   // ---- boot -------------------------------------------------------------------
   const wantTest = new URLSearchParams(location.search).has('test');
-  // ---- Guided tour: five predict-first stops through the spectrum --------
+  // ---- Quiz: five predict-first questions, markers travelling to each ------
   const TOUR = [
     { a: 'wifi', b: 'microwave-oven',
       q: 'Wi-Fi and a microwave oven. How far apart in frequency?',
@@ -1904,7 +1937,7 @@ beam power      P = photons per second × energy per photon</pre>
   const tourBtn = $('tourBtn');
   const tOverlay = document.createElement('div');
   tOverlay.id = 'tourOverlay'; tOverlay.hidden = true;
-  tOverlay.innerHTML = '<div class="tourpanel holopanel" role="dialog" aria-modal="true" aria-label="Guided tour"></div>';
+  tOverlay.innerHTML = '<div class="tourpanel holopanel" role="dialog" aria-modal="true" aria-label="Spectrum quiz"></div>';
   document.body.appendChild(tOverlay);
   const tPanel = tOverlay.firstElementChild;
   let ti = 0;
@@ -1914,7 +1947,7 @@ beam power      P = photons per second × energy per photon</pre>
   function tourStep() {
     if (ti >= TOUR.length) {
       tPanel.classList.remove('answered');
-      tPanel.innerHTML = '<div class="thead"><span class="ttag">✦ GUIDED TOUR</span>' +
+      tPanel.innerHTML = '<div class="thead"><span class="ttag">✦ SPECTRUM QUIZ</span>' +
         '<button type="button" class="tclose">✕</button></div>' +
         '<p class="tq">That is the whole idea: one family of waves, and every pair on this page is ' +
         'the same comparison at a different scale. The bar is yours now.</p>' +
@@ -1930,9 +1963,9 @@ beam power      P = photons per second × energy per photon</pre>
     setMarker('b', byId[st.b].hz, st.b);
     render(); encodeState();
     tPanel.classList.remove('answered');
-    tPanel.innerHTML = '<div class="thead"><span class="ttag">✦ GUIDED TOUR</span>' +
+    tPanel.innerHTML = '<div class="thead"><span class="ttag">✦ SPECTRUM QUIZ</span>' +
       '<span class="tcount num">' + (ti + 1) + ' / ' + TOUR.length + '</span>' +
-      '<button type="button" class="tclose" aria-label="Close tour">✕</button></div>' +
+      '<button type="button" class="tclose" aria-label="Close quiz">✕</button></div>' +
       '<div class="tdots">' + TOUR.map((_, k) =>
         '<i class="' + (k < ti ? 'done' : k === ti ? 'on' : '') + '"></i>').join('') + '</div>' +
       '<p class="tq">' + st.q + '</p>' +
@@ -1940,7 +1973,7 @@ beam power      P = photons per second × energy per photon</pre>
         '<button type="button" data-i="' + k + '">' + c + '</button>').join('') + '</div>' +
       '<p class="treveal"></p>' +
       '<div class="tfoot"><button type="button" class="tnext">' +
-      (ti === TOUR.length - 1 ? 'FINISH →' : 'NEXT STOP →') + '</button>' +
+      (ti === TOUR.length - 1 ? 'FINISH →' : 'NEXT QUESTION →') + '</button>' +
       '<span class="tnote">Guess first. The markers above have already moved.</span></div>';
     const story = STORIES.find(x => (x.a === st.a && x.b === st.b) || (x.a === st.b && x.b === st.a));
     tPanel.querySelectorAll('.tchoices button').forEach(b => b.addEventListener('click', () => {

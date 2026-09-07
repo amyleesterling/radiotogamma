@@ -61,9 +61,14 @@
   .lmcard h3 { margin: 0 0 5px; font-size: 15px; color: #eff4fb; }
   .lmcard .e { font-size: 12.5px; color: #e278b4; margin: 0 0 7px; }
   .lmcard p { margin: 0; font-size: 13.5px; color: #9aa2b1; line-height: 1.6; }
-  .lmcard img { display: block; width: 100%; max-width: 520px; margin: 12px 0 6px;
-                border: 1px solid rgba(226,120,180,.3); }
-  .lmcard .credit { font-size: 11px; color: #5c6b7a; }
+  /* the photograph is the payoff, so it sits directly under the ruler you just
+     dragged, above the numbers rather than three cards below them */
+  .lmfig { margin: 0 0 20px; }
+  .lmfig img { display: block; width: 100%; max-width: 560px;
+               border: 1px solid rgba(226,120,180,.3); }
+  .lmfig figcaption { font-size: 11px; color: #5c6b7a; margin-top: 6px; max-width: 560px;
+                      line-height: 1.5; }
+  .lmfig figcaption b { color: #e278b4; font-weight: 600; }
 
   .dark { border: 1px solid rgba(196,228,255,.14); padding: 15px 18px; margin: 0 0 22px; }
   .dark h2 { font-size: 13px; letter-spacing: .12em; color: #e278b4; margin: 0 0 9px; font-weight: 600; }
@@ -112,15 +117,19 @@
      between 1.4 PeV and the Planck energy lie thirteen more orders of magnitude in which
      no photon has ever been seen.</p>
 
+  <figure class="lmfig" id="lmFigure" hidden>
+    <img id="lmImg" alt="">
+    <figcaption id="lmCredit"></figcaption>
+  </figure>
+
   <div class="readout">
     <div class="rcard"><div class="l">Photon energy</div><div class="v num" id="rE"></div><div class="m" id="rEm"></div></div>
-    <div class="rcard"><div class="l">Frequency</div><div class="v num" id="rF"></div><div class="m">oscillations per second</div></div>
+    <div class="rcard"><div class="l">Frequency</div><div class="v num" id="rF"></div><div class="m" id="rFm"></div></div>
     <div class="rcard"><div class="l">Wavelength</div><div class="v num" id="rL"></div><div class="m" id="rLm"></div></div>
   </div>
 
   <div class="lmcard" id="lmCard" hidden>
     <h3 id="lmName"></h3><div class="e num" id="lmE"></div><p id="lmWhy"></p>
-    <img id="lmImg" alt="" hidden><p class="credit" id="lmCredit" hidden></p>
   </div>
 
   <div class="dark">
@@ -160,6 +169,14 @@
   const fmtF = f => f >= 1e21 ? sci(f, 'Hz') : num(f / 1e18) + ' EHz';
   const fmtL = l => l >= 1e-12 ? num(l / 1e-12) + ' pm'
     : l >= 1e-16 ? num(l / 1e-15) + ' fm' : sci(l, 'm');
+  // the abbreviation spelled out: almost nobody has met a petaelectronvolt or a
+  // femtometre before, and the symbol alone teaches them nothing
+  const UNIT_NAME = { PeV: 'petaelectronvolts', TeV: 'teraelectronvolts', GeV: 'gigaelectronvolts',
+    MeV: 'megaelectronvolts', keV: 'kiloelectronvolts', eV: 'electronvolts',
+    pm: 'picometres', fm: 'femtometres', m: 'metres', EHz: 'exahertz' };
+  // plain Hz is deliberately absent: its card already says oscillations per
+  // second, and "hertz · oscillations per second" says the same thing twice
+  const spell = s => { const u = UNIT_NAME[s.split(' ').pop()]; return u ? u + ' · ' : ''; };
 
   // energy in eV; each landmark is a real thing that emits there
   const LM = [
@@ -247,26 +264,34 @@
 
   function readout() {
     const f = marker / EV_PER_HZ, lam = C / f;
-    document.getElementById('rE').textContent = fmtE(marker);
+    const eText = fmtE(marker), fText = fmtF(f), lText = fmtL(lam);
+    document.getElementById('rE').textContent = eText;
     const er = marker / 5.11e5;
-    document.getElementById('rEm').textContent = 'one photon, ' + (er < 1.5 && er > 0.67
+    document.getElementById('rEm').textContent = spell(eText) + 'one photon, ' + (er < 1.5 && er > 0.67
       ? 'about an electron’s rest energy'
       : er >= 1 ? human(er) + '× an electron’s rest energy'
       : '1/' + human(1 / er) + ' of an electron’s rest energy');
-    document.getElementById('rF').textContent = fmtF(f);
-    document.getElementById('rL').textContent = fmtL(lam);
+    document.getElementById('rF').textContent = fText;
+    document.getElementById('rFm').textContent = spell(fText) + 'oscillations per second';
+    document.getElementById('rL').textContent = lText;
     const nuc = lam / 1e-14;
-    document.getElementById('rLm').textContent = nuc > 1.5 ? human(nuc) + '× an atomic nucleus' : nuc > 0.67 ? 'about the size of an atomic nucleus' : '1/' + human(1 / nuc) + ' of an atomic nucleus';
+    document.getElementById('rLm').textContent = spell(lText) + (nuc > 1.5 ? human(nuc) + '× an atomic nucleus' : nuc > 0.67 ? 'about the size of an atomic nucleus' : '1/' + human(1 / nuc) + ' of an atomic nucleus');
     const card = document.getElementById('lmCard');
     if (sel) {
       card.hidden = false;
       document.getElementById('lmName').textContent = sel.name;
       document.getElementById('lmE').textContent = fmtE(sel.e);
       document.getElementById('lmWhy').textContent = sel.why;
-      const im = document.getElementById('lmImg'), cr = document.getElementById('lmCredit');
-      im.hidden = cr.hidden = !sel.img;
-      if (sel.img) { im.src = sel.img; im.alt = sel.name; cr.textContent = sel.credit; }
     } else card.hidden = true;
+    // the figure lives above the readout, so it names itself rather than
+    // relying on the card further down the page
+    const fig = document.getElementById('lmFigure');
+    if (sel && sel.img) {
+      fig.hidden = false;
+      const im = document.getElementById('lmImg');
+      if (im.getAttribute('src') !== sel.img) { im.src = sel.img; im.alt = sel.name; }
+      document.getElementById('lmCredit').innerHTML = '<b>' + sel.name + '</b> · ' + sel.credit;
+    } else fig.hidden = true;
   }
 
   function render() { draw(); readout(); }
