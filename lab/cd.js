@@ -12,25 +12,33 @@
     return 'rgba(' + Math.round(rgb[0] * 255) + ',' + Math.round(rgb[1] * 255) + ',' +
       Math.round(rgb[2] * 255) + ',' + a.toFixed(3) + ')';
   }
+  // The geometric dive stops at FG: past that the pits are still a landscape
+  // (about five tracks across) with room for the wave picture; the rest of
+  // the slider fades the waves in instead of zooming to a two-track close-up
+  // where nothing could be seen separating.
+  var FG = 0.92;
   function zoomText(f) {
     if (f < 0.01) return 'full disc';
-    var s = Math.pow(10, f * 5);
+    var fg = Math.min(f, FG);
+    var s = Math.pow(10, fg * 5);
     var p = Math.pow(10, Math.floor(Math.log(s) / Math.LN10));
     var v = Math.round(Math.round(s / p * 10) / 10 * p);   // two significant figures
     var txt = '×' + v.toLocaleString('en-US');
-    if (f > 0.78) txt += ' — the grooves';
+    if (f > 0.95) txt += ' — the pits, and the light';
+    else if (f > 0.78) txt += ' — the pits';
     return txt;
   }
   // ---- the hint under the stage follows the dive ---------------------------
   var HINT0 = 'Drag the lamp around the disc. When the rainbow appears, use the zoom slider to dive into the surface and find out why.';
   var HINT_TRACKS = 'Those stripes are the data track — one spiral groove, 1.6 µm between turns. Keep going.';
-  var HINT_PITS = 'Each pit is smaller than a wavelength of light. Tilt the disc and watch the glints move.';
+  var HINT_PITS = 'Each pit is smaller than a wavelength of light. Tilt the disc and watch the glints move, then keep going.';
+  var HINT_WAVES = 'The sheet is a cross-section through the beam: crests arriving, ripples leaving. Tilt the disc to look along it.';
   function bindHint(mount) {                         // lab.html renders the hint as a
     var exp = mount.closest && mount.closest('.exp'); // sibling of the stage
     var el = exp && exp.querySelector('.hint');
     return function (f) {
       if (!el) return;
-      var t = f >= 0.93 ? HINT_PITS : f >= 0.56 ? HINT_TRACKS : HINT0;
+      var t = f >= 0.95 ? HINT_WAVES : f >= 0.84 ? HINT_PITS : f >= 0.56 ? HINT_TRACKS : HINT0;
       if (el.textContent !== t) el.textContent = t;
     };
   }
@@ -436,6 +444,53 @@
     '  col+=wl2rgb(lam)*win*.10*fres;',
     '  gl_FragColor=vec4(col,uFade);}'
   ].join('\n');
+  // ---- the wave sheet: a cross-section of the light, computed, not drawn -
+  // A translucent plane standing on the pits in the grating plane (patch +X
+  // across the tracks, +Z up), in µm. Per pixel and per wavelength: the
+  // incoming plane wave's crests, and the sum of cylindrical wavelets sent
+  // back by nine neighbouring tracks, each starting with the phase the
+  // incoming wave had when it reached that track. Where the wavelets arrive
+  // crest on crest they add up into a beam; the grating equation is not
+  // written anywhere here, the beams simply appear where the sum says so.
+  // Three wavelengths are overlaid additively, so the sorted fans are the
+  // rainbow. Crests are drawn as max(A,0)^2 so their spacing is one λ.
+  var SVERT = 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+  var SFRAG = [
+    'varying vec2 vUv;',
+    'uniform float uSinI,uCosI,uT,uFade,uW,uH;',      // in-plane incidence, seconds, µm
+    'uniform vec3 uLam;',                            // the three wavelengths, nm
+    GLSL_WL,
+    'void main(){',
+    '  float x=(vUv.x-.5)*uW, z=vUv.y*uH;',
+    '  float edge=smoothstep(0.,.05,vUv.x)*(1.-smoothstep(.95,1.,vUv.x))*(1.-smoothstep(.8,1.,vUv.y));',
+    // the lamp beam lights about three tracks: with nine lit the sheet is a
+    // near-field Talbot lattice (true, but it reads as confetti); with three
+    // the lobes part within a few µm, which is the picture the sheet is for
+    '  float band=1.-smoothstep(2.,3.1,abs(x*uCosI-z*uSinI));',
+    '  vec3 col=vec3(0.);',
+    // the arriving wave, drawn once in white at 532 nm: white light carries
+    // every spacing at once and three overlaid crest trains read as moiré
+    '  float ki=6.2831853/.532;',
+    '  float inc=cos(ki*(-uSinI*x-uCosI*z)-uT*ki*.5);',
+    '  col+=vec3(.7,.76,.86)*pow(max(inc,0.),12.)*band*.4;',
+    '  for(int i=0;i<3;i++){',
+    '    float lam=(i==0?uLam.x:i==1?uLam.y:uLam.z)*1e-3;', // µm
+    '    float k=6.2831853/lam, w=k*.5;',            // crests advance half a micron a second
+    '    vec3 c=wl2rgb(lam*1e3);',
+    '    float A=0.,S=0.;',
+    '    for(int n=-4;n<=4;n++){',
+    '      float xn=float(n)*1.6;',                  // track n, 1.6 µm apart
+    '      float wn=1.-smoothstep(2.,3.1,abs(xn*uCosI));', // lit by the beam?
+    '      float r=length(vec2(x-xn,z)), g=wn/sqrt(max(r,.35));',
+    '      A+=g*cos(k*r-k*uSinI*xn-uT*w);',          // wavelet, phased by arrival
+    '      S+=g;}',
+    // this close to the surface the orders are still forming (the far field
+    // is hundreds of µm out), so the lanes are shown soft rather than as
+    // lines: pow 3 keeps one crest per λ but lets partial alignment glow
+    '    float b=pow(max(A/max(S,1e-3),0.),3.);',
+    '    col+=c*b*.8;}',
+    '  gl_FragColor=vec4(col*edge*uFade,1.);}'       // additive: light, not paint
+  ].join('\n');
   // Seeded pit heightfield in µm. Real CD numbers: track pitch 1.6, pit width
   // ~0.5, depth ~0.11, run lengths ~0.83-3.05 (3T-11T). Each 2.4 µm cell of a
   // track carries one hashed pit; the hash is a pure function of (track, cell)
@@ -546,10 +601,31 @@
       if (!patches) patches = [                      // [min zoom f, mesh]; ~100k tris each
         [0, buildPatch(128, 224)],                   // 0.57 µm mesh step
         [0.84, buildPatch(48, 224)],                 // 0.21 µm
-        [0.935, buildPatch(16, 224)]                 // 0.07 µm — pits ~7 segments wide
+        [0.905, buildPatch(32, 224)]                 // 0.14 µm — pits ~4 segments wide
       ];
       return patches;
     }
+    // the wave sheet lives in the same µm space as the active patch; `micro`
+    // is re-posed to match it every frame
+    var micro = new THREE.Group();
+    micro.visible = false;
+    group.add(micro);
+    var SHEET_W = 12, SHEET_H = 7;
+    var sheetMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uSinI: { value: 0 }, uCosI: { value: 1 }, uT: { value: 0 }, uFade: { value: 0 },
+        uW: { value: SHEET_W }, uH: { value: SHEET_H },
+        uLam: { value: new THREE.Vector3(640, 532, 450) }
+      },
+      vertexShader: SVERT, fragmentShader: SFRAG, side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+    });
+    var sheet = new THREE.Mesh(new THREE.PlaneGeometry(SHEET_W, SHEET_H), sheetMat);
+    sheet.rotation.x = Math.PI / 2;                  // stand it up: plane XY -> XZ
+    sheet.position.set(0, 0, SHEET_H / 2);           // resting on the surface, +Z up
+    sheet.renderOrder = 4;
+    micro.add(sheet);
+    var wavesOn = true;
     // the little light: a glowing sprite orbiting a hemisphere above the disc
     var spr = document.createElement('canvas'); spr.width = spr.height = 64;
     var sctx = spr.getContext('2d');
@@ -612,7 +688,6 @@
     }
     function updateBeams(z) {                        // uLp must already be fresh
       fan.visible = beamsOn;
-      if (!beamsOn) return;
       uTShared.value = performance.now() / 1000;     // only advances while rendering
       var Lp = mat.uniforms.uLp.value;
       var dive = sm(Math.min(1, z.f * 1.6));         // impact migrates to the dive target,
@@ -626,9 +701,17 @@
       var Lr = (lx * cr + ly * sr) / ln;             // sin(incidence) along the grating vector
       var Lt = (-lx * sr + ly * cr) / ln, Lz = lz / ln;
       var side = Lz >= 0 ? 1 : -1, up = Math.abs(Lz);
+      // the sheet sees the in-plane part of the lamp direction (the cross-
+      // section through the grating plane); it hides if the lamp is behind
+      sheetMat.uniforms.uSinI.value = Lr;
+      sheetMat.uniforms.uCosI.value = Math.sqrt(Math.max(0, 1 - Lr * Lr));
+      sheetMat.uniforms.uFade.value = side > 0 ? z.wave : 0;
+      sheetMat.uniforms.uT.value = api.reducedMotion ? 0 : (performance.now() / 1000) % 600;
+      if (!beamsOn) return;
       aim(inBeam, lx / ln, ly / ln, lz / ln, Math.min(ln / k, 60), 0.055, [1, 0.98, 0.9], 0.55);
       var d0 = [(-Lr) * cr - (-Lt) * sr, (-Lr) * sr + (-Lt) * cr, Lz]; // mirror bounce
-      aim(m0Beam, d0[0], d0[1], d0[2], 1.5, 0.034, [1, 1, 1], 0.26 * Math.pow(up, 0.35));
+      var dim = 1 - 0.7 * z.wave * (sheetMat.uniforms.uFade.value > 0 ? 1 : 0); // the sheet tells the story now
+      aim(m0Beam, d0[0], d0[1], d0[2], 1.5, 0.034, [1, 1, 1], 0.26 * Math.pow(up, 0.35) * dim);
       var n = 0;
       for (var m2 = 1; m2 <= 2; m2++) for (var w = 0; w < BEAM_WLS.length; w++) {
         var lam = BEAM_WLS[w], mesh = orderBeams[n++];
@@ -636,7 +719,7 @@
         var uz2 = 1 - ur * ur - ut * ut;             // <0: evanescent, no beam leaves
         if (uz2 < 0.004) { mesh.visible = false; continue; }
         aim(mesh, ur * cr - ut * sr, ur * sr + ut * cr, side * Math.sqrt(uz2),
-          1.65, 0.028, api.strip.wavelengthRGB(lam), (m2 === 1 ? 0.8 : 0.28) * Math.pow(up, 0.35));
+          1.65, 0.028, api.strip.wavelengthRGB(lam), (m2 === 1 ? 0.8 : 0.28) * Math.pow(up, 0.35) * dim);
       }
       bloom.material.opacity = 0.25 + 0.5 * up;
     }
@@ -648,12 +731,13 @@
     // procedural LOD: the shader's track pitch is inflated by the residual
     // factor so on-screen spacing matches the total implied magnification.
     function zoomState() {
-      var f = zoomInput.value / 1000;
-      var dolly = 3.2 * Math.pow(0.04, f);           // geometric part of the dive
-      var pitchU = PITCH0 * Math.pow(10, 4.55 * f) * dolly / 3.2;
+      var f = zoomInput.value / 1000, fg = Math.min(f, FG);
+      var dolly = 3.2 * Math.pow(0.04, fg);          // geometric part of the dive
+      var pitchU = PITCH0 * Math.pow(10, 4.55 * fg) * dolly / 3.2;
       var pitchPx = pitchU * H / (2 * dolly * Math.tan(camera.fov * Math.PI / 360));
       var stripe = pitchPx < 1.5 ? 0 : sm((Math.log10(pitchPx) - 0.25) / 0.65);
-      return { f: f, dolly: dolly, pitchU: pitchU, pitchPx: pitchPx, stripe: stripe };
+      var wave = sm((f - 0.9) / 0.1);                // the last stretch: the light itself
+      return { f: f, dolly: dolly, pitchU: pitchU, pitchPx: pitchPx, stripe: stripe, wave: wave };
     }
     function render() {
       sprite.position.copy(lightPos());
@@ -672,11 +756,17 @@
         active.scale.set(s, s, s);
         active.position.set(0.68, 0, 0.05 * s);      // a hair above the flat ring
         patchMat.uniforms.uFade.value = pf;
+        micro.position.copy(active.position);
+        micro.scale.copy(active.scale);
       } else if (patches) {
         for (var j = 0; j < patches.length; j++) patches[j][1].visible = false;
       }
+      micro.visible = !!active && wavesOn && z.wave > 0.001;
       group.updateMatrixWorld(true);
-      tgt.set(0.68, 0, 0).applyMatrix4(group.matrixWorld)
+      // the look target climbs the surface normal as the waves fade in, so the
+      // sheet and the pits share the frame instead of the sheet running off the top
+      var lift = active ? 1.8 * z.wave * z.pitchU / 1.6 : 0;
+      tgt.set(0.68, 0, lift).applyMatrix4(group.matrixWorld)
         .multiplyScalar(sm(Math.min(1, z.f * 1.6))); // narrowing target of the dive
       camera.position.copy(tgt).addScaledVector(DIR0, z.dolly);
       camera.lookAt(tgt);
@@ -730,78 +820,10 @@
         return Math.min(0.95, w);
       });
     }
-    // ---- max-zoom overlay: measurement label + the payoff explanation ------
+    // ---- max-zoom overlay: one real measurement, nothing else ----------------
+    // The explanation lives in HTML under the stage (see cdWhy below), so
+    // nothing is ever pasted over the 3D scene.
     function proj(v) { tmp.copy(v).project(camera); return [(tmp.x * 0.5 + 0.5) * W, (-tmp.y * 0.5 + 0.5) * H]; }
-    var EXPL = [                                     // the WHY, in three beats
-      'Light bounces off MANY rows of pits at once.',
-      'Each color’s waves line up — crest on crest — at one particular angle, and cancel at the others.',
-      'Different colors line up at different angles, so the bounce sorts white light into a rainbow.'
-    ];
-    function drawExplain(a) {                        // staged block in the empty sky
-      var pad = 12, maxW = Math.min(W - 24 - pad * 2, 520);
-      octx.save();
-      octx.globalAlpha = a;
-      octx.font = MONO; octx.textAlign = 'center';
-      var lines = [], wmax = 0, s, i;
-      for (s = 0; s < EXPL.length; s++) {            // wrap each beat to the canvas
-        var ws = wrapLines(octx, EXPL[s], maxW);
-        for (i = 0; i < ws.length; i++) {
-          lines.push(ws[i]);
-          wmax = Math.max(wmax, octx.measureText(ws[i]).width);
-        }
-        if (s < EXPL.length - 1) lines.push('');     // small gap between beats
-      }
-      var lh = 16, gap = 7, textH = 0;
-      for (i = 0; i < lines.length; i++) textH += lines[i] ? lh : gap;
-      var dgH = 78;                                  // room for the mini ray diagram
-      var plw = Math.min(W - 24, Math.max(wmax, 260) + pad * 2);
-      var plh = textH + dgH + pad * 2;
-      var x0 = W / 2 - plw / 2, y0 = 10;
-      octx.fillStyle = 'rgba(5,7,12,.82)';           // backing plate: never collides
-      octx.strokeStyle = 'rgba(196,228,255,.16)';    // with the surface or page text
-      octx.lineWidth = 1;
-      octx.beginPath();
-      if (octx.roundRect) octx.roundRect(x0, y0, plw, plh, 6);
-      else octx.rect(x0, y0, plw, plh);
-      octx.fill(); octx.stroke();
-      var y = y0 + pad + 11;
-      octx.fillStyle = '#8b98a8';
-      for (i = 0; i < lines.length; i++) {
-        if (lines[i]) { octx.fillText(lines[i], W / 2, y); y += lh; }
-        else y += gap;
-      }
-      // the same story as one picture: pits, parallel light in, sorted colors out
-      function rot(x2, y2, an) { var c2 = Math.cos(an), s2 = Math.sin(an); return [x2 * c2 - y2 * s2, x2 * s2 + y2 * c2]; }
-      var baseY = y0 + plh - pad - 6, midX = W / 2;
-      var sp = Math.min(46, (plw - 50) / 5);
-      octx.strokeStyle = 'rgba(196,228,255,.4)';
-      octx.beginPath(); octx.moveTo(midX - 2.6 * sp, baseY); octx.lineTo(midX + 2.6 * sp, baseY); octx.stroke();
-      for (i = -2; i <= 2; i++) {
-        octx.beginPath(); octx.arc(midX + i * sp, baseY, 5, Math.PI, 0);
-        octx.fillStyle = 'rgba(196,228,255,.18)'; octx.fill();
-        octx.strokeStyle = 'rgba(196,228,255,.5)'; octx.stroke();
-      }
-      var d = [0.42, 0.907];                         // incoming direction, down-right
-      octx.lineWidth = 1.3;
-      for (i = -1; i <= 1; i++) {                    // parallel white rays: many rows at once
-        octx.strokeStyle = 'rgba(255,255,255,.75)';
-        octx.beginPath();
-        octx.moveTo(midX + i * sp - d[0] * 52, baseY - 5 - d[1] * 52);
-        octx.lineTo(midX + i * sp, baseY - 5);
-        octx.stroke();
-      }
-      octx.globalCompositeOperation = 'lighter';
-      var out = [[650, -0.20], [550, -0.09], [470, 0]]; // red bends farthest
-      for (i = -1; i <= 1; i++) for (var c = 0; c < out.length; c++) {
-        var v = rot(d[0], -d[1], out[c][1]);
-        octx.strokeStyle = rgba(api.strip.wavelengthRGB(out[c][0]), 0.85);
-        octx.beginPath();
-        octx.moveTo(midX + i * sp, baseY - 5);
-        octx.lineTo(midX + i * sp + v[0] * 46, baseY - 5 + v[1] * 46);
-        octx.stroke();
-      }
-      octx.restore();
-    }
     function drawOverlay() {
       var z = zoomState();
       var a = sm((z.f - 0.82) / 0.13);
@@ -809,12 +831,6 @@
       if (a < 0.01) return;
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.clearRect(0, 0, W, H);
-      octx.font = MONO; octx.textAlign = 'center'; octx.fillStyle = '#8b98a8';
-      var cap = wrapLines(octx, '1.6 µm — a few wavelengths of light', W - 24);
-      for (var ci = 0; ci < cap.length; ci++)
-        octx.fillText(cap[ci], W / 2, H - 24 - (cap.length - 1 - ci) * 16);
-      var ae = sm((z.f - 0.84) / 0.12);              // the payoff, only past the handoff
-      if (ae > 0.01) drawExplain(ae);
       // measure one real track pitch: project the radial pitch vector to screen
       var s0 = proj(tgt.set(0.68, 0, 0).applyMatrix4(group.matrixWorld));
       var s1 = proj(tgt.set(0.68 + z.pitchU, 0, 0).applyMatrix4(group.matrixWorld));
@@ -827,8 +843,12 @@
         octx.moveTo(s0[0] + px * 9, s0[1] + py * 9); octx.lineTo(s0[0] - px * 9, s0[1] - py * 9);
         octx.moveTo(s1[0] + px * 9, s1[1] + py * 9); octx.lineTo(s1[0] - px * 9, s1[1] - py * 9);
         octx.stroke();
+        octx.font = MONO; octx.fillStyle = '#8b98a8';  // the label sits at the ruler
+        octx.textAlign = 'center';
+        var lx = (s0[0] + s1[0]) / 2 + px * 16, ly = (s0[1] + s1[1]) / 2 + py * 16 + 4;
+        octx.fillText('1.6 µm', Math.max(24, Math.min(W - 24, lx)), Math.max(14, Math.min(H - 6, ly)));
       }
-    }                                                // (the ray story is the 3D fan itself)
+    }
     // ---- interaction: drag tilts the disc, or grabs the light --------------
     var dragging = 0;                                // 0 none, 1 tilt, 2 light
     var lastX = 0, lastY = 0, vx = 0, vy = 0, rafId = 0, settleT = 0;
@@ -836,19 +856,38 @@
       tmp.copy(sprite.position).project(camera);
       return { x: (tmp.x * 0.5 + 0.5) * W, y: (-tmp.y * 0.5 + 0.5) * H };
     }
+    // The waves only animate while they are on screen, on, and the page is
+    // visible; under reduced motion they hold one still frame.
+    var onScreen = true;
+    function wavesActive() {
+      return wavesOn && onScreen && !document.hidden && !api.reducedMotion && zoomState().wave > 0.001;
+    }
     function loop() {
+      if (rafId) return;
       rafId = requestAnimationFrame(function tick() {
+        var settled = true;
         if (!dragging) {                             // <0.5 s inertia settle
           var dt = (performance.now() - settleT) / 1000;
-          if (api.reducedMotion || dt > 0.45 || (Math.abs(vx) + Math.abs(vy)) < 0.02) { rafId = 0; render(); drawOverlay(); return; }
-          group.rotation.y += vx * 0.016;
-          group.rotation.x = Math.max(-2.62, Math.min(2.62, group.rotation.x + vy * 0.016));
-          vx *= 0.9; vy *= 0.9;
+          settled = api.reducedMotion || dt > 0.45 || (Math.abs(vx) + Math.abs(vy)) < 0.02;
+          if (!settled) {
+            group.rotation.y += vx * 0.016;
+            group.rotation.x = Math.max(-2.62, Math.min(2.62, group.rotation.x + vy * 0.016));
+            vx *= 0.9; vy *= 0.9;
+          }
         }
         render();
+        if (!dragging && settled) {
+          drawOverlay();
+          if (!wavesActive()) { rafId = 0; return; }
+        }
         rafId = requestAnimationFrame(tick);
       });
     }
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function (en) { onScreen = en[0].isIntersecting; if (wavesActive()) loop(); })
+        .observe(canvas);
+    }
+    document.addEventListener('visibilitychange', function () { if (wavesActive()) loop(); });
     function toLocal(e) {
       var r = canvas.getBoundingClientRect();
       return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -859,7 +898,7 @@
       lastX = p.x; lastY = p.y; vx = vy = 0;
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
       canvas.style.cursor = 'grabbing';
-      if (!rafId) loop();
+      loop();
       e.preventDefault();
     });
     canvas.addEventListener('pointermove', function (e) {
@@ -887,10 +926,28 @@
     canvas.addEventListener('pointerup', endDrag);
     canvas.addEventListener('pointercancel', endDrag);
     var setHint = bindHint(mount);
+    // the WHY, staged in HTML below the stage once the pits are in view: the
+    // three beats appear one by one as the waves fade in
+    var why = document.createElement('div');
+    why.className = 'cdwhy';
+    why.hidden = true;
+    why.innerHTML =
+      '<p>The lamp\u2019s light arrives as a train of crests, <b>0.4 to 0.7 µm</b> apart depending on colour, and lands on several rows of pits at once.</p>' +
+      '<p>Every row sends back a ripple of its own. In most directions the ripples from neighbouring rows arrive out of step and cancel. Where they arrive <b>crest on crest</b>, they add up into a beam.</p>' +
+      '<p>The rows are <b>1.6 µm</b> apart, so the crest-on-crest angle depends on how long the wave is: red lines up at a wider angle than blue. The bounce sorts white light into a rainbow. <span class="num">d\u00b7(sin\u2009i \u2212 sin\u2009r) = m\u03bb</span></p>';
+    mount.appendChild(why);
+    function setWhy(z) {
+      why.hidden = z.f < 0.84;
+      var ps = why.children;
+      for (var i = 0; i < ps.length; i++) ps[i].classList.toggle('on', z.f >= 0.84 + i * 0.05);
+    }
     zoomInput.addEventListener('input', function () {
-      zoomLabel.textContent = zoomText(zoomInput.value / 1000);
-      setHint(zoomInput.value / 1000);
+      var z = zoomState();
+      zoomLabel.textContent = zoomText(z.f);
+      setHint(z.f);
+      setWhy(z);
       render(); drawOverlay(); updateStrip();
+      if (wavesActive()) loop();
     });
     var beamBtn = document.createElement('button');  // pure mirror-shine view on demand
     beamBtn.type = 'button';
@@ -902,6 +959,19 @@
       beamBtn.setAttribute('aria-pressed', String(beamsOn));
       render();
     });
+    var waveBtn = document.createElement('button');  // the cross-section, on demand
+    waveBtn.type = 'button';
+    waveBtn.textContent = 'SHOW THE WAVES';
+    waveBtn.setAttribute('aria-pressed', 'true');
+    waveBtn.hidden = true;                           // appears with the waves
+    controls.appendChild(waveBtn);
+    waveBtn.addEventListener('click', function () {
+      wavesOn = !wavesOn;
+      waveBtn.setAttribute('aria-pressed', String(wavesOn));
+      render();
+      if (wavesActive()) loop();
+    });
+    zoomInput.addEventListener('input', function () { waveBtn.hidden = zoomState().wave < 0.001; });
     function resize() {
       var rect = canvas.getBoundingClientRect();
       if (rect.width < 40) return;
