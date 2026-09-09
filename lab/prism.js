@@ -10,9 +10,9 @@
     question: {
       text: 'Which color bends most through glass?',
       choices: ['Red', 'Green', 'Blue'],
-      reveal: 'Blue bends most. Glass slows every frequency by a slightly different amount, so each color refracts through a slightly different angle, blue the hardest — and white light fans into a continuous band, one color per frequency, no seams.'
+      reveal: 'Blue bends most. Glass slows every frequency by a slightly different amount, so each color refracts through a slightly different angle, blue the hardest, and white light fans into a continuous band, one color per frequency, no seams.'
     },
-    hint: 'Drag objects out of the tray — as many as you like; drag one back onto the tray to remove it. ' +
+    hint: 'Drag objects out of the tray, as many as you like; drag one back onto the tray to remove it. ' +
       'Hover an object and drag the curved arrow on its ring to rotate it (hold SHIFT to snap to 45°). ' +
       'Add extra LIGHT sources and tap one to change its color. INVENT builds an optic of your own recipe.',
     init: init

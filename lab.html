@@ -172,7 +172,7 @@
 
   <div class="stripdock">
     <div class="dockrow">
-      <p class="striplabel">The visible octave · 750 nm — 380 nm</p>
+      <p class="striplabel">The visible octave · 750 nm to 380 nm</p>
       <button id="quizToggle" type="button" aria-haspopup="dialog">LIGHT QUIZ</button>
     </div>
     <canvas id="labStrip" aria-label="Visible spectrum strip; lights up with the wavelengths each experiment affects"></canvas>
@@ -303,7 +303,7 @@ window.LAB = (() => {
     panel.classList.remove('answered');
     panel.innerHTML = headHTML(items) +
       '<p class="qfrom">RESULTS</p>' +
-      '<p class="score"><span class="num">' + score + ' / ' + n + '</span> — ' + word + '</p>' +
+      '<p class="score"><span class="num">' + score + ' / ' + n + '</span> · ' + word + '</p>' +
       '<p class="reveal" style="display:block">' + items.map((e, k) =>
         (picks[k] ? '✓ ' : '✗ ') + e.title).join('<br>') + '</p>' +
       '<div class="qfoot"><button type="button" class="qnext" style="visibility:visible">TRY AGAIN</button>' +

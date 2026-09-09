@@ -21,7 +21,7 @@
     question: {
       text: 'Why is the sky blue at noon but red at the horizon at sunset?',
       choices: ['Air is faintly blue', 'Blue light scatters far more than red', 'The sun actually reddens', 'Reflection from the oceans'],
-      reveal: 'Blue light scatters far more — in proportion to 1/λ⁴, so 460 nm blue scatters about 3.3× more than 620 nm red. Look away from the sun and scattered blue is what reaches you. At sunset the light crosses ~38× more air, the blue is scattered out en route, and only the red survives the trip. Same air, same law, both colors of sky.'
+      reveal: 'Blue light scatters far more, in proportion to 1/λ⁴, so 460 nm blue scatters about 3.3× more than 620 nm red. Look away from the sun and scattered blue is what reaches you. At sunset the light crosses ~38× more air, the blue is scattered out en route, and only the red survives the trip. Same air, same law, both colors of sky.'
     },
     hint: 'Three dials: drag the sun, thicken the air, grow the particles. Challenges: make Earth’s noon. Make Mars. Make a white sky. Make the reddest sunset you can.',
 
@@ -207,7 +207,7 @@
         } else if (state.mie > 0.6 && state.th < 0.45) {
           t = '🟠 Mars-ish: thin air, big dust';
         } else if (state.mie > 0.7) {
-          t = '⚪ white sky — big-droplet Mie scattering';
+          t = '⚪ white sky · big-droplet Mie scattering';
         } else if (state.elev < 15 && state.mie < 0.35 && state.th > 0.7 && state.th < 1.4) {
           t = '🔴 proper sunset';
           api.solved();

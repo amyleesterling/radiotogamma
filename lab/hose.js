@@ -34,7 +34,7 @@
         'Only at one angle from your shadow',
         'Directly toward the sun'
       ],
-      reveal: 'Only at one angle. Each droplet sends red light back at 42° from the line running from the sun through your head — the antisolar point. The rainbow is not a thing at a place; it is an angle, a 42° cone around your own shadow, and every observer stands at the tip of their own private cone.'
+      reveal: 'Only at one angle. Each droplet sends red light back at 42° from the line running from the sun through your head, the antisolar point. The rainbow is not a thing at a place; it is an angle, a 42° cone around your own shadow, and every observer stands at the tip of their own private cone.'
     },
     hint: 'Drag the sun across the sky and the spray around the yard. Nothing… nothing… then geometry. When the bow is strong, look just outside it: a fainter twin at 51°, colors flipped, with Alexander’s dark band of sky between the two. SHOW THE LIGHT reveals why.',
 

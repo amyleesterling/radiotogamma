@@ -43,5 +43,8 @@ stylesheet, one data file, four lab modules. Read `README.md` for the map.
   the reasoning.
 - Comments explain why, not what, and record the user-facing reason for a
   design choice when there is one.
-- The site's copy uses em-dashes freely; match the surrounding page rather
-  than imposing a house rule.
+- **No em or en dashes in copy, ever.** Amy's standing rule, and it outranks
+  whatever the surrounding page does. Use commas, semicolons, colons, or full
+  stops; a numeric range reads "380 to 750 nm"; compound names take a plain
+  hyphen (Stefan-Boltzmann). The whole site was swept on 2026-09-09, so any
+  dash you meet in copy is new, and wrong. Code comments are not copy.

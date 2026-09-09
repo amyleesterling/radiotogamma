@@ -415,7 +415,7 @@
     <button class="ctl" id="scaleBtn" type="button" aria-pressed="false">Linear scale</button>
   </div>
   <svg class="spec" id="ovSvg" viewBox="0 0 1000 96" role="img" aria-label="Full electromagnetic spectrum overview with markers A and B and a draggable focus window"></svg>
-  <p class="ovnote" id="ovNote">This view spans 10 kHz to 100 EHz — sixteen orders of magnitude of one phenomenon,
+  <p class="ovnote" id="ovNote">This view spans 10 kHz to 100 EHz, sixteen orders of magnitude of one phenomenon,
      not the physical beginning or end of the spectrum. Click a region to focus on it, or drag the bright window.</p>
 
   <div class="rowhead">
@@ -448,7 +448,7 @@
       <pre>photon energy   E = hν        (h = 6.626×10⁻³⁴ J·s)
 beam power      P = photons per second × energy per photon</pre>
       <p>Frequency fixes the energy of each photon. It does not fix how many photons
-         a source emits — that is power, and power belongs to the source, not to the spectrum.</p>
+         a source emits; that is power, and power belongs to the source, not to the spectrum.</p>
     </details>
   </div>
 
@@ -471,8 +471,8 @@ beam power      P = photons per second × energy per photon</pre>
   <div class="panel" id="panelMatter" hidden>
     <h3>How matter commonly responds</h3>
     <svg class="spec" id="matterSvg" viewBox="0 0 1000 190" role="img"
-         aria-label="Overlapping ranges of common light–matter interaction regimes across the spectrum"></svg>
-    <p class="note">These regimes overlap and depend on the material — they are common mechanisms, not walls.
+         aria-label="Overlapping ranges of common light-matter interaction regimes across the spectrum"></svg>
+    <p class="note">These regimes overlap and depend on the material; they are common mechanisms, not walls.
        The named spectrum bands themselves are conventions with soft edges, not laws of nature.</p>
   </div>
 
@@ -516,7 +516,7 @@ beam power      P = photons per second × energy per photon</pre>
     <p class="note">Different animals are issued different slices. Bees and birds
        see into the ultraviolet; pit vipers image the world in the infrared glow of their prey; your own
        skin senses radiant warmth far below what your eyes catch. And one correction to a common mix-up:
-       no ear hears radio. Sound is pressure waves in air, not electromagnetic radiation — different
+       no ear hears radio. Sound is pressure waves in air, not electromagnetic radiation: different
        physics that borrowed the same vocabulary.
        <a href="senses.html" style="color:#7ee0ff">Meet the whole spectral zoo →</a></p>
   </div>
@@ -586,7 +586,7 @@ beam power      P = photons per second × energy per photon</pre>
       <button class="ctl" type="button" data-glide="1">▶ the doubling, swept</button>
       <span class="octnote">Sound, not light: a pressure wave in air borrowing the spectrum's vocabulary.</span>
     </div>
-    <p>Doubling hides its own size. To feel it, take one walking step — <b>0.75 m</b> — and double
+    <p>Doubling hides its own size. To feel it, take one walking step, <b>0.75 m</b>, and double
        it once per octave. The named bands are marked at the octave where each begins:</p>
     <div class="stepladder num">
       <span>0</span><span>0.75 m</span><span>one step <i class="bmark" style="--bc:74,150,224">RADIO</i></span>
@@ -602,17 +602,17 @@ beam power      P = photons per second × energy per photon</pre>
       <span>51</span><span>0.18 light-years</span><span>into the inner Oort cloud <i class="bmark" style="--bc:226,120,180">GAMMA</i></span>
       <span>53</span><span>0.7 light-years</span><span>deep in the Oort cloud</span>
     </div>
-    <p>One step becomes seven-tenths of a light-year — most of the way through the comet halo at
+    <p>One step becomes seven-tenths of a light-year, most of the way through the comet halo at
        the solar system's edge, a sixth of the distance to the nearest star. Radio to gamma is the
        gap between a footstep and the Oort cloud, and the entire visible rainbow is
        <b>a single stride</b> somewhere along the way.</p>
   </div>
 
-  <p class="foot" id="shareNote">The address bar tracks this comparison — copy the URL to share exactly this view.
+  <p class="foot" id="shareNote">The address bar tracks this comparison; copy the URL to share exactly this view.
      Band boundaries are drawn softly on purpose: the named regions are human conventions laid over one continuous spectrum.</p>
 
   <p class="coda">You are reading this page by catching a hail of half-quadrillion-hertz photons that left
-     a glowing rectangle nanoseconds ago — light your eyes were built for. Of the fifty-three octaves
+     a glowing rectangle nanoseconds ago, light your eyes were built for. Of the fifty-three octaves
      above, you were issued <span class="stride">one</span>. Spend it well.</p>
 </div>
 
@@ -851,9 +851,9 @@ beam power      P = photons per second × energy per photon</pre>
     }
     $('ovNote').textContent = S.linear
       ? 'Same window, linear scale: every tenfold step no longer gets equal room, so nearly the entire ' +
-        'lower-frequency universe — radio through ultraviolet — collapses into the left sliver. ' +
+        'lower-frequency universe, radio through ultraviolet, collapses into the left sliver. ' +
         'A logarithmic scale gives every tenfold increase equal room. Switch back to breathe again.'
-      : 'This view spans 10 kHz to 100 EHz — sixteen orders of magnitude of one phenomenon, not the physical ' +
+      : 'This view spans 10 kHz to 100 EHz, sixteen orders of magnitude of one phenomenon, not the physical ' +
         'beginning or end of the spectrum. Click a region to focus on it, or drag the bright window.';
     $('ovNote').classList.toggle('linear', S.linear);
   }
@@ -1002,7 +1002,7 @@ beam power      P = photons per second × energy per photon</pre>
       const hg = el('g', {}, focSvg);
       el('rect', { x: x - 22, y: 30, width: 44, height: 100, fill: 'transparent', class: 'handlehit',
                    'data-handle': m, tabindex: 0, role: 'slider',
-                   'aria-label': 'Marker ' + m.toUpperCase() + ' — ' + nameOf(m),
+                   'aria-label': 'Marker ' + m.toUpperCase() + ', ' + nameOf(m),
                    'aria-valuemin': F0, 'aria-valuemax': F1, 'aria-valuenow': log(f).toFixed(2),
                    'aria-valuetext': freq(f) + ', ' + nameOf(m) }, hg);
       el('line', { x1: x, x2: x, y1: 34, y2: 94, stroke: col, 'stroke-width': 2.5,
@@ -1105,7 +1105,7 @@ beam power      P = photons per second × energy per photon</pre>
                    'text-anchor': 'middle' }, sensesSvg, fmtLam(sel.hi));
     } else {
       el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 122, 'font-size': 13, fill: '#ffd479',
-                   'text-anchor': 'middle' }, sensesSvg, fmtLam(sel.lo) + ' – ' + fmtLam(sel.hi));
+                   'text-anchor': 'middle' }, sensesSvg, fmtLam(sel.lo) + ' to ' + fmtLam(sel.hi));
     }
     el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 146, 'font-size': 13.5, fill: '#cfd6e2',
                  'text-anchor': 'middle', 'font-weight': 600 }, sensesSvg,
@@ -1396,7 +1396,7 @@ beam power      P = photons per second × energy per photon</pre>
     const hiM = S.bHz >= S.aHz ? 'b' : 'a', loM = hiM === 'b' ? 'a' : 'b';
     if (r < 1.05) {
       $('sentence').innerHTML = '<b>' + nameOf('a') + '</b> (A) and <b>' + nameOf('b') +
-        '</b> (B) sit at almost the same frequency — within ' + ((r - 1) * 100).toFixed(1) +
+        '</b> (B) sit at almost the same frequency, within ' + ((r - 1) * 100).toFixed(1) +
         '%. Whatever separates them in daily life, it is not their place on the spectrum.';
     } else {
       // the factor is stated once, big; the prose only says what it moves
@@ -1407,7 +1407,7 @@ beam power      P = photons per second × energy per photon</pre>
         '<div class="relratio num' + (w.length > 12 ? ' long' : '') + '"><span class="x">×</span>' + w + '</div>' +
         '<div class="reldir">' + tag(loM) + '<span class="relarrow">⟶</span>' + tag(hiM) + '</div>' +
         '<div class="relnote">Along the arrow, <b>frequency</b> and <b>energy per photon</b> climb by ' +
-        'exactly this factor — <b>wavelength</b> and <b>period</b> shrink by it. Try it:</div>' +
+        'exactly this factor: <b>wavelength</b> and <b>period</b> shrink by it. Try it:</div>' +
         '<div class="lockstep">' +
           '<input type="range" id="lockRange" min="0" max="1000" value="0" ' +
             'aria-label="Slide from ' + nameOf(loM) + ' to ' + nameOf(hiM) + '">' +
@@ -1426,8 +1426,8 @@ beam power      P = photons per second × energy per photon</pre>
       const oom = Math.abs(log(S.bHz / S.aHz));
       $('insight').textContent = oom < 0.01
         ? 'Zero distance on a ruler that spans 53 octaves end to end.'
-        : 'These sit ' + oom.toFixed(2) + ' orders of magnitude — ' + (oom / Math.LOG10E / Math.LN2).toFixed(1) +
-          ' doublings — apart, on a view that spans 53 octaves. Human vision occupies roughly one of them.';
+        : 'These sit ' + oom.toFixed(2) + ' orders of magnitude apart, ' + (oom / Math.LOG10E / Math.LN2).toFixed(1) +
+          ' doublings, on a view that spans 53 octaves. Human vision occupies roughly one of them.';
     }
   }
 
@@ -1490,7 +1490,7 @@ beam power      P = photons per second × energy per photon</pre>
       else if (r > 1) phrase = 'about <b>' + ratioWord(r) + '×</b> the size of <b>' + best.name + '</b>';
       else phrase = 'about <b>1/' + ratioWord(1 / r) + '</b> the size of <b>' + best.name + '</b>';
       $('scaleWho' + M).innerHTML = '<b>' + M + '</b> · ' + nameOf(m).toUpperCase();
-      $('scaleWhat' + M).innerHTML = 'One wavelength — <span class="num">' + wave(hzOf(m), true) + '</span> — is ' + phrase + '.';
+      $('scaleWhat' + M).innerHTML = 'One wavelength, <span class="num">' + wave(hzOf(m), true) + '</span>, is ' + phrase + '.';
       const lm = byId[m === 'a' ? S.aId : S.bId];
       const desc = $('scaleDesc' + M);
       desc.textContent = lm ? (lm.how || lm.why) : '';

@@ -24,13 +24,13 @@
     var p = Math.pow(10, Math.floor(Math.log(s) / Math.LN10));
     var v = Math.round(Math.round(s / p * 10) / 10 * p);   // two significant figures
     var txt = '×' + v.toLocaleString('en-US');
-    if (f > 0.95) txt += ' — the pits, and the light';
-    else if (f > 0.78) txt += ' — the pits';
+    if (f > 0.95) txt += ' · the pits, and the light';
+    else if (f > 0.78) txt += ' · the pits';
     return txt;
   }
   // ---- the hint under the stage follows the dive ---------------------------
   var HINT0 = 'Drag the lamp around the disc. When the rainbow appears, use the zoom slider to dive into the surface and find out why.';
-  var HINT_TRACKS = 'Those stripes are the data track — one spiral groove, 1.6 µm between turns. Keep going.';
+  var HINT_TRACKS = 'Those stripes are the data track: one spiral groove, 1.6 µm between turns. Keep going.';
   var HINT_PITS = 'Each pit is smaller than a wavelength of light. Tilt the disc and watch the glints move, then keep going.';
   var HINT_WAVES = 'The sheet is a cross-section through the beam: crests arriving, ripples leaving. Tilt the disc to look along it.';
   function bindHint(mount) {                         // lab.html renders the hint as a
@@ -81,7 +81,7 @@
     }
     ctx.globalAlpha = a;
     ctx.fillStyle = '#8b98a8'; ctx.font = MONO; ctx.textAlign = 'center';
-    ctx.fillText('not paint — structure. keep going.', W / 2, 26);
+    ctx.fillText('not paint. structure. keep going.', W / 2, 26);
     ctx.restore();
   }
   function drawTracksView(ctx, api, W, a) {          // the diffraction cartoon
@@ -105,7 +105,7 @@
     ctx.moveTo(midX + sp - 18, baseY + 20.5); ctx.lineTo(midX + sp - 12, baseY + 24); ctx.lineTo(midX + sp - 18, baseY + 27.5);
     ctx.stroke();
     ctx.fillStyle = '#8b98a8';
-    ctx.fillText('1.6 µm — a few wavelengths of light', midX, baseY + 52);
+    ctx.fillText('1.6 µm, a few wavelengths of light', midX, baseY + 52);
     var expl = wrapLines(ctx, 'one wave hits adjacent tracks; each color adds up at its own angle', W - 24);
     for (var li = 0; li < expl.length; li++) ctx.fillText(expl[li], midX, 26 + li * 16);
     var d = [0.42, 0.907];                           // incoming direction, down-right
@@ -997,7 +997,7 @@
     question: {
       text: 'A CD has no colored pigment. Where does its rainbow come from?',
       choices: ['Microscopic colored material', 'Reflection from the room', 'A tiny repeating structure', 'Magic, obviously'],
-      reveal: 'A tiny repeating structure. The data track spirals around the disc with a spacing of 1.6 micrometers — a few wavelengths of light — and that regular spacing reflects each wavelength constructively at a slightly different angle. The disc is a diffraction grating that happens to hold music.'
+      reveal: 'A tiny repeating structure. The data track spirals around the disc with a spacing of 1.6 micrometers, a few wavelengths of light, and that regular spacing reflects each wavelength constructively at a slightly different angle. The disc is a diffraction grating that happens to hold music.'
     },
     hint: HINT0,
     init: function (mount, api) {

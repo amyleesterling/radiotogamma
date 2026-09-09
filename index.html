@@ -495,19 +495,19 @@
     Planck's law, drawn per unit wavelength and scaled to its own peak; the marker sits at Wien's
     λ<sub>max</sub> = 2.898 mm·K ÷ T. Counted per unit frequency instead, the peak lands 1.76× lower,
     which is why the cosmic microwave background is quoted both at 1.06 mm and at 160 GHz: the same
-    glow, sliced two ways. Radiated power is Stefan–Boltzmann, σT⁴, for a perfect emitter.
+    glow, sliced two ways. Radiated power is Stefan-Boltzmann, σT⁴, for a perfect emitter.
   </p>
 
   <div class="windbox">
     <h2>✦ EVEN THE WIND IS SUNLIGHT</h2>
     <p><b>All wind is reprocessed sunlight.</b> The Sun delivers energy to Earth purely as
-       electromagnetic radiation. It lands unevenly — equator vs poles, land vs sea, day vs
-       night — the uneven heating makes pressure differences, and air falls down those
-       gradients. Roughly 1–2% of incoming solar power ends up as wind. So every gust is EM
+       electromagnetic radiation. It lands unevenly: equator vs poles, land vs sea, day vs
+       night. The uneven heating makes pressure differences, and air falls down those
+       gradients. Roughly 1 to 2% of incoming solar power ends up as wind. So every gust is EM
        energy that arrived as photons, thermalized, and got converted into moving air. A wind
        turbine is, with a couple of steps in between, solar powered.</p>
     <p><b>And we measure wind with EM.</b> Doppler weather radar bounces microwaves off
-       raindrops and reads the frequency shift of the echo — moving droplets compress or
+       raindrops and reads the frequency shift of the echo: moving droplets compress or
        stretch the returning wave, and that shift is the wind speed. Lidar does the same trick
        with laser light off dust and aerosols; satellite scatterometers read ocean wind from
        how microwaves scatter off wind-roughened water. Wind has no EM signature of its own,
@@ -517,7 +517,7 @@
   <p class="colophon">Everything on this site runs the real physics in miniature: Planck's
      E&nbsp;=&nbsp;hf behind every readout, Snell and dispersion in the prism, the grating
      equation on a real 1.6&nbsp;µm track pitch in the CD, the 42° droplet cone, Rayleigh's
-     1/λ⁴ in the sky. Illustrative in scale, honest in mechanism &mdash; if a number here
+     1/λ⁴ in the sky. Illustrative in scale, honest in mechanism; if a number here
      disagrees with your textbook, trust the textbook and tell us.
      Studio lighting HDRI by <a href="https://polyhaven.com" style="color:#7ee0ff">Poly Haven</a> (CC0).</p>
   <p class="colophon" style="border-top:0; padding-top:0; margin-top:10px">Built by Amy Robinson Sterling
@@ -693,7 +693,7 @@
     const inVis = fB >= VIS_LO && fB <= VIS_HI;
     document.getElementById('visZone').hidden = !inVis;
     const INVITES = {
-      radio: ['Waves down here are as long as buildings and cities — and this whole floor is just the doorstep.',
+      radio: ['Waves down here are as long as buildings and cities, and this whole floor is just the doorstep.',
               'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
       microwave: ['Your Wi-Fi, your dinner, and the afterglow of the Big Bang all live in this band.',
               'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
@@ -701,7 +701,7 @@
               'SEE WHO SENSES WHAT IN THE OBSERVATORY', 'observatory.html?layer=senses&b='],
       UV: ['Bees and songbirds see into this band. Flowers paint runway stripes here that you cannot see.',
               'SEE WHO SENSES WHAT IN THE OBSERVATORY', 'observatory.html?layer=senses&b='],
-      'x-ray': ['Wavelengths here are the size of atoms and DNA — which is exactly why they can photograph your bones.',
+      'x-ray': ['Wavelengths here are the size of atoms and DNA, which is exactly why they can photograph your bones.',
               'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
       gamma: ['This sliver is a trick of the map: gamma is secretly <b>35 octaves</b> tall, wider than every other band combined.',
               'CLIMB INTO THE GAMMA ATTIC', 'gamma.html'],
@@ -723,7 +723,7 @@
     const vA = visualHz(fA), vB = visualHz(fB);
     const visR = (Math.max(vA, vB) / Math.min(vA, vB)).toFixed(vA === vB ? 0 : 1);
     waveNote.innerHTML = 'On screen: A ' + vA.toFixed(2) + '/s, B ' + vB.toFixed(2) +
-      '/s (' + visR + '&times; apart) &mdash; really ' + r + '&times; apart.';
+      '/s (' + visR + '&times; apart); really ' + r + '&times; apart.';
   }
 
   // The wave lanes. A literal scale is unwatchable at either end of a 16
