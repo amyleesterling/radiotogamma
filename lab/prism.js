@@ -14,7 +14,7 @@
     },
     hint: 'Drag objects out of the tray, as many as you like; drag one back onto the tray to remove it. ' +
       'Hover an object and drag the curved arrow on its ring to rotate it (hold SHIFT to snap to 45°). ' +
-      'Add extra LIGHT sources and tap one to change its color. INVENT builds an optic of your own recipe \u2014 tap one twice to rewrite it. Drag the handle under the bench to make it taller.',
+      'Add extra LIGHT sources and tap one to change its color. INVENT builds an optic of your own recipe; tap one twice to rewrite it. Drag the handle under the bench to make it taller.',
     init: init
   });
 
@@ -814,13 +814,13 @@
       var trueSpread = (indexAt(rc, 450) - indexAt(rc, 650)) * apex;
       if (rc.shape === 'lens') {
         pcap.innerHTML = 'n ' + rc.n.toFixed(3) + ' · focus red ' + Math.round(focalOf(rc, 650)) +
-          ' px, blue ' + Math.round(focalOf(rc, 450)) + ' px — the blue focuses closer: chromatic aberration.';
+          ' px, blue ' + Math.round(focalOf(rc, 450)) + ' px. The blue focuses closer: chromatic aberration.';
       } else if (!apex) {
         pcap.innerHTML = 'No wedge, so no deviation: a parallel slab shifts the beam sideways but never fans it.' +
           (rc.scatter > 0.02 ? ' Scatter is roughening the surface.' : ' Pick WEDGE or PRISM to bend it.');
       } else {
         pcap.innerHTML = 'Deviation (n−1)×' + apex + '°: red ' + red.toFixed(1) + '°, blue ' + blue.toFixed(1) +
-          '°. True spread ' + trueSpread.toFixed(2) + '° — drawn ×' + DISP_GAIN + ' to be visible.';
+          '°. True spread ' + trueSpread.toFixed(2) + '°, drawn ×' + DISP_GAIN + ' to be visible.';
       }
     }
 
