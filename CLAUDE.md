@@ -1,7 +1,7 @@
 # Working on Radio to Gamma
 
 A static site, no build step, no framework. Five HTML pages, one shared
-stylesheet, one data file, four lab modules. Read `README.md` for the map.
+stylesheet, one data file, six lab modules. Read `README.md` for the map.
 
 ## Rules that keep the site honest
 
