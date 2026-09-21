@@ -245,8 +245,8 @@
       ctx.restore();
       // one arrowhead, so which way it is travelling is never in doubt
       var au = -U_DRAW * 0.55, av = -Lz * 0.45;
-      arrow(au - tT * av * 0 + tT * 0, av, Math.sin(theta), Math.cos(theta), rgba(c, Math.min(1, alpha * 3)));
-      label('REFERENCE BEAM', PX(au, av) + (port ? 10 : 6), PY(au, av) + (port ? -6 : -8), rgba(c, 0.75));
+      arrow(au, av, Math.sin(theta), Math.cos(theta), rgba(c, Math.min(1, alpha * 3)));
+      label('REFERENCE BEAM', PX(au, av) + (port ? 12 : 8), PY(au, av) - (port ? 8 : 10), rgba(c, 0.75));
     }
     function arrow(u, v, du, dv, style) {
       var x = PX(u, v), y = PY(u, v);
@@ -316,7 +316,7 @@
       ctx.strokeStyle = 'rgba(196,228,255,.5)'; ctx.lineWidth = 1.4;
       line(U_MARK - 3.5, 0, U_MARK + 3.5, 0);
       line(U_MARK, -3.5, U_MARK, 3.5);
-      label('MARK ON THE HOLDER', PX(U_MARK, 0) + (port ? 8 : -14), PY(U_MARK, 0) + (port ? 16 : 18), 'rgba(154,162,177,.8)');
+      label('MARK ON THE HOLDER', PX(U_MARK, 0) + (port ? 10 : 14), PY(U_MARK, 0) + (port ? 17 : 4), 'rgba(154,162,177,.8)');
       label(replay ? 'DEVELOPED PLATE' : 'PLATE', PX(U_HALF, 0) + (port ? 6 : -30), PY(U_HALF, 0) - (port ? 14 : 12), 'rgba(126,224,255,.85)');
     }
 
@@ -337,25 +337,49 @@
         ctx.beginPath(); ctx.arc(PX(q.u, -q.z), PY(q.u, -q.z), 2.1, 0, TAU); ctx.fill();
       }
       var mid = pointAt(1);
-      label('OBJECT', PX(mid.u, -mid.z) + (port ? 14 : -22), PY(mid.u, -mid.z) - (port ? 18 : 20), '#eff4fb');
+      label('OBJECT', PX(mid.u, -mid.z) + (port ? 20 : -22), PY(mid.u, -mid.z) + (port ? 20 : -20), '#eff4fb');
       // a dimension line for the depth
       ctx.save();
       ctx.strokeStyle = 'rgba(196,228,255,.22)'; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
       line(mid.u - 14, -zo, mid.u - 14, 0);
       ctx.restore();
       label(Math.round(zo) + ' µm', PX(mid.u - 14, -zo * 0.5) + (port ? -44 : -14), PY(mid.u - 14, -zo * 0.5) + (port ? 0 : 14), 'rgba(154,162,177,.9)');
+      terms();
+    }
+
+    // The three terms of |O + R|², spelled out where there is room for them.
+    // The point of the whole experiment lives in the third one: |O|² and |R|²
+    // only know how bright each wave was, and the cross term is the only place
+    // the phase, the direction the light was travelling, survives at all.
+    function terms() {
+      if (port) return;
+      var lines = [
+        { t: 'WHAT LANDS ON THE PLATE', c: '#7ee0ff' },
+        { t: '|R|²          the reference, alone' },
+        { t: '|O|²          the object wave, alone' },
+        // a hyphen-minus, inside a formula, where it is an operator
+        { t: '2|O||R| cos k(r - x sin θ)', c: '#eff4fb' },
+        { t: 'Only the third term knows which way', c: '#cfe6e6' },
+        { t: 'the light was going. It is the fringes.', c: '#cfe6e6' }
+      ];
+      ctx.font = MONO;
+      var wmax = 0, i;
+      for (i = 0; i < lines.length; i++) wmax = Math.max(wmax, ctx.measureText(lines[i].t).width);
+      var x = plateX + 26;
+      if (x + wmax + 20 > W - 8) return;              // no room: leave it out
+      panel(lines, x, 14);
     }
 
     function drawReplay() {
-      var c = col(), a = aper(), j, i, NR = 9;
-      drawRefBeam(0.2);
+      var c = col(), a = aper(), j, i, NR = 7;
+      drawRefBeam(0.18);
       // m = 0: the reference carries straight on through, undiffracted
       ctx.save();
-      ctx.strokeStyle = rgba(c, 0.1); ctx.lineWidth = 1;
+      ctx.strokeStyle = rgba(c, 0.08); ctx.lineWidth = 1;
       var tT = Math.tan(theta);
-      for (i = 0; i <= 6; i++) {
-        var ue = a[0] + (a[1] - a[0]) * i / 6;
-        line(ue, 0, ue + tT * (ZE + 20), ZE + 20);
+      for (i = 0; i <= 4; i++) {
+        var ue = a[0] + (a[1] - a[0]) * i / 4;
+        line(ue, 0, ue + tT * ZE, ZE);
       }
       ctx.restore();
       // m = -1: the twin image, real, on this side of the plate. At theta = 0
@@ -363,16 +387,21 @@
       // what made Gabor's in-line holograms so murky; tilt the reference and
       // the two orders swing apart, which is the whole point of off-axis.
       var mid = pointAt(1);
-      ctx.strokeStyle = rgba(c, 0.09); ctx.lineWidth = 1;
-      for (i = 0; i <= 6; i++) {
-        var ut = a[0] + (a[1] - a[0]) * i / 6;
-        var so = sinOut(ut, 1, -1), t = (ZE + 18) / Math.sqrt(1 - so * so);
-        line(ut, 0, ut + so * t, (ZE + 18));
+      ctx.strokeStyle = rgba(c, 0.08); ctx.lineWidth = 1;
+      for (i = 0; i <= 4; i++) {
+        var ut = a[0] + (a[1] - a[0]) * i / 4;
+        var so = sinOut(ut, 1, -1), t = ZE / Math.sqrt(1 - so * so);
+        line(ut, 0, ut + so * t, ZE);
       }
+      // the paraxial crossing of that fan: v = pz, shifted sideways by the tilt
       var twinU = mid.u + 2 * Math.sin(theta) * mid.z;
-      if (mid.z < ZE + 18) {
-        glow(PX(twinU, mid.z), PY(twinU, mid.z), 7, c, 0.3);
-        label('TWIN IMAGE', PX(twinU, mid.z) + 8, PY(twinU, mid.z) + 4, rgba(c, 0.55));
+      var tx = PX(twinU, mid.z), ty = PY(twinU, mid.z);
+      var ex = PX(eyeU, ZE), ey = PY(eyeU, ZE);
+      if (mid.z < ZE + 14) {
+        glow(tx, ty, 7, c, 0.3);
+        // the label goes only where it will not sit on top of the eye
+        if (Math.abs(tx - ex) > 66 || Math.abs(ty - ey) > 26)
+          label('TWIN IMAGE', tx + 9, ty + 4, rgba(c, 0.55));
       }
       // m = +1: the reconstruction. Each ray leaves at the angle the object
       // wave had, so the fan back-projects onto the original point.
@@ -381,8 +410,8 @@
         ctx.strokeStyle = rgba(c, sees(j) ? 0.2 : 0.09); ctx.lineWidth = 1;
         for (i = 0; i < NR; i++) {
           var u = a[0] + (a[1] - a[0]) * (NR === 1 ? 0.5 : i / (NR - 1));
-          var so1 = sinOut(u, j, 1), tf = (ZE + 18) / Math.sqrt(1 - so1 * so1);
-          line(u, 0, u + so1 * tf, ZE + 18);
+          var so1 = sinOut(u, j, 1), tf = (ZE + 14) / Math.sqrt(1 - so1 * so1);
+          line(u, 0, u + so1 * tf, ZE + 14);
         }
         // and the backward extension: dashed, straight onto the virtual point
         ctx.save();
@@ -398,13 +427,13 @@
         var al = (0.18 + 0.75 * frac) * (seen ? 1 : 0.16);
         glow(PX(pp.u, -pp.z), PY(pp.u, -pp.z), rad + 5, c, al * 0.5);
         glow(PX(pp.u, -pp.z), PY(pp.u, -pp.z), rad, c, al);
-        if (seen) {
-          ctx.strokeStyle = rgba(c, 0.5); ctx.lineWidth = 0.8;
+        if (seen && rad > 4) {                       // the size of the blur disc, drawn
+          ctx.strokeStyle = rgba(c, 0.3); ctx.lineWidth = 0.8;
           ctx.beginPath(); ctx.arc(PX(pp.u, -pp.z), PY(pp.u, -pp.z), rad, 0, TAU); ctx.stroke();
         }
       }
       var m2 = pointAt(1);
-      label('VIRTUAL IMAGE', PX(m2.u, -m2.z) + (port ? 16 : -28), PY(m2.u, -m2.z) - (port ? 20 : 24), '#eff4fb');
+      label('VIRTUAL IMAGE', PX(m2.u, -m2.z) + (port ? 20 : -28), PY(m2.u, -m2.z) + (port ? 22 : -24), '#eff4fb');
       // the sight lines actually entering the pupil, and the eye
       for (j = 0; j < OBJ.length; j++) {
         if (!sees(j)) continue;
@@ -437,24 +466,30 @@
     // the parallax is right there: move the eye and the points slide across
     // the mark, because they are 80 µm further away. A photograph cannot.
     function drawFinder(x, y) {
-      var bw = port ? 150 : 172, bh = 40, c = col(), j;
+      var bw = port ? 150 : 178, bh = 46, c = col(), j;
       ctx.fillStyle = 'rgba(5,7,12,.86)'; ctx.fillRect(x, y, bw, bh);
       ctx.strokeStyle = 'rgba(196,228,255,.2)'; ctx.lineWidth = 1;
       ctx.strokeRect(x + 0.5, y + 0.5, bw - 1, bh - 1);
       label('WHAT THE EYE SEES', x + 7, y + 13, 'rgba(126,224,255,.8)');
-      var by = y + 28, span = 44;                 // degrees across the strip
+      var by = y + 27, span = 44;                 // degrees across the strip
       function at(deg) { return x + bw / 2 + clamp(deg, -span, span) / span * (bw / 2 - 10); }
-      ctx.strokeStyle = 'rgba(196,228,255,.18)';
+      ctx.strokeStyle = 'rgba(196,228,255,.18)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x + 8, by); ctx.lineTo(x + bw - 8, by); ctx.stroke();
       var aMark = Math.atan((U_MARK - eyeU) / ZE) * DEG;
-      ctx.strokeStyle = 'rgba(196,228,255,.75)'; ctx.lineWidth = 1.6;
+      ctx.strokeStyle = 'rgba(196,228,255,.8)'; ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(at(aMark), by - 7); ctx.lineTo(at(aMark), by + 7); ctx.stroke();
+      label('MARK', at(aMark) - 13, by + 17, 'rgba(154,162,177,.8)');
       for (j = 0; j < OBJ.length; j++) {
         var p = pointAt(j);
         var ad = Math.atan((p.u - eyeU) / (p.z + ZE)) * DEG;
         // the same 1.22 lambda / A that blurs the image blurs it here too
-        var rad = Math.max(2, (1.22 * lam / aperW()) * DEG / span * (bw / 2 - 10));
-        glow(at(ad), by, rad + 2, c, sees(j) ? 0.85 : 0.12);
+        var rad = Math.max(2.4, (1.22 * lam / aperW()) * DEG / span * (bw / 2 - 10));
+        var vis = sees(j);
+        glow(at(ad), by, rad + 3, c, vis ? 0.9 : 0.12);
+        if (vis && rad < 4) {
+          ctx.fillStyle = rgba(c, 0.95);
+          ctx.beginPath(); ctx.arc(at(ad), by, 1.6, 0, TAU); ctx.fill();
+        }
       }
     }
 
@@ -483,47 +518,47 @@
         for (i = -1; i <= 1; i += 2) fine = Math.min(fine, spacing(i * U_HALF, j));
       var px = fine * s;
       if (!replay) {
-        lines.push({ t: 'RECORD  ·  ' + nm + ' nm  ·  reference at ' + fmt(theta * DEG, 1) + '°', c: '#7ee0ff' });
-        lines.push({ t: 'the plate is exposed by |O + R|², not by the object', c: '#cfe6e6' });
+        lines.push({ t: 'RECORD · ' + nm + ' nm · reference ' + fmt(theta * DEG, 1) + '°', c: '#7ee0ff' });
+        lines.push({ t: 'exposed by |O + R|², not by the object', c: '#cfe6e6' });
         lines.push({
-          t: 'finest fringes: ' + fmt(fine) + ' µm' +
-            (px < 2 ? '  (finer than this screen: it greys out, like the real thing)'
-              : '  (' + fmt(px, 1) + ' px here)')
+          t: px < 2 ? 'finest fringes ' + fmt(fine) + ' µm: finer than a pixel'
+            : 'finest fringes ' + fmt(fine) + ' µm, ' + fmt(px, 1) + ' px here'
         });
         lines.push(theta * DEG < 0.6
-          ? { t: 'in line: three Gabor zone plates, open at the centre, crowding to the edges', c: '#ffd479' }
-          : { t: 'off axis: a ' + fmt(lam / Math.sin(theta)) + ' µm carrier runs under the zone plates' });
+          ? { t: 'in line: a Gabor zone plate per point', c: '#ffd479' }
+          : { t: 'off axis: a ' + fmt(lam / Math.sin(theta)) + ' µm carrier under them' });
       } else {
         var A = aperW(), ang = 1.22 * lam / A * DEG, frac = A / (2 * U_HALF);
-        lines.push({ t: 'REPLAY  ·  reference beam alone  ·  first order = the object wave', c: '#7ee0ff' });
-        lines.push({ t: 'virtual image: 3 points, ' + Math.round(zo) + ' µm behind the plate', c: '#cfe6e6' });
+        lines.push({ t: 'REPLAY · the reference beam alone', c: '#7ee0ff' });
+        lines.push({ t: 'first order leaves at the object wave angle', c: '#cfe6e6' });
+        lines.push({ t: 'virtual image: 3 points, ' + Math.round(zo) + ' µm back' });
         lines.push({
-          t: 'window ' + fmt(A, 1) + ' µm  ·  1.22λ/A = ' + fmt(ang, 2) + '°  ·  blur ' + fmt(blurUm(zo)) + ' µm',
+          t: 'window ' + fmt(A, 1) + ' µm, 1.22λ/A = ' + fmt(ang, 2) + '°, blur ' + fmt(blurUm(zo)) + ' µm',
           c: lvl ? '#ffd479' : '#9aa2b1'
         });
         var seen = 0;
         for (j = 0; j < OBJ.length; j++) if (sees(j)) seen++;
         lines.push(seen === OBJ.length
           ? {
-            t: 'all 3 points visible  ·  light ' + Math.round(frac * 100) + '%  ·  parallax ' +
+            t: 'all 3 visible, light ' + Math.round(frac * 100) + '%, parallax ' +
               (parallax() >= 0 ? '+' : '') + fmt(parallax(), 1) + '°'
           }
-          : { t: 'drag the eye to look through the piece that is left', c: '#ff9c8a' });
+          : { t: 'drag the eye to look through what is left', c: '#ff9c8a' });
       }
-      var shortLines = lines;
-      if (port) {                                   // a phone has no room for the long forms
-        shortLines = lines.map(function (l) {
-          return { t: l.t.replace('  ·  ', ' · ').replace(/\s*\(.*\)\s*$/, ''), c: l.c };
-        });
-      }
-      var y = panel(shortLines, 12, 12);
+      var y = panel(lines, 12, 12);
       if (replay) drawFinder(12, y + 6);
-      // the honest footnote about scale
-      ctx.font = MONO_S; ctx.fillStyle = 'rgba(92,107,122,.95)'; ctx.textAlign = 'left';
+      // the honest footnote about scale, on its own backing so the beams
+      // cannot make a mess of it
       var note = port
         ? ['80 µm of plate. Scale it up 1000×', 'for a plate you can hold: the same', 'fringes, tens of thousands of them.']
-        : ['80 µm of plate, drawn at its real fringe spacing. Scale the whole scene up 1000× and it is an 8 cm plate',
-           'with the subject 8 cm behind it, the same fringes a micron or two apart, tens of thousands of them.'];
+        : ['80 µm of plate, drawn at its real fringe spacing. Scale the whole scene up 1000× and it is an',
+           '8 cm plate with the subject 8 cm behind it, the same fringes, tens of thousands of them.'];
+      ctx.font = MONO_S; ctx.textAlign = 'left';
+      var nw = 0;
+      for (i = 0; i < note.length; i++) nw = Math.max(nw, ctx.measureText(note[i]).width);
+      ctx.fillStyle = 'rgba(5,7,12,.8)';
+      ctx.fillRect(6, H - 12 - note.length * 12, nw + 12, note.length * 12 + 10);
+      ctx.fillStyle = 'rgba(108,124,140,.95)';
       for (i = 0; i < note.length; i++) ctx.fillText(note[i], 12, H - 10 - (note.length - 1 - i) * 12);
     }
     // the angle between the middle point and the mark on the holder, from the eye
@@ -579,21 +614,27 @@
     function expose() { expo = api.reducedMotion ? 1 : 0; }
     function refresh() { if (!rafId) draw(); }
 
+    function tellHint() { setHint(replay ? (lvl ? HINT_BROKEN : HINT_REPLAY) : HINT_RECORD); }
+    function breakUI() {
+      fixBtn.hidden = lvl === 0;
+      breakBtn.textContent = lvl === 0 ? 'BREAK THE PLATE'
+        : lvl < SHARDS.length - 1 ? 'BREAK IT AGAIN' : 'BROKEN AS IT GOES';
+      breakBtn.disabled = lvl === SHARDS.length - 1;
+    }
     function setMode(r) {
       replay = r;
       modeBtn.setAttribute('aria-pressed', String(r));
       modeBtn.textContent = r ? 'BACK TO RECORDING' : 'REPLAY THE PLATE';
       canvas.style.cursor = r ? 'grab' : 'crosshair';
-      if (!r) expose();
-      setHint(r ? (lvl ? HINT_BROKEN : HINT_REPLAY) : HINT_RECORD);
+      // going back to record means a fresh plate in the holder: you cannot
+      // expose a hologram onto glass you have already snapped in half
+      if (!r) { lvl = 0; breakUI(); expose(); }
+      tellHint();
       refresh();
     }
     function setBreak(n) {
       lvl = clamp(n, 0, SHARDS.length - 1);
-      fixBtn.hidden = lvl === 0;
-      breakBtn.textContent = lvl === 0 ? 'BREAK THE PLATE'
-        : lvl < SHARDS.length - 1 ? 'BREAK IT AGAIN' : 'BROKEN AS IT GOES';
-      breakBtn.disabled = lvl === SHARDS.length - 1;
+      breakUI();
       if (lvl > 0) {
         // put the eye where the shard's beam actually goes, so the first thing
         // seen is the scene surviving; finding it by hand comes after
@@ -601,7 +642,7 @@
         eyeU = clamp(p.u + (uc - p.u) * (p.z + ZE) / p.z, -U_DRAW, U_DRAW);
         if (!solvedDone) { solvedDone = true; api.solved(); }
       }
-      if (lvl > 0 && !replay) setMode(true); else setHint(replay ? (lvl ? HINT_BROKEN : HINT_REPLAY) : HINT_RECORD);
+      tellHint();
       refresh();
     }
     zIn.addEventListener('input', function () {
@@ -619,7 +660,10 @@
       lightStrip(); expose(); refresh();
     });
     modeBtn.addEventListener('click', function () { setMode(!replay); lightStrip(); });
-    breakBtn.addEventListener('click', function () { setBreak(lvl + 1); lightStrip(); });
+    breakBtn.addEventListener('click', function () {
+      if (!replay) setMode(true);                 // there is nothing to break until it is developed
+      setBreak(lvl + 1); lightStrip();
+    });
     fixBtn.addEventListener('click', function () { setBreak(0); refresh(); });
 
     // ---- direct manipulation ---------------------------------------------------
