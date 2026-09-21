@@ -149,6 +149,8 @@
   .stagegrip em { font: 10px ui-monospace, Menlo, monospace; font-style: normal;
                   letter-spacing: .1em; opacity: 0; transition: opacity .15s; }
   .stagegrip:hover em, .stagegrip:focus-visible em { opacity: .8; }
+  /* nothing hovers on a touch screen, so the handle has to say what it is */
+  @media (hover: none) { .stagegrip em { opacity: .5; } }
   /* direct children only: an experiment's own inner canvases (the INVENT
      preview) must keep their own size */
   .exp[data-resized] .stage > canvas { height: var(--stage-h) !important; }

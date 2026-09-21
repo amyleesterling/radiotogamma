@@ -614,7 +614,7 @@
       var l = document.createElement('span');
       /* every row label is the same width, so the sliders line up in one
          column however long the word is */
-      l.style.cssText = 'display:inline-block;min-width:92px;flex:none;';
+      l.style.cssText = 'display:inline-block;min-width:min(92px,24vw);flex:none;';
       l.textContent = txt;
       return l;
     }
@@ -649,13 +649,16 @@
     var sliders = {};
     function mkSlider(key, name, min, max, step, fmt) {
       var r = row();
+      r.style.flexWrap = 'nowrap';
       var inp = document.createElement('input');
       inp.type = 'range'; inp.min = String(min); inp.max = String(max); inp.step = String(step);
       inp.value = String(draft[key]);
-      inp.style.cssText = 'width:min(210px, 46vw);flex:1 1 130px;';
+      /* nowrap plus a zero minimum keeps label, slider and value on one line
+         at any width: the slider is the part that gives */
+      inp.style.cssText = 'flex:1 1 60px;min-width:0;';
       inp.setAttribute('aria-label', name);
       var val = document.createElement('span');
-      val.style.cssText = 'min-width:52px;color:#c4e4ff;flex:none;';
+      val.style.cssText = 'min-width:52px;text-align:right;color:#c4e4ff;flex:none;';
       val.textContent = fmt(draft[key]);
       r.appendChild(label(name)); r.appendChild(inp); r.appendChild(val);
       sliders[key] = { inp: inp, val: val, fmt: fmt };
