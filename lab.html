@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Light Lab</title>
-<meta name="description" content="Five hands-on light experiments: split it, bounce it, bend it, scatter it, stack it. Predict first, then find out.">
+<meta name="description" content="Six hands-on light experiments: split it, bounce it, bend it, scatter it, stack it, record it. Predict first, then find out.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Radio to Gamma">
 <meta property="og:title" content="The Light Lab · Radio to Gamma">
-<meta property="og:description" content="Five hands-on light experiments: split it, bounce it, bend it, scatter it, stack it. Predict first, then find out.">
+<meta property="og:description" content="Six hands-on light experiments: split it, bounce it, bend it, scatter it, stack it, record it. Predict first, then find out.">
 <meta property="og:url" content="https://radiotogamma.com/lab.html">
 <meta property="og:image" content="https://radiotogamma.com/og-card.jpg">
 <meta property="og:image:width" content="1200">
@@ -136,6 +136,24 @@
   .exp .controls button[aria-pressed="true"] { color: #7ee0ff; border-color: rgba(126,224,255,.6);
     background: rgba(126,224,255,.08); }
   .exp .controls button[hidden] { display: none; }
+  /* Every stage can be pulled taller or shorter: some experiments want room
+     (the bench with ten optics on it), some want to be out of the way. */
+  .stagegrip { display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 16px; margin: 3px 0 0; cursor: ns-resize; touch-action: none;
+    color: #4a5866; background: none; border: 0; width: 100%; padding: 0; }
+  .stagegrip:hover, .stagegrip:focus-visible { color: #7ee0ff; }
+  .stagegrip:focus-visible { outline: 1px solid rgba(126,224,255,.5); outline-offset: 2px; }
+  .stagegrip i { display: block; width: 26px; height: 2px; border-radius: 2px;
+                 background: currentColor; opacity: .55; }
+  .stagegrip:hover i, .stagegrip:focus-visible i { opacity: 1; }
+  .stagegrip em { font: 10px ui-monospace, Menlo, monospace; font-style: normal;
+                  letter-spacing: .1em; opacity: 0; transition: opacity .15s; }
+  .stagegrip:hover em, .stagegrip:focus-visible em { opacity: .8; }
+  /* nothing hovers on a touch screen, so the handle has to say what it is */
+  @media (hover: none) { .stagegrip em { opacity: .5; } }
+  /* direct children only: an experiment's own inner canvases (the INVENT
+     preview) must keep their own size */
+  .exp[data-resized] .stage > canvas { height: var(--stage-h) !important; }
   /* the CD's payoff: three beats of prose under the stage, each fading in as
      the dive reaches the pits and then the waves; never drawn over the scene */
   .cdwhy { margin: 12px 0 0; max-width: 70ch; }
@@ -166,9 +184,9 @@
 </header>
 <div class="wrap">
   <h1>Reach in and mess with it.</h1>
-  <p class="sub">Five little instruments, one octave of spectrum. Each one starts with a question:
+  <p class="sub">Six little instruments, one octave of spectrum. Each one starts with a question:
      make your guess, then run the experiment yourself. The strip below stays lit the whole time,
-     showing which wavelengths each experiment is touching. Five manipulations of the same thing.</p>
+     showing which wavelengths each experiment is touching. Six manipulations of the same thing.</p>
 
   <div class="stripdock">
     <div class="dockrow">
@@ -182,7 +200,8 @@
 
   <p class="foot">Everything here runs on the real physics in miniature: dispersion in glass,
      interference from a CD's 1.6 µm track spacing, the 42° water-droplet cone, Rayleigh's
-     1/λ⁴ scattering, and two reflections a few hundred nanometres apart in a soap film. Illustrative in scale, honest in mechanism. Want a full optical bench with lenses,
+     1/λ⁴ scattering, two reflections a few hundred nanometres apart in a soap film, and a
+     hologram's fringes solved from |O + R|² and read back out with the grating equation. Illustrative in scale, honest in mechanism. Want a full optical bench with lenses,
      mirrors, and dispersive glass you arrange yourself? The open-source
      <a href="https://phydemo.app/ray-optics/" style="color:#7ee0ff">Ray Optics Simulation</a>
      is the deep end of this pool.</p>
@@ -320,13 +339,63 @@ window.LAB = (() => {
 
   const mount = document.getElementById('labMount');
   // sections land in a fixed order no matter when each module registers
-  const ORDER = ['prism', 'cd', 'hose', 'sky', 'film'];
+  const ORDER = ['prism', 'cd', 'hose', 'sky', 'film', 'holo'];
   for (const id of ORDER) {
     const slot = document.createElement('div');
     slot.id = 'slot-' + id;
     mount.appendChild(slot);
   }
+  // ---- drag the bottom edge of a stage to resize it ----------------------
+  // The stage's canvases follow --stage-h; each experiment reads its own live
+  // height back out of the element, so the physics re-lays-out rather than
+  // stretching. Double-click (or Escape mid-drag) returns to the default.
   const registry = [];
+  function addGrip(sec) {
+    const stage = sec.querySelector('.stage');
+    if (!stage) return;
+    const grip = document.createElement('button');
+    grip.type = 'button';
+    grip.className = 'stagegrip';
+    grip.title = 'Drag to resize · double-click to reset';
+    grip.setAttribute('aria-label', 'Resize this experiment. Use the up and down arrow keys.');
+    grip.innerHTML = '<i></i><em>DRAG TO RESIZE</em><i></i>';
+    sec.insertBefore(grip, stage.nextSibling);
+    const canvas = () => stage.querySelector(':scope > canvas');
+    const natural = () => {
+      const c = canvas();
+      return c ? Math.round(c.getBoundingClientRect().height) || 300 : 300;
+    };
+    let base = 0;
+    const setH = (h) => {
+      h = Math.max(160, Math.min(900, Math.round(h)));
+      sec.style.setProperty('--stage-h', h + 'px');
+      sec.dataset.resized = '1';
+      return h;
+    };
+    const reset = () => { delete sec.dataset.resized; sec.style.removeProperty('--stage-h'); };
+    grip.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      base = natural();
+      const y0 = e.clientY;
+      grip.setPointerCapture(e.pointerId);
+      const move = (ev) => setH(base + (ev.clientY - y0));
+      const up = () => {
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', up);
+        grip.removeEventListener('pointercancel', up);
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up);
+      grip.addEventListener('pointercancel', up);
+    });
+    grip.addEventListener('dblclick', reset);
+    grip.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setH(natural() + (e.key === 'ArrowDown' ? 1 : -1) * (e.shiftKey ? 60 : 20));
+      } else if (e.key === 'Escape') reset();
+    });
+  }
   function register(exp) {
     registry.push(exp);
     const sec = document.createElement('section');
@@ -336,6 +405,7 @@ window.LAB = (() => {
       '<div class="stage"></div>' +
       (exp.hint ? '<p class="hint">' + exp.hint + '</p>' : '');
     (document.getElementById('slot-' + exp.id) || mount).appendChild(sec);
+    addGrip(sec);
     const expApi = {
       strip: api,
       // the experiment calls this when the visitor has made the phenomenon
@@ -355,6 +425,7 @@ window.LAB = (() => {
 <script src="lab/hose.js"></script>
 <script src="lab/sky.js"></script>
 <script src="lab/film.js"></script>
+<script src="lab/holo.js"></script>
 <script src="share.js"></script>
 </body>
 </html>

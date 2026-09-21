@@ -305,6 +305,7 @@
       var rect = canvas.getBoundingClientRect();
       if (rect.width < 40) return;
       W = rect.width;
+      H2 = Math.max(160, Math.round(rect.height) || H2);   /* draggable stage */
       dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H2 * dpr);
@@ -976,10 +977,12 @@
       var rect = canvas.getBoundingClientRect();
       if (rect.width < 40) return;
       W = rect.width;
+      H = Math.max(160, Math.round(rect.height) || H);     /* draggable stage */
       dpr = Math.min(2, window.devicePixelRatio || 1);
       renderer.setPixelRatio(dpr);
       renderer.setSize(W, H, false);
-      canvas.style.width = '100%'; canvas.style.height = H + 'px';
+      canvas.style.width = '100%';
+      overlay.style.height = H + 'px';
       overlay.width = Math.round(W * dpr); overlay.height = Math.round(H * dpr);
       camera.aspect = W / H; camera.updateProjectionMatrix();
       render(); drawOverlay();

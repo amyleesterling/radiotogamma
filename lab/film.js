@@ -254,7 +254,8 @@
     function resize() {
       var rect = canvas.getBoundingClientRect();
       if (rect.width < 40) return;
-      W = rect.width; dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = rect.width; H = Math.max(160, Math.round(rect.height) || H);
+      dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       cx = W / 2; cy = H * 0.5; R = Math.min(W * 0.36, H * 0.4);
       draw(performance.now());

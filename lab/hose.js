@@ -434,6 +434,7 @@
         var r = canvas.getBoundingClientRect();
         if (!r.width) return;
         W = r.width;
+        H = Math.max(160, Math.round(r.height) || H);   /* the stage can be dragged taller */
         var dpr = Math.min(2, window.devicePixelRatio || 1);
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);

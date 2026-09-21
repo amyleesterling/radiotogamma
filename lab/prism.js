@@ -14,7 +14,7 @@
     },
     hint: 'Drag objects out of the tray, as many as you like; drag one back onto the tray to remove it. ' +
       'Hover an object and drag the curved arrow on its ring to rotate it (hold SHIFT to snap to 45°). ' +
-      'Add extra LIGHT sources and tap one to change its color. INVENT builds an optic of your own recipe.',
+      'Add extra LIGHT sources and tap one to change its color. INVENT builds an optic of your own recipe; tap one twice to rewrite it. Drag the handle under the bench to make it taller.',
     init: init
   });
 
@@ -138,18 +138,55 @@
       return [dx * c - dy * s, dx * s + dy * c];
     }
 
+    /* ---------- the physics an invented optic runs on ----------
+       A thin wedge of apex angle A and index n deviates a ray by (n-1)*A, and
+       n climbs toward the blue, so one recipe gives both the bend and the fan.
+       Real dispersion is small: crown glass spans about 0.008 across the
+       visible band, dense flint about 0.02, diamond about 0.044. At a 30 deg
+       apex that is under a degree of spread, a few pixels on this bench, so
+       the FAN is drawn exaggerated by DISP_GAIN while the readout states the
+       true angles. Illustrative in scale, honest in mechanism. */
+    var APEX = { slab: 0, tri: 30, lens: 0, blob: 0, wedge: 12 };
+    var DISP_MAX = 0.06, DISP_GAIN = 22, LENS_R = 62;
+    function indexAt(rc, nm) {
+      /* normal dispersion, centred so the stated n is the index at 550 nm */
+      var u = (550 - nm) / 370;
+      return rc.n + rc.disp * u;
+    }
+    function deviate(rc, nm, apex) {
+      if (!apex) return 0;
+      var base = (rc.n - 1) * apex;
+      var extra = (indexAt(rc, nm) - rc.n) * apex * DISP_GAIN;
+      return base + extra;
+    }
+    function focalOf(rc, nm) {
+      /* biconvex, both radii LENS_R: 1/f = (n-1) * 2/R, exaggerated the same
+         way so the colours land at visibly different focal points */
+      var n = rc.n + (indexAt(rc, nm) - rc.n) * DISP_GAIN;
+      return LENS_R / (2 * Math.max(0.05, n - 1));
+    }
+    /* frosted glass: a deterministic spread per ray, so a still bench is still */
+    function scatterOf(rc, seed) {
+      if (!rc.scatter) return 0;
+      var h = Math.sin(seed * 12.9898 + 4.1) * 43758.5453;
+      return (h - Math.floor(h) - 0.5) * 70 * rc.scatter;
+    }
+
     function bendDeg(nm, prot) {
       var u = (750 - nm) / 370;               /* 0 at red .. 1 at blue: blue bends most */
       return (8 + prot * 0.7) + u * (11 + Math.abs(prot) * 0.7);
     }
 
+    /* The bench is the space above the tray line: a ray leaving the scene
+       runs to the edge of THAT box, not the whole canvas, so a steep fan can
+       never paint over the tray icons and their labels. */
     function exitLen(r) {
-      var t = 1e9;
+      var t = 1e9, floor = TRAY_LINE - 2;
       if (r.dx > EPS) t = Math.min(t, (W + 20 - r.x) / r.dx);
       else if (r.dx < -EPS) t = Math.min(t, (-20 - r.x) / r.dx);
-      if (r.dy > EPS) t = Math.min(t, (H + 20 - r.y) / r.dy);
+      if (r.dy > EPS) t = Math.min(t, (floor - r.y) / r.dy);
       else if (r.dy < -EPS) t = Math.min(t, (-20 - r.y) / r.dy);
-      return t === 1e9 ? 0 : t;
+      return t === 1e9 || t < 0 ? 0 : t;
     }
 
     function rgbStr(nm) {
@@ -239,6 +276,7 @@
         } else if (o.type === 'custom') {
           var rc = o.recipe;
           var ri = r.i * rc.refl, ti = r.i * rc.trans, ai = r.i * rc.abs;
+          var apex = APEX[rc.shape] || 0;
           if (ai >= 0.02) glows.push({ x: best.x, y: best.y, r: 14, col: rc.tint, a: 0.14 * Math.min(1, ai * 2) });
           /* branches, strongest first; drop the weakest when at the ray cap */
           var wantR = ri >= 0.02, wantT = ti >= 0.02;
@@ -251,14 +289,40 @@
               child(r, best, bi, rr[0], rr[1], r.nm, ri);
               pushed++;
             } else if (order[b] === 'T' && wantT && allow >= 1) {
-              if (r.nm === null && rc.disp > 0.05) {
-                var fn = Math.min(Math.round(6 + 30 * rc.disp), allow);
+              if (rc.shape === 'lens') {
+                /* a real lens: the lensmaker's equation gives the focus, and
+                   because n rises toward the blue every colour focuses at its
+                   own distance — chromatic aberration, for free */
+                var sgn2 = r.dx >= 0 ? 1 : -1;
+                if (r.nm === null && rc.disp > 0) {
+                  var ln = Math.min(Math.round(5 + 24 * (rc.disp / DISP_MAX)), allow);
+                  if (ln >= 2) {
+                    dispersed = true;
+                    for (var jl = 0; jl < ln; jl++) {
+                      var nml = 380 + 370 * jl / (ln - 1);
+                      var fl = focalOf(rc, nml);
+                      var fxl = o.x + fl * sgn2, fyl = o.y;
+                      var vxl = fxl - best.x, vyl = fyl - best.y;
+                      var Ll = Math.sqrt(vxl * vxl + vyl * vyl) || 1;
+                      child(r, best, bi, vxl / Ll, vyl / Ll, nml, ti);
+                    }
+                    pushed += ln;
+                  } else { child(r, best, bi, r.dx, r.dy, null, ti); pushed++; }
+                } else {
+                  var f1 = focalOf(rc, r.nm === null ? 550 : r.nm);
+                  var fx1 = o.x + f1 * sgn2, fy1 = o.y;
+                  var vx1 = fx1 - best.x, vy1 = fy1 - best.y;
+                  var L1 = Math.sqrt(vx1 * vx1 + vy1 * vy1) || 1;
+                  child(r, best, bi, vx1 / L1, vy1 / L1, r.nm, ti);
+                  pushed++;
+                }
+              } else if (r.nm === null && apex > 0 && rc.disp > 0) {
+                var fn = Math.min(Math.round(6 + 26 * (rc.disp / DISP_MAX)), allow);
                 if (fn >= 2) {
                   dispersed = true;
-                  var spread = 6 + 30 * rc.disp;
                   for (var j2 = 0; j2 < fn; j2++) {
                     var nm2 = 380 + 370 * j2 / (fn - 1);
-                    var dd = rotDir(r.dx, r.dy, 2 + (750 - nm2) / 370 * spread);
+                    var dd = rotDir(r.dx, r.dy, deviate(rc, nm2, apex) + scatterOf(rc, j2));
                     child(r, best, bi, dd[0], dd[1], nm2, ti);
                   }
                   pushed += fn;
@@ -266,12 +330,12 @@
                   child(r, best, bi, r.dx, r.dy, null, ti);
                   pushed++;
                 }
-              } else if (r.nm !== null && rc.disp > 0.05) {
-                var d3 = rotDir(r.dx, r.dy, 2 + (750 - r.nm) / 370 * (6 + 30 * rc.disp));
-                child(r, best, bi, d3[0], d3[1], r.nm, ti);
-                pushed++;
               } else {
-                child(r, best, bi, r.dx, r.dy, r.nm, ti);
+                /* one ray: white light through a shape with no wedge is not
+                   spread at all (a parallel slab only shifts it sideways) */
+                var dv = deviate(rc, r.nm === null ? 550 : r.nm, apex) + scatterOf(rc, pushed);
+                var d3 = dv ? rotDir(r.dx, r.dy, dv) : [r.dx, r.dy];
+                child(r, best, bi, d3[0], d3[1], r.nm, ti);
                 pushed++;
               }
             }
@@ -300,6 +364,9 @@
 
     function drawScene(sc) {
       ctx.save();
+      /* a hard clip as well as the shortened rays: glows have radius, and a
+         glow centred just above the line would otherwise bleed onto the tray */
+      ctx.beginPath(); ctx.rect(0, 0, W, TRAY_LINE - 2); ctx.clip();
       ctx.globalCompositeOperation = 'lighter';
       var i, s;
       for (i = 0; i < sc.segs.length; i++) {
@@ -397,6 +464,13 @@
       ctx.rotate(o.rot * RAD);
       drawGlyph(o.type, o);
       ctx.restore();
+      /* an invented optic carries its name, upright however it is rotated */
+      if (o.type === 'custom' && o.recipe && o.recipe.name) {
+        ctx.fillStyle = 'rgba(' + o.recipe.tint + ',.85)';
+        ctx.font = '10px ui-monospace,SFMono-Regular,Menlo,monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(o.recipe.name.toUpperCase(), o.x, o.y + 40);
+      }
     }
 
     function drawRing(o) {
@@ -478,19 +552,50 @@
       });
     }
 
-    /* ---------- INVENT panel ---------- */
+    /* ---------- INVENT panel ----------
+       A recipe, not a magic object: pick a shape (the wedge angle), an index
+       (how hard it bends), how the index climbs toward the blue (the fan),
+       how the light splits between reflected / transmitted / absorbed, and
+       how rough the surface is. The preview runs the same ray code as the
+       bench, so what is drawn in the little box is what lands on the big one. */
     var TINTS = ['#c4e4ff', '#7ee0ff', '#a07cff', '#ffb36b', '#ff6b81'];
-    var draft = { shape: 'slab', refl: 40, trans: 40, abs: 20, disp: 60, tint: TINTS[1] };
+    var draft = { shape: 'tri', refl: 20, trans: 70, abs: 10,
+                  n: 1.52, disp: 0.020, scatter: 0, tint: TINTS[1], name: '' };
+
+    /* real materials, real numbers: index at 550 nm and the spread of index
+       across the visible band (crown 0.008, dense flint 0.019, diamond 0.044) */
+    var PRESETS = [
+      ['WATER',   { shape: 'tri',  n: 1.333, disp: 0.008, refl: 8,  trans: 88, abs: 4,  scatter: 0,  tint: TINTS[1] }],
+      ['CROWN',   { shape: 'tri',  n: 1.517, disp: 0.008, refl: 8,  trans: 88, abs: 4,  scatter: 0,  tint: TINTS[0] }],
+      ['FLINT',   { shape: 'tri',  n: 1.620, disp: 0.019, refl: 12, trans: 84, abs: 4,  scatter: 0,  tint: TINTS[2] }],
+      ['DIAMOND', { shape: 'tri',  n: 2.417, disp: 0.044, refl: 29, trans: 68, abs: 3,  scatter: 0,  tint: TINTS[0] }],
+      ['FROSTED', { shape: 'slab', n: 1.517, disp: 0.008, refl: 10, trans: 72, abs: 18, scatter: 55, tint: TINTS[0] }],
+      ['MIRROR',  { shape: 'slab', n: 1.000, disp: 0,     refl: 92, trans: 2,  abs: 6,  scatter: 0,  tint: TINTS[0] }],
+      ['LENS',    { shape: 'lens', n: 1.517, disp: 0.012, refl: 8,  trans: 88, abs: 4,  scatter: 0,  tint: TINTS[1] }]
+    ];
+
     var panel = document.createElement('div');
     panel.hidden = true;
+    /* no display in this rule: an inline display would beat the hidden
+       attribute and the panel could never close. The flex row lives on an
+       inner wrapper instead. */
     panel.style.cssText = 'margin-top:8px;padding:12px 14px;border:1px solid rgba(196,228,255,.16);' +
       'background:#070a10;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#8b98a8;';
+    var inner = document.createElement('div');
+    inner.style.cssText = 'display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-start;';
+    panel.appendChild(inner);
     mount.appendChild(panel);
+
+    var ctrlCol = document.createElement('div');
+    ctrlCol.style.cssText = 'flex:1 1 300px;min-width:min(300px,100%);';
+    var prevCol = document.createElement('div');
+    prevCol.style.cssText = 'flex:0 1 196px;min-width:170px;';
+    inner.appendChild(ctrlCol); inner.appendChild(prevCol);
 
     function row() {
       var d = document.createElement('div');
       d.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:6px 0;';
-      panel.appendChild(d);
+      ctrlCol.appendChild(d);
       return d;
     }
     function btn(txt) {
@@ -505,50 +610,73 @@
       b.style.borderColor = on ? 'rgba(126,224,255,.6)' : 'rgba(196,228,255,.16)';
       b.style.background = on ? 'rgba(126,224,255,.08)' : 'none';
     }
+    function label(txt) {
+      var l = document.createElement('span');
+      /* every row label is the same width, so the sliders line up in one
+         column however long the word is */
+      l.style.cssText = 'display:inline-block;min-width:min(92px,24vw);flex:none;';
+      l.textContent = txt;
+      return l;
+    }
+
+    var startRow = row();
+    startRow.appendChild(label('START FROM'));
+    var presetBtns = [];
+    PRESETS.forEach(function (pz) {
+      var b = btn(pz[0]);
+      b.title = 'n = ' + pz[1].n.toFixed(3) + ', dispersion ' + pz[1].disp.toFixed(3);
+      b.addEventListener('click', function () {
+        for (var k in pz[1]) draft[k] = pz[1][k];
+        draft.name = pz[0].charAt(0) + pz[0].slice(1).toLowerCase();
+        syncAll();
+        presetBtns.forEach(function (x) { markOn(x.el, x.n === pz[0]); });
+      });
+      presetBtns.push({ n: pz[0], el: b });
+      startRow.appendChild(b);
+    });
 
     var shapeRow = row();
-    shapeRow.appendChild(document.createTextNode('SHAPE '));
+    shapeRow.appendChild(label('SHAPE'));
     var shapeBtns = [];
-    [['slab', 'SLAB'], ['tri', 'TRIANGLE'], ['lens', 'LENS'], ['blob', 'BLOB']].forEach(function (s) {
-      var b = btn(s[1]);
-      b.addEventListener('click', function () {
-        draft.shape = s[0];
-        shapeBtns.forEach(function (x) { markOn(x.el, x.id === s[0]); });
-      });
-      shapeBtns.push({ id: s[0], el: b });
-      markOn(b, s[0] === draft.shape);
+    [['slab', 'SLAB'], ['wedge', 'WEDGE'], ['tri', 'PRISM'], ['lens', 'LENS'], ['blob', 'BLOB']].forEach(function (sp) {
+      var b = btn(sp[1]);
+      b.title = APEX[sp[0]] ? APEX[sp[0]] + ' degree wedge' : 'no wedge: no deviation';
+      b.addEventListener('click', function () { draft.shape = sp[0]; syncAll(); });
+      shapeBtns.push({ id: sp[0], el: b });
       shapeRow.appendChild(b);
     });
 
     var sliders = {};
-    function mkSlider(key, name, indent) {
+    function mkSlider(key, name, min, max, step, fmt) {
       var r = row();
-      if (indent) r.style.marginLeft = '18px';
-      var lab = document.createElement('span');
-      lab.style.cssText = 'display:inline-block;min-width:86px;';
-      lab.textContent = name;
+      r.style.flexWrap = 'nowrap';
       var inp = document.createElement('input');
-      inp.type = 'range'; inp.min = '0'; inp.max = '100'; inp.step = '1';
+      inp.type = 'range'; inp.min = String(min); inp.max = String(max); inp.step = String(step);
       inp.value = String(draft[key]);
-      inp.style.cssText = 'width:min(250px, 52vw);';
+      /* nowrap plus a zero minimum keeps label, slider and value on one line
+         at any width: the slider is the part that gives */
+      inp.style.cssText = 'flex:1 1 60px;min-width:0;';
+      inp.setAttribute('aria-label', name);
       var val = document.createElement('span');
-      val.style.cssText = 'min-width:34px;color:#c4e4ff;';
-      val.textContent = draft[key] + '%';
-      r.appendChild(lab); r.appendChild(inp); r.appendChild(val);
-      sliders[key] = { inp: inp, val: val };
+      val.style.cssText = 'min-width:52px;text-align:right;color:#c4e4ff;flex:none;';
+      val.textContent = fmt(draft[key]);
+      r.appendChild(label(name)); r.appendChild(inp); r.appendChild(val);
+      sliders[key] = { inp: inp, val: val, fmt: fmt };
       return inp;
     }
-    /* REFLECT / TRANSMIT / ABSORB auto-normalize to a sum of 100 */
+    var pct = function (v) { return Math.round(v) + '%'; };
+    mkSlider('n', 'INDEX', 1, 2.6, 0.001, function (v) { return 'n ' + (+v).toFixed(3); })
+      .addEventListener('input', function () { draft.n = +sliders.n.inp.value; syncAll(); });
+    /* REFLECT / TRANSMIT / ABSORB are one photon's fate, so they add to 100 */
     ['refl', 'trans', 'abs'].forEach(function (key, ki) {
       var names = ['REFLECT', 'TRANSMIT', 'ABSORB'];
-      var inp = mkSlider(key, names[ki], false);
-      if (key === 'trans') mkSlider('disp', 'DISPERSION', true);
-      inp.addEventListener('input', function () { renorm(key); });
+      mkSlider(key, names[ki], 0, 100, 1, pct)
+        .addEventListener('input', function () { renorm(key); syncAll(true); });
     });
-    sliders.disp.inp.addEventListener('input', function () {
-      draft.disp = +sliders.disp.inp.value;
-      sliders.disp.val.textContent = draft.disp + '%';
-    });
+    mkSlider('disp', 'DISPERSION', 0, DISP_MAX, 0.001, function (v) { return (+v).toFixed(3); })
+      .addEventListener('input', function () { draft.disp = +sliders.disp.inp.value; syncAll(); });
+    mkSlider('scatter', 'SCATTER', 0, 100, 1, pct)
+      .addEventListener('input', function () { draft.scatter = +sliders.scatter.inp.value; syncAll(); });
 
     function renorm(changed) {
       var keys = ['refl', 'trans', 'abs'];
@@ -561,56 +689,195 @@
         draft[others[0]] = draft[others[0]] * rest / sum;
         draft[others[1]] = rest - draft[others[0]];
       }
-      keys.forEach(function (k) {
-        var v = Math.round(draft[k]);
-        sliders[k].inp.value = String(v);
-        sliders[k].val.textContent = v + '%';
-      });
     }
 
     var tintRow = row();
-    tintRow.appendChild(document.createTextNode('TINT '));
+    tintRow.appendChild(label('TINT'));
     var tintBtns = [];
     TINTS.forEach(function (t) {
       var b = document.createElement('button');
       b.type = 'button';
       b.style.cssText = 'width:22px;height:22px;cursor:pointer;background:' + t + ';' +
-        'border:2px solid ' + (t === draft.tint ? '#eff4fb' : 'rgba(196,228,255,.2)') + ';padding:0;';
+        'border:2px solid rgba(196,228,255,.2);padding:0;';
       b.setAttribute('aria-label', 'tint ' + t);
-      b.addEventListener('click', function () {
-        draft.tint = t;
-        tintBtns.forEach(function (x) {
-          x.el.style.borderColor = x.t === t ? '#eff4fb' : 'rgba(196,228,255,.2)';
-        });
-      });
+      b.addEventListener('click', function () { draft.tint = t; syncAll(); });
       tintBtns.push({ t: t, el: b });
       tintRow.appendChild(b);
     });
 
+    var nameRow = row();
+    nameRow.appendChild(label('NAME'));
+    var nameInp = document.createElement('input');
+    nameInp.type = 'text'; nameInp.maxLength = 14; nameInp.placeholder = 'my glass';
+    nameInp.style.cssText = 'font:inherit;background:#04070a;color:#cfe6e6;padding:5px 8px;' +
+      'border:1px solid rgba(196,228,255,.2);width:150px;';
+    nameInp.addEventListener('input', function () { draft.name = nameInp.value; });
+    nameRow.appendChild(nameInp);
+
     var actRow = row();
-    var createBtn = btn('CREATE'), cancelBtn = btn('CANCEL');
+    var createBtn = btn('CREATE'), surpriseBtn = btn('SURPRISE ME'), cancelBtn = btn('CANCEL');
     markOn(createBtn, true);
-    actRow.appendChild(createBtn); actRow.appendChild(cancelBtn);
-    cancelBtn.addEventListener('click', function () { panel.hidden = true; });
-    createBtn.addEventListener('click', function () {
-      if (instances.length >= MAX_OPTICS) { flash('MAX ' + MAX_OPTICS + ' OBJECTS ON THE BENCH'); return; }
-      var inst = {
-        type: 'custom', x: Math.round(W * 0.55), y: BEAM_Y, rot: 0, nm: null,
-        recipe: {
-          shape: draft.shape,
-          refl: Math.round(draft.refl) / 100,
-          trans: Math.round(draft.trans) / 100,
-          abs: Math.round(draft.abs) / 100,
-          disp: draft.disp / 100,
-          tint: hex2rgb(draft.tint)
+    actRow.appendChild(createBtn); actRow.appendChild(surpriseBtn); actRow.appendChild(cancelBtn);
+    cancelBtn.addEventListener('click', function () { panel.hidden = true; editing = null; });
+    /* a roll of the dice that still lands on a possible material: real solids
+       run from about n 1.3 to 2.4, and dispersion rises with index (higher
+       index glasses are the fiery ones), so the two are rolled together */
+    var ADJ = ['moody', 'cheap', 'haunted', 'borrowed', 'wet', 'ancient', 'suspicious', 'honest'];
+    var NOUN = ['glass', 'ice', 'amber', 'quartz', 'resin', 'crystal', 'jelly', 'stuff'];
+    surpriseBtn.addEventListener('click', function () {
+      var rnd = Math.random();
+      draft.n = +(1.3 + rnd * 1.1).toFixed(3);
+      draft.disp = +(0.004 + rnd * rnd * 0.05).toFixed(3);
+      draft.shape = ['slab', 'wedge', 'tri', 'lens', 'blob'][Math.floor(Math.random() * 5)];
+      draft.scatter = Math.random() < 0.3 ? Math.round(Math.random() * 60) : 0;
+      draft.refl = Math.round(5 + Math.random() * 45);
+      draft.abs = Math.round(Math.random() * 25);
+      draft.trans = 100 - draft.refl - draft.abs;
+      draft.tint = TINTS[Math.floor(Math.random() * TINTS.length)];
+      draft.name = ADJ[Math.floor(Math.random() * ADJ.length)] + ' ' + NOUN[Math.floor(Math.random() * NOUN.length)];
+      presetBtns.forEach(function (x) { markOn(x.el, false); });
+      syncAll();
+    });
+
+    /* ---------- the live preview: the same optic, the same ray code -------- */
+    var pcv = document.createElement('canvas');
+    pcv.width = 380; pcv.height = 260;                 /* drawn at 2x for sharpness */
+    pcv.style.cssText = 'display:block;width:100%;height:auto;background:#05070c;' +
+      'border:1px solid rgba(196,228,255,.16);';
+    pcv.setAttribute('aria-label', 'Live preview of the optic being invented');
+    var pctx = pcv.getContext('2d');
+    var pcap = document.createElement('p');
+    pcap.style.cssText = 'margin:6px 0 0;font-size:10.5px;line-height:1.5;color:#6c7c8c;';
+    var ptitle = document.createElement('p');
+    ptitle.style.cssText = 'margin:0 0 5px;font-size:10.5px;letter-spacing:.1em;color:#8b98a8;';
+    ptitle.textContent = 'PREVIEW · WHITE LIGHT IN';
+    prevCol.appendChild(ptitle); prevCol.appendChild(pcv); prevCol.appendChild(pcap);
+
+    function recipeOf(d) {
+      return { shape: d.shape, refl: d.refl / 100, trans: d.trans / 100, abs: d.abs / 100,
+               n: d.n, disp: d.disp, scatter: d.scatter / 100, tint: hex2rgb(d.tint),
+               name: (d.name || '').trim() };
+    }
+
+    function drawPreview() {
+      var rc = recipeOf(draft), apex = APEX[rc.shape] || 0;
+      var PW = 190, PH = 130, ox = PW * 0.46, oy = PH * 0.46, tilt = 18;
+      pctx.setTransform(2, 0, 0, 2, 0, 0);
+      pctx.fillStyle = '#05070c'; pctx.fillRect(0, 0, PW, PH);
+      pctx.save();
+      pctx.globalCompositeOperation = 'lighter';
+      /* the beam in */
+      pctx.globalAlpha = .9; pctx.strokeStyle = '#ffffff'; pctx.lineWidth = 1.4;
+      pctx.beginPath(); pctx.moveTo(4, oy); pctx.lineTo(ox, oy); pctx.stroke();
+      var m = [Math.cos((tilt + 90) * RAD), Math.sin((tilt + 90) * RAD)];
+      var LEN = PW;
+      if (rc.refl > 0.02) {                            /* the reflected share */
+        var rd = reflectDir(1, 0, m);
+        pctx.globalAlpha = Math.min(1, rc.refl * 1.6); pctx.lineWidth = 1.2;
+        pctx.beginPath(); pctx.moveTo(ox, oy);
+        pctx.lineTo(ox + rd[0] * LEN, oy + rd[1] * LEN); pctx.stroke();
+      }
+      if (rc.trans > 0.02) {                           /* the transmitted share */
+        var N = 26;
+        for (var i = 0; i < N; i++) {
+          var nm = 380 + 370 * i / (N - 1), dd;
+          if (rc.shape === 'lens') {
+            var f = focalOf(rc, nm), fx = ox + f * 0.62, fy = oy;
+            var vx = fx - ox, vy = fy - oy, L = Math.sqrt(vx * vx + vy * vy) || 1;
+            dd = [vx / L, vy / L];
+          } else {
+            dd = rotDir(1, 0, deviate(rc, nm, apex) + scatterOf(rc, i));
+          }
+          var c = api.strip.wavelengthRGB(nm);
+          pctx.strokeStyle = 'rgb(' + Math.round(c[0] * 255) + ',' + Math.round(c[1] * 255) + ',' + Math.round(c[2] * 255) + ')';
+          pctx.globalAlpha = Math.min(1, rc.trans) * (apex || rc.scatter || rc.shape === 'lens' ? .5 : .12);
+          pctx.lineWidth = 1.6;
+          pctx.beginPath(); pctx.moveTo(ox, oy);
+          pctx.lineTo(ox + dd[0] * LEN, oy + dd[1] * LEN); pctx.stroke();
         }
-      };
-      instances.push(inst);
+      }
+      if (rc.abs > 0.02) {                             /* what the glass keeps */
+        var g = pctx.createRadialGradient(ox, oy, 0, ox, oy, 22);
+        g.addColorStop(0, 'rgba(' + rc.tint + ',' + (0.5 * rc.abs).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(' + rc.tint + ',0)');
+        pctx.globalAlpha = 1; pctx.fillStyle = g;
+        pctx.beginPath(); pctx.arc(ox, oy, 22, 0, Math.PI * 2); pctx.fill();
+      }
+      pctx.restore();
+      /* the optic itself, drawn by the same glyph the bench uses */
+      var save = ctx; ctx = pctx;
+      pctx.save();
+      pctx.translate(ox, oy); pctx.rotate(tilt * RAD); pctx.scale(.62, .62);
+      drawGlyph('custom', { recipe: rc });
+      pctx.restore();
+      ctx = save;
+
+      /* the honest numbers, whatever the drawing had to exaggerate */
+      var red = deviate(rc, 650, apex), blue = deviate(rc, 450, apex);
+      var trueSpread = (indexAt(rc, 450) - indexAt(rc, 650)) * apex;
+      if (rc.shape === 'lens') {
+        pcap.innerHTML = 'n ' + rc.n.toFixed(3) + ' · focus red ' + Math.round(focalOf(rc, 650)) +
+          ' px, blue ' + Math.round(focalOf(rc, 450)) + ' px. The blue focuses closer: chromatic aberration.';
+      } else if (!apex) {
+        pcap.innerHTML = 'No wedge, so no deviation: a parallel slab shifts the beam sideways but never fans it.' +
+          (rc.scatter > 0.02 ? ' Scatter is roughening the surface.' : ' Pick WEDGE or PRISM to bend it.');
+      } else {
+        pcap.innerHTML = 'Deviation (n−1)×' + apex + '°: red ' + red.toFixed(1) + '°, blue ' + blue.toFixed(1) +
+          '°. True spread ' + trueSpread.toFixed(2) + '°, drawn ×' + DISP_GAIN + ' to be visible.';
+      }
+    }
+
+    function syncAll(skipInputs) {
+      shapeBtns.forEach(function (x) { markOn(x.el, x.id === draft.shape); });
+      tintBtns.forEach(function (x) { x.el.style.borderColor = x.t === draft.tint ? '#eff4fb' : 'rgba(196,228,255,.2)'; });
+      for (var k in sliders) {
+        var v = draft[k];
+        if (!skipInputs || (k !== 'refl' && k !== 'trans' && k !== 'abs')) sliders[k].inp.value = String(v);
+        else sliders[k].inp.value = String(Math.round(v));
+        sliders[k].val.textContent = sliders[k].fmt(v);
+      }
+      if (nameInp.value !== draft.name) nameInp.value = draft.name;
+      drawPreview();
+    }
+
+    /* an optic already on the bench can be reopened and rewritten in place:
+       double-click it, tune the recipe, SAVE */
+    var editing = null;
+    function openInvent(inst) {
+      editing = inst || null;
+      if (inst) {
+        var rc = inst.recipe;
+        draft.shape = rc.shape; draft.n = rc.n; draft.disp = rc.disp;
+        draft.refl = Math.round(rc.refl * 100); draft.trans = Math.round(rc.trans * 100);
+        draft.abs = Math.round(rc.abs * 100); draft.scatter = Math.round((rc.scatter || 0) * 100);
+        draft.name = rc.name || '';
+        for (var i = 0; i < TINTS.length; i++) if (hex2rgb(TINTS[i]) === rc.tint) draft.tint = TINTS[i];
+        presetBtns.forEach(function (x) { markOn(x.el, false); });
+      }
+      createBtn.textContent = inst ? 'SAVE' : 'CREATE';
+      panel.hidden = false;
+      syncAll();
+    }
+    createBtn.addEventListener('click', function () {
+      if (editing && instances.indexOf(editing) !== -1) {
+        editing.recipe = recipeOf(draft);
+        hot = editing;
+      } else {
+        if (instances.length >= MAX_OPTICS) { flash('MAX ' + MAX_OPTICS + ' OBJECTS ON THE BENCH'); return; }
+        var inst = {
+          type: 'custom', x: Math.round(W * 0.55), y: BEAM_Y, rot: 0, nm: null,
+          recipe: recipeOf(draft)
+        };
+        instances.push(inst);
+        hot = inst;
+      }
+      editing = null;
+      createBtn.textContent = 'CREATE';
       panel.hidden = true;
-      hot = inst;
       draw();
       updateStrip();
     });
+    syncAll();
 
     /* ---------- fullscreen ---------- */
     var fs = false, fsMode = null;             /* 'api' | 'css' */
@@ -710,6 +977,7 @@
       return best;
     }
 
+    var lastTap = { o: null, t: 0 };
     canvas.addEventListener('pointerdown', function (e) {
       var p = pointer(e);
       var grab = nearest(instances, p, 16, 'x', 'y');
@@ -727,6 +995,17 @@
       if (!grab) grab = nearest(instances, p, 28, 'x', 'y');
       if (grab) {
         e.preventDefault();
+        /* a second tap on the same invented optic reopens its recipe. This is
+           counted here rather than with a dblclick listener because the
+           preventDefault above suppresses the browser's own double-click,
+           and counting taps works the same under a finger. */
+        if (grab.type === 'custom' && onBench(grab) && lastTap.o === grab &&
+            Date.now() - lastTap.t < 400) {
+          lastTap = { o: null, t: 0 };
+          openInvent(grab);
+          return;
+        }
+        lastTap = { o: grab, t: Date.now() };
         hot = grab;
         drag = { mode: 'move', obj: grab, dx: grab.x - p.x, dy: grab.y - p.y, id: e.pointerId, sx: p.x, sy: p.y, moved: false };
         canvas.setPointerCapture(e.pointerId);
@@ -739,7 +1018,7 @@
       if (!slot) return;
       e.preventDefault();
       if (slot.type === 'invent') {            /* click or drag-out both open the panel */
-        panel.hidden = false;
+        openInvent(null);                      /* a fresh recipe, not the last edit */
         return;
       }
       if (instances.length >= MAX_OPTICS) { flash('MAX ' + MAX_OPTICS + ' OBJECTS ON THE BENCH'); return; }
