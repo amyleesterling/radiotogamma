@@ -289,7 +289,7 @@
           // they are drawn in the laser's colour. Replaying: the plate has been
           // developed and is silver, so they go neutral.
           ctx.fillStyle = replay
-            ? 'rgb(' + Math.round(28 + 200 * b) + ',' + Math.round(30 + 198 * b) + ',' + Math.round(34 + 190 * b) + ')'
+            ? 'rgb(' + Math.round(14 + 236 * b) + ',' + Math.round(16 + 233 * b) + ',' + Math.round(20 + 225 * b) + ')'
             : rgba(c, 0.10 + 0.9 * b);
         }
         if (port) ctx.fillRect(base + i, plateY - TH / 2, 1.05, TH);
@@ -400,7 +400,7 @@
       if (mid.z < ZE + 14) {
         glow(tx, ty, 7, c, 0.3);
         // the label goes only where it will not sit on top of the eye
-        if (Math.abs(tx - ex) > 66 || Math.abs(ty - ey) > 26)
+        if (Math.sqrt((tx - ex) * (tx - ex) + (ty - ey) * (ty - ey)) > 92)
           label('TWIN IMAGE', tx + 9, ty + 4, rgba(c, 0.55));
       }
       // m = +1: the reconstruction. Each ray leaves at the angle the object
@@ -457,7 +457,7 @@
       ctx.fillStyle = 'rgba(126,224,255,.9)';
       ctx.beginPath(); ctx.arc(0, 0, 3.4, 0, TAU); ctx.fill();
       ctx.restore();
-      label('EYE  (DRAG IT)', x + (port ? 16 : -18), y + (port ? 6 : 26), 'rgba(126,224,255,.9)');
+      label('EYE  (DRAG IT)', x - (port ? 42 : 18), y + (port ? 22 : 26), 'rgba(126,224,255,.9)');
     }
 
     // ---- what the eye actually sees: a one-line viewfinder -------------------
@@ -478,7 +478,7 @@
       var aMark = Math.atan((U_MARK - eyeU) / ZE) * DEG;
       ctx.strokeStyle = 'rgba(196,228,255,.8)'; ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(at(aMark), by - 7); ctx.lineTo(at(aMark), by + 7); ctx.stroke();
-      label('MARK', at(aMark) - 13, by + 17, 'rgba(154,162,177,.8)');
+      label('MARK', clamp(at(aMark) - 13, x + 5, x + bw - 33), by + 17, 'rgba(154,162,177,.8)');
       for (j = 0; j < OBJ.length; j++) {
         var p = pointAt(j);
         var ad = Math.atan((p.u - eyeU) / (p.z + ZE)) * DEG;
@@ -517,33 +517,35 @@
       for (j = 0; j < OBJ.length; j++)
         for (i = -1; i <= 1; i += 2) fine = Math.min(fine, spacing(i * U_HALF, j));
       var px = fine * s;
+      // a wide and a narrow wording for every line: a phone gets about 38
+      // monospace characters before the panel runs off the canvas
+      function L(wide, narrow, c) { lines.push({ t: port ? narrow : wide, c: c }); }
       if (!replay) {
-        lines.push({ t: 'RECORD · ' + nm + ' nm · reference ' + fmt(theta * DEG, 1) + '°', c: '#7ee0ff' });
-        lines.push({ t: 'exposed by |O + R|², not by the object', c: '#cfe6e6' });
-        lines.push({
-          t: px < 2 ? 'finest fringes ' + fmt(fine) + ' µm: finer than a pixel'
-            : 'finest fringes ' + fmt(fine) + ' µm, ' + fmt(px, 1) + ' px here'
-        });
-        lines.push(theta * DEG < 0.6
-          ? { t: 'in line: a Gabor zone plate per point', c: '#ffd479' }
-          : { t: 'off axis: a ' + fmt(lam / Math.sin(theta)) + ' µm carrier under them' });
+        L('RECORD · ' + nm + ' nm · reference ' + fmt(theta * DEG, 1) + '°',
+          'RECORD · ' + nm + ' nm · ref ' + fmt(theta * DEG, 1) + '°', '#7ee0ff');
+        L('exposed by |O + R|², not by the object', 'exposed by |O + R|²', '#cfe6e6');
+        L(px < 2 ? 'finest fringes ' + fmt(fine) + ' µm: finer than a pixel'
+          : 'finest fringes ' + fmt(fine) + ' µm, ' + fmt(px, 1) + ' px here',
+          'finest fringes ' + fmt(fine) + ' µm');
+        if (theta * DEG < 0.6) L('in line: a Gabor zone plate per point', 'in line: a Gabor zone plate each', '#ffd479');
+        else L('off axis: a ' + fmt(lam / Math.sin(theta)) + ' µm carrier under them',
+          'off axis: ' + fmt(lam / Math.sin(theta)) + ' µm carrier');
       } else {
         var A = aperW(), ang = 1.22 * lam / A * DEG, frac = A / (2 * U_HALF);
-        lines.push({ t: 'REPLAY · the reference beam alone', c: '#7ee0ff' });
-        lines.push({ t: 'first order leaves at the object wave angle', c: '#cfe6e6' });
-        lines.push({ t: 'virtual image: 3 points, ' + Math.round(zo) + ' µm back' });
-        lines.push({
-          t: 'window ' + fmt(A, 1) + ' µm, 1.22λ/A = ' + fmt(ang, 2) + '°, blur ' + fmt(blurUm(zo)) + ' µm',
-          c: lvl ? '#ffd479' : '#9aa2b1'
-        });
+        L('REPLAY · the reference beam alone', 'REPLAY · reference beam alone', '#7ee0ff');
+        L('first order leaves at the object wave angle', 'first order = the object wave', '#cfe6e6');
+        L('virtual image: 3 points, ' + Math.round(zo) + ' µm back', 'virtual image ' + Math.round(zo) + ' µm back');
+        L('window ' + fmt(A, 1) + ' µm, 1.22λ/A = ' + fmt(ang, 2) + '°, blur ' + fmt(blurUm(zo)) + ' µm',
+          'window ' + fmt(A, 1) + ' µm, 1.22λ/A = ' + fmt(ang, 2) + '°', lvl ? '#ffd479' : '#9aa2b1');
+        if (port) L('', 'blur at the image ' + fmt(blurUm(zo)) + ' µm', lvl ? '#ffd479' : '#9aa2b1');
         var seen = 0;
         for (j = 0; j < OBJ.length; j++) if (sees(j)) seen++;
-        lines.push(seen === OBJ.length
-          ? {
-            t: 'all 3 visible, light ' + Math.round(frac * 100) + '%, parallax ' +
-              (parallax() >= 0 ? '+' : '') + fmt(parallax(), 1) + '°'
-          }
-          : { t: 'drag the eye to look through what is left', c: '#ff9c8a' });
+        if (seen === OBJ.length) {
+          var par = (parallax() >= 0 ? '+' : '') + fmt(parallax(), 1) + '°';
+          L('all 3 visible, light ' + Math.round(frac * 100) + '%, parallax ' + par,
+            'all 3 visible, light ' + Math.round(frac * 100) + '%');
+          if (port) L('', 'parallax ' + par);
+        } else L('drag the eye to look through what is left', 'drag the eye into the beam', '#ff9c8a');
       }
       var y = panel(lines, 12, 12);
       if (replay) drawFinder(12, y + 6);
