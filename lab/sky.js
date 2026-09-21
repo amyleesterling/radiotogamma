@@ -27,7 +27,8 @@
 
     init(mount, api) {
       const state = { elev: 65, th: 1, mie: 1 };   // start with a white (Mie) atmosphere
-      const H = 300, GROUND = 34;
+      let H = 300;                       // live: the stage can be dragged taller
+      const GROUND = 34;
       let W = 0;
 
       // --- DOM ---------------------------------------------------------------
@@ -111,6 +112,7 @@
         const rect = canvas.getBoundingClientRect();
         if (!rect.width) return;
         W = rect.width;
+        H = Math.max(160, Math.round(rect.height) || H);
         const dpr = Math.min(2, window.devicePixelRatio || 1);
         canvas.width = Math.round(W * dpr);
         canvas.height = Math.round(H * dpr);
