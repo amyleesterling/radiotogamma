@@ -14,7 +14,7 @@
     },
     hint: 'Drag objects out of the tray, as many as you like; drag one back onto the tray to remove it. ' +
       'Hover an object and drag the curved arrow on its ring to rotate it (hold SHIFT to snap to 45°). ' +
-      'Add extra LIGHT sources and tap one to change its color. INVENT builds an optic of your own recipe.',
+      'Add extra LIGHT sources and tap one to change its color. INVENT builds an optic of your own recipe \u2014 tap one twice to rewrite it. Drag the handle under the bench to make it taller.',
     init: init
   });
 
@@ -712,10 +712,29 @@
     nameRow.appendChild(nameInp);
 
     var actRow = row();
-    var createBtn = btn('CREATE'), cancelBtn = btn('CANCEL');
+    var createBtn = btn('CREATE'), surpriseBtn = btn('SURPRISE ME'), cancelBtn = btn('CANCEL');
     markOn(createBtn, true);
-    actRow.appendChild(createBtn); actRow.appendChild(cancelBtn);
-    cancelBtn.addEventListener('click', function () { panel.hidden = true; });
+    actRow.appendChild(createBtn); actRow.appendChild(surpriseBtn); actRow.appendChild(cancelBtn);
+    cancelBtn.addEventListener('click', function () { panel.hidden = true; editing = null; });
+    /* a roll of the dice that still lands on a possible material: real solids
+       run from about n 1.3 to 2.4, and dispersion rises with index (higher
+       index glasses are the fiery ones), so the two are rolled together */
+    var ADJ = ['moody', 'cheap', 'haunted', 'borrowed', 'wet', 'ancient', 'suspicious', 'honest'];
+    var NOUN = ['glass', 'ice', 'amber', 'quartz', 'resin', 'crystal', 'jelly', 'stuff'];
+    surpriseBtn.addEventListener('click', function () {
+      var rnd = Math.random();
+      draft.n = +(1.3 + rnd * 1.1).toFixed(3);
+      draft.disp = +(0.004 + rnd * rnd * 0.05).toFixed(3);
+      draft.shape = ['slab', 'wedge', 'tri', 'lens', 'blob'][Math.floor(Math.random() * 5)];
+      draft.scatter = Math.random() < 0.3 ? Math.round(Math.random() * 60) : 0;
+      draft.refl = Math.round(5 + Math.random() * 45);
+      draft.abs = Math.round(Math.random() * 25);
+      draft.trans = 100 - draft.refl - draft.abs;
+      draft.tint = TINTS[Math.floor(Math.random() * TINTS.length)];
+      draft.name = ADJ[Math.floor(Math.random() * ADJ.length)] + ' ' + NOUN[Math.floor(Math.random() * NOUN.length)];
+      presetBtns.forEach(function (x) { markOn(x.el, false); });
+      syncAll();
+    });
 
     /* ---------- the live preview: the same optic, the same ray code -------- */
     var pcv = document.createElement('canvas');
@@ -818,15 +837,40 @@
       drawPreview();
     }
 
+    /* an optic already on the bench can be reopened and rewritten in place:
+       double-click it, tune the recipe, SAVE */
+    var editing = null;
+    function openInvent(inst) {
+      editing = inst || null;
+      if (inst) {
+        var rc = inst.recipe;
+        draft.shape = rc.shape; draft.n = rc.n; draft.disp = rc.disp;
+        draft.refl = Math.round(rc.refl * 100); draft.trans = Math.round(rc.trans * 100);
+        draft.abs = Math.round(rc.abs * 100); draft.scatter = Math.round((rc.scatter || 0) * 100);
+        draft.name = rc.name || '';
+        for (var i = 0; i < TINTS.length; i++) if (hex2rgb(TINTS[i]) === rc.tint) draft.tint = TINTS[i];
+        presetBtns.forEach(function (x) { markOn(x.el, false); });
+      }
+      createBtn.textContent = inst ? 'SAVE' : 'CREATE';
+      panel.hidden = false;
+      syncAll();
+    }
     createBtn.addEventListener('click', function () {
-      if (instances.length >= MAX_OPTICS) { flash('MAX ' + MAX_OPTICS + ' OBJECTS ON THE BENCH'); return; }
-      var inst = {
-        type: 'custom', x: Math.round(W * 0.55), y: BEAM_Y, rot: 0, nm: null,
-        recipe: recipeOf(draft)
-      };
-      instances.push(inst);
+      if (editing && instances.indexOf(editing) !== -1) {
+        editing.recipe = recipeOf(draft);
+        hot = editing;
+      } else {
+        if (instances.length >= MAX_OPTICS) { flash('MAX ' + MAX_OPTICS + ' OBJECTS ON THE BENCH'); return; }
+        var inst = {
+          type: 'custom', x: Math.round(W * 0.55), y: BEAM_Y, rot: 0, nm: null,
+          recipe: recipeOf(draft)
+        };
+        instances.push(inst);
+        hot = inst;
+      }
+      editing = null;
+      createBtn.textContent = 'CREATE';
       panel.hidden = true;
-      hot = inst;
       draw();
       updateStrip();
     });
@@ -930,6 +974,7 @@
       return best;
     }
 
+    var lastTap = { o: null, t: 0 };
     canvas.addEventListener('pointerdown', function (e) {
       var p = pointer(e);
       var grab = nearest(instances, p, 16, 'x', 'y');
@@ -947,6 +992,17 @@
       if (!grab) grab = nearest(instances, p, 28, 'x', 'y');
       if (grab) {
         e.preventDefault();
+        /* a second tap on the same invented optic reopens its recipe. This is
+           counted here rather than with a dblclick listener because the
+           preventDefault above suppresses the browser's own double-click,
+           and counting taps works the same under a finger. */
+        if (grab.type === 'custom' && onBench(grab) && lastTap.o === grab &&
+            Date.now() - lastTap.t < 400) {
+          lastTap = { o: null, t: 0 };
+          openInvent(grab);
+          return;
+        }
+        lastTap = { o: grab, t: Date.now() };
         hot = grab;
         drag = { mode: 'move', obj: grab, dx: grab.x - p.x, dy: grab.y - p.y, id: e.pointerId, sx: p.x, sy: p.y, moved: false };
         canvas.setPointerCapture(e.pointerId);
@@ -959,7 +1015,7 @@
       if (!slot) return;
       e.preventDefault();
       if (slot.type === 'invent') {            /* click or drag-out both open the panel */
-        panel.hidden = false;
+        openInvent(null);                      /* a fresh recipe, not the last edit */
         return;
       }
       if (instances.length >= MAX_OPTICS) { flash('MAX ' + MAX_OPTICS + ' OBJECTS ON THE BENCH'); return; }
