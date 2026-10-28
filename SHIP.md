@@ -40,7 +40,7 @@ what exists, evolve it, invent only what is absent. We build on `.holopanel`,
   `spectrumTexture()`. `ship.motion` is false under reduced motion.
 - `ship/ship.css`: tokens and chrome. `--deck` is the deck's accent. Classes:
   `.deck-wrap`, `.stage`, `.stage-head` (`.tag` + `h2`), `.lede`, `.viewport`
-  (+ `.hud`, `.hud .label`, `.hud .tick`, `.vp-note`), `.probe` (+ `.cap`),
+  (+ `.vhud`, `.vhud .label`, `.vhud .tick`, `.vp-note`), `.probe` (+ `.cap`),
   `.readouts .readout` (`.k .v .d`), `.chips .chip`, `.dial` with
   `input.beam`, `.glass` (on a `.holopanel`), `.hatches .hatch`,
   `.deck-foot`, `.rise`. Add deck-specific CSS in the page's own `<style>`,
@@ -71,7 +71,7 @@ what exists, evolve it, invent only what is absent. We build on `.holopanel`,
     <section class="stage" id="...">
       <div class="stage-head"><div class="tag">Stage 01 · the name</div><h1>...</h1><p class="lede">...</p></div>
       <div class="viewport" id="vpX" style="height: clamp(320px, 56vh, 560px)">
-        <div class="hud">...probes, labels...</div>
+        <div class="vhud">...probes, labels...</div>
         <div class="fallback">What the instrument shows, in a sentence, for a browser without WebGL.</div>
       </div>
       <div class="readouts">...</div>

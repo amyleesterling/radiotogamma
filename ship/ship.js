@@ -40,7 +40,7 @@ const motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-redu
 let spectrumTex = null;
 export function spectrumTexture() {
   if (spectrumTex) return spectrumTex;
-  const W = 1024, data = new Uint8Array(W * 4);
+  const W = 4096, data = new Uint8Array(W * 4);   // wide enough that the visible band, a third of a decade, gets ~80 texels
   for (let i = 0; i < W; i++) {
     const f = P.freqAt(i / (W - 1));
     const band = P.bandOf(f);
@@ -169,9 +169,14 @@ function createShip() {
          <img src="favicon.png" alt="" width="26" height="26">
          <span><span class="name">${title || 'Radio to Gamma'}</span><span class="sub">${sub || ('Survey vessel · deck ' + d.k + ' · ' + d.name)}</span></span>
        </a>
-       <nav class="decknav" aria-label="Decks">${DECKS.map(x =>
-         `<a href="${x.href}"${x.id === d.id ? ' aria-current="page"' : ''} data-holo-tap><span class="k">${x.k}</span>${x.name}</a>`).join('')}</nav>
        <button class="share" type="button" id="shareBtn" data-holo-tap>Share</button>`;
+    // the deck rail is a sibling of the bar, not a child: the bar's backdrop
+    // filter would otherwise become the containing block of a fixed rail,
+    // and the phone dock would pin itself to the bar instead of the screen
+    const nav = document.createElement('nav');
+    nav.className = 'decknav'; nav.setAttribute('aria-label', 'Decks');
+    nav.innerHTML = DECKS.map(x => `<a href="${x.href}"${x.id === d.id ? ' aria-current="page"' : ''} data-holo-tap><span class="k">${x.k}</span>${x.name}</a>`).join('');
+    document.body.prepend(nav);
     document.body.prepend(bar);
 
     // the share button: the native sheet where there is one, copy the link where there is not

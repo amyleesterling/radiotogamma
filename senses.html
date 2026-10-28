@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The Spectral Zoo</title>
+<title>Spectral Zoo · Radio to Gamma</title>
 <meta name="description" content="Who senses what: animal vision and radiant-heat detection across the electromagnetic spectrum, plus the senses that refuse to sit on a wavelength ruler.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Radio to Gamma">
@@ -19,375 +19,545 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
-<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="vendor/scifi-ui/data-readout.css">
+<link rel="stylesheet" href="ship/ship.css">
 <style>
+  /* deck 05: the three senses get three lights, vision cyan, heat ember,
+     the visitor the deck's own green, carried on --p so the shared readout
+     and chip rules pick them up without a rule of their own */
+  body[data-deck="senses"] { --vision: 126 224 255; --heat: 255 140 90; --alien: 123 255 142; --field: 168 224 106; --polar: 200 143 255; --xray: 226 120 180; }
+  body[data-deck="senses"] .mode-v { --p: var(--vision); }
+  body[data-deck="senses"] .mode-h { --p: var(--heat); }
+  body[data-deck="senses"] .mode-a { --p: var(--alien); }
 
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
-  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
-  .sub { font-size: 14.5px; color: #9aa2b1; margin: 0 0 22px; line-height: 1.6; max-width: 70ch; }
-  .sub b { color: #eff4fb; }
+  /* the roster: one row per mode of sensing, each creature a chip with its icon */
+  body[data-deck="senses"] .roster { display: grid; gap: 14px; margin-top: 18px; }
+  body[data-deck="senses"] .roster .row { display: grid; gap: 8px; }
+  body[data-deck="senses"] .roster .row-k {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; color: rgb(var(--p)); }
+  body[data-deck="senses"] .roster .row-k small { font-family: var(--sans); font-size: 12px; letter-spacing: 0; text-transform: none; color: rgb(var(--dim)); }
+  body[data-deck="senses"] .roster .chips { margin-top: 0; }
+  body[data-deck="senses"] .chip.creature { display: inline-flex; align-items: center; gap: 9px; padding: 5px 13px 5px 6px; min-height: 42px; }
+  body[data-deck="senses"] .chip.creature img { height: 28px; width: auto; max-width: 40px; object-fit: contain; filter: drop-shadow(0 1px 3px rgb(0 0 0 / .6)); }
+  body[data-deck="senses"] .chip.creature .glyph { width: 28px; height: 28px; display: grid; place-items: center; font-family: var(--mono); color: rgb(var(--alien)); border: 1px dashed rgb(var(--alien) / .6); border-radius: 50%; font-size: 13px; }
+  body[data-deck="senses"] .chip.creature:hover, body[data-deck="senses"] .chip.creature.holo-on { border-color: rgb(var(--p) / .6); background: rgb(var(--p) / .08); }
+  body[data-deck="senses"] .chip.creature[aria-pressed="true"] { border-color: rgb(var(--p)); color: rgb(var(--p)); background: rgb(var(--p) / .10); box-shadow: 0 0 16px rgb(var(--p) / .25); }
+  body[data-deck="senses"] .mode-a .chip.creature { border-style: dashed; }
 
-  h2.group { font-size: 12px; letter-spacing: .14em; margin: 22px 0 9px; font-weight: 600; }
-  h2.group.vision { color: #7ee0ff; }
-  h2.group.heat { color: #ff9c6b; }
-  h2.group.alien { color: #7bff8e; }
-  h2.group small { color: #6c7c8c; letter-spacing: 0; font-weight: 400; text-transform: none; font-size: 11.5px; }
+  /* the specimen card: what the camera is looking at, in numbers and a sentence */
+  body[data-deck="senses"] .card { margin-top: 18px; }
+  body[data-deck="senses"] .card .card-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  body[data-deck="senses"] .card .card-head h3 { font-family: var(--sans); font-size: clamp(20px, 2.4vw, 26px); font-weight: 400; letter-spacing: 0; text-transform: none; color: rgb(var(--ink)); margin: 0; }
+  body[data-deck="senses"] .modetag {
+    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 3px; color: rgb(var(--p)); border: 1px solid rgb(var(--p) / .5); background: rgb(var(--p) / .07); }
+  body[data-deck="senses"] .mode-a .modetag { border-style: dashed; }
+  body[data-deck="senses"] .card .readouts { margin-top: 0; }
+  body[data-deck="senses"] .card .readout .v { font-size: clamp(17px, 1.9vw, 22px); }
+  body[data-deck="senses"] .card .sentence { margin: 16px 0 0; font-size: 15px; line-height: 1.6; color: rgb(var(--ink) / .86); max-width: 76ch; }
+  body[data-deck="senses"] .card .sentence b { color: rgb(var(--p)); font-weight: 600; }
 
-  .sensechips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
-  .sensechips button { font: inherit; font-size: 13.5px; cursor: pointer; background: none;
-    color: #9aa2b1; border: 1px solid rgba(196,228,255,.18); padding: 8px 12px; min-height: 42px;
-    display: inline-flex; align-items: center; gap: 9px; }
-  .sensechips button img { height: 32px; width: auto; max-width: 44px; object-fit: contain;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
-  .sensechips button:hover { color: #ffd479; border-color: rgba(232,169,58,.5); }
-  .sensechips button[aria-pressed="true"] { color: #ffd479; border-color: rgba(232,169,58,.75);
-    background: rgba(232,169,58,.1); }
-  .sensechips.heatrow button:hover { color: #ff9c6b; border-color: rgba(255,120,80,.5); }
-  .sensechips.heatrow button[aria-pressed="true"] { color: #ff9c6b; border-color: rgba(255,120,80,.75);
-    background: rgba(255,120,80,.08); }
-  .sensechips.alienrow button { border-style: dashed; }
-  .sensechips.alienrow button:hover { color: #7bff8e; border-color: rgba(123,255,142,.5); }
-  .sensechips.alienrow button[aria-pressed="true"] { color: #7bff8e; border-color: rgba(123,255,142,.75);
-    background: rgba(123,255,142,.07); }
+  /* camera chips live in the instrument's top right corner */
+  body[data-deck="senses"] .vhud .cam { position: absolute; right: 14px; top: 12px; display: flex; gap: 6px; }
+  body[data-deck="senses"] .vhud .cam .chip { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; padding: 6px 10px; background: rgb(var(--void) / .55); }
+  body[data-deck="senses"] .vhud .picked {
+    position: absolute; left: 14px; top: 12px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: rgb(var(--p) / .95); pointer-events: none; }
+  body[data-deck="senses"] .vhud .picked small { display: block; font-size: 9.5px; letter-spacing: .14em; color: rgb(var(--dim)); margin-top: 3px; }
 
-  .sensedesc { font-size: 14px; color: #cfe6e6; line-height: 1.6; margin: 14px 0 10px; min-height: 4.2em; }
-  .sensedesc b { color: #ffd479; font-weight: 600; }
-  .sensedesc .modetag { display: inline-block; font-family: ui-monospace, Menlo, monospace;
-    font-size: 10.5px; letter-spacing: .12em; padding: 2px 8px; margin-right: 8px; border-radius: 3px;
-    vertical-align: 2px; }
-  .modetag.vision { color: #7ee0ff; border: 1px solid rgba(126,224,255,.5); background: rgba(126,224,255,.07); }
-  .modetag.heat { color: #ff9c6b; border: 1px solid rgba(255,120,80,.5); background: rgba(255,120,80,.07); }
-  .modetag.alien { color: #7bff8e; border: 1px dashed rgba(123,255,142,.5); background: rgba(123,255,142,.05); }
+  /* be the creature: a select, a day and night switch, and the legend */
+  body[data-deck="senses"] .be-controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin: 0 0 14px; }
+  body[data-deck="senses"] .be-controls label { font-family: var(--mono); font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: rgb(var(--dim)); display: flex; align-items: center; gap: 10px; }
+  body[data-deck="senses"] select {
+    font: inherit; font-size: 14px; color: rgb(var(--ink)); background: rgb(var(--holo-panel, 15 18 24) / .8);
+    border: 1px solid rgb(var(--line) / .25); border-radius: 8px; padding: 8px 12px; min-width: 200px; }
+  body[data-deck="senses"] .seg { display: inline-flex; border: 1px solid rgb(var(--line) / .2); border-radius: 999px; overflow: hidden; }
+  body[data-deck="senses"] .seg button { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; background: none; border: 0; padding: 8px 14px; color: rgb(var(--dim)); cursor: pointer; }
+  body[data-deck="senses"] .seg button[aria-pressed="true"] { color: rgb(var(--void)); background: rgb(var(--deck)); }
+  body[data-deck="senses"] .legend .readout { padding-left: 20px; }
+  body[data-deck="senses"] .legend .readout::before { display: none; }
+  body[data-deck="senses"] .legend .sw { position: absolute; left: 0; top: 10px; bottom: 10px; width: 6px; border-radius: 3px; background: rgb(var(--sw, 40 40 40)); box-shadow: 0 0 10px rgb(var(--sw, 40 40 40) / .7); }
+  body[data-deck="senses"] .legend .bar { height: 3px; margin-top: 8px; border-radius: 2px; background: rgb(var(--line) / .1); overflow: hidden; }
+  body[data-deck="senses"] .legend .bar i { display: block; height: 100%; width: var(--w, 0%); background: rgb(var(--sw, 120 120 120)); }
+  body[data-deck="senses"] .sight { margin: 14px 0 0; font-size: 15px; line-height: 1.6; color: rgb(var(--ink) / .86); max-width: 76ch; }
+  body[data-deck="senses"] .sight b { color: rgb(var(--deck)); font-weight: 600; }
 
-  svg.spec { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16);
-             background: #05070c; }
-
-  .zoonote { font-size: 12.5px; color: #5c6b7a; margin: 10px 0 30px; line-height: 1.6; max-width: 74ch; }
-
-  .fields { border: 1px solid rgba(196,228,255,.14); padding: 16px 18px; margin: 30px 0 22px; }
-  .fields h2 { font-size: 13px; letter-spacing: .12em; color: #a8e06a; margin: 0 0 9px; font-weight: 600; }
-  .fields > p { font-size: 13.5px; color: #9aa2b1; line-height: 1.6; margin: 0 0 14px; max-width: 74ch; }
-  .fields > p b { color: #cfe6e6; }
-  .fieldcards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  .fieldcard { border: 1px solid rgba(168,224,106,.25); border-left: 3px solid #a8e06a;
-               background: rgba(168,224,106,.04); padding: 12px 14px; }
-  .fieldcard h3 { margin: 0 0 6px; font-size: 14.5px; color: #eff4fb; }
-  .fieldcard p { margin: 0; font-size: 13px; color: #9aa2b1; line-height: 1.6; }
-  .fieldcard .fcicon { height: 62px; width: auto; float: right; margin: 0 0 8px 10px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
-
-  .polar { border: 1px solid rgba(196,150,255,.3); border-left: 3px solid #c88fff;
-           background: rgba(196,150,255,.04); padding: 13px 16px; margin: 0 0 30px; }
-  .polar h2 { font-size: 12px; letter-spacing: .12em; color: #c88fff; margin: 0 0 7px; font-weight: 600; }
-  .polar p { margin: 0; font-size: 13px; color: #9aa2b1; line-height: 1.6; max-width: 74ch; }
-  .polar p b { color: #cfe6e6; }
-  .xray { border: 1px solid rgba(226,120,180,.35); border-left: 3px solid #e278b4;
-          background: repeating-linear-gradient(45deg, rgba(226,120,180,.04) 0 8px, rgba(226,120,180,.09) 8px 10px);
-          padding: 13px 16px; margin: 0 0 26px; }
-  .xray h2 { font-size: 12px; letter-spacing: .12em; color: #e278b4; margin: 0 0 7px; font-weight: 600; }
-  .xray p { margin: 0; font-size: 13px; color: #9aa2b1; line-height: 1.6; max-width: 74ch; }
-  .xray .fcicon, .polar .fcicon { height: 62px; width: auto; float: right; margin: 0 0 8px 10px;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
-  .polar > p { margin: 0 0 14px; }
-  .polar .fieldcard { border-color: rgba(200,143,255,.28); border-left-color: #c88fff;
-                      background: rgba(200,143,255,.04); }
-  .polar .skyline { display: inline-block; margin-top: 6px; font-size: 12px; letter-spacing: .08em;
-    color: #c88fff; text-decoration: none; border: 1px solid rgba(200,143,255,.35); padding: 6px 10px; }
-  .polar .skyline:hover { border-color: #c88fff; background: rgba(200,143,255,.08); }
-  .xray b { color: #cfe6e6; }
-
-  .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 26px; max-width: 74ch; }
-  .foot a { color: #7ee0ff; }
+  /* the wings: field senses, polarization, the footnote */
+  body[data-deck="senses"] .wing .glass { --p: var(--deck); }
+  body[data-deck="senses"] .wing-field .glass, body[data-deck="senses"] .wing-field .stage-head .tag { --deck: var(--field); }
+  body[data-deck="senses"] .wing-polar .glass, body[data-deck="senses"] .wing-polar .stage-head .tag { --deck: var(--polar); }
+  body[data-deck="senses"] .wing-xray .glass, body[data-deck="senses"] .wing-xray .stage-head .tag { --deck: var(--xray); }
+  body[data-deck="senses"] .wing .glass .fcicon { height: 62px; width: auto; float: right; margin: 0 0 8px 12px; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .6)); }
+  body[data-deck="senses"] .wing .glass h3 { color: rgb(var(--deck)); }
+  body[data-deck="senses"] .wing .glass p { font-size: 14px; color: rgb(var(--ink) / .82); }
+  body[data-deck="senses"] .wing-xray .glass { background: repeating-linear-gradient(45deg, rgb(226 120 180 / .03) 0 8px, rgb(226 120 180 / .07) 8px 10px), linear-gradient(158deg, rgb(15 18 24 / .96), rgb(6 10 18 / .98)); }
+  body[data-deck="senses"] .lede-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 22px; max-width: 900px; }
+  body[data-deck="senses"] .lede-split .glass { padding: 16px 18px; }
+  body[data-deck="senses"] .lede-split .glass p { font-size: 14px; }
 </style>
 </head>
 <body>
-<header class="gamebar holopanel" style="--bar-accent: 168 224 106;">
-  <div class="gbrand">
-    <img class="gamebar-icon" src="favicon.png" alt="">
-    <span class="gamebar-name">THE SPECTRAL ZOO</span>
-    <span style="flex:1"></span>
-    <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
+<main class="deck">
+  <div class="deck-wrap">
+
+    <!-- ============ stage 01: the menagerie ============ -->
+    <section class="stage" id="menagerie">
+      <div class="stage-head">
+        <div class="tag">Stage 01 · the menagerie</div>
+        <h1>Every animal is issued <em>a different slice.</em></h1>
+        <p class="lede">The beam runs the length of the deck. Each creature hovers over the part of it that reaches its senses, and that part is drawn on the beam in the light's own colours. Tap one, or pick it from the roster, and the ship flies you over.</p>
+      </div>
+      <div class="lede-split">
+        <div class="holopanel glass mode-v"><h3>Vision · photoreception</h3><p>A pigment molecule absorbs a photon and the eye builds a picture, in whatever band evolution tuned it to.</p></div>
+        <div class="holopanel glass mode-h"><h3>Radiant heat · absorbed and felt</h3><p>The organ absorbs infrared radiation and feels the microscopic warming or mechanical change it causes. Real electromagnetic detection, but not colour seen the way an eye sees red or violet. For the heat-sensers, the band on the beam is the radiation their <em>target</em> emits: a warm body, a wildfire, an ankle.</p></div>
+      </div>
+
+      <div class="viewport" id="vpZoo" style="height: clamp(340px, 58vh, 580px); margin-top: 24px" aria-label="The spectral menagerie: creatures hovering over the bands of the spectrum they sense">
+        <div class="vhud">
+          <div class="picked mode-v" id="picked"></div>
+          <div class="cam" role="group" aria-label="Camera">
+            <button class="chip" type="button" id="camZoo" aria-pressed="true" data-holo-tap>Menagerie</button>
+            <button class="chip" type="button" id="camAll" aria-pressed="false" data-holo-tap>Whole beam</button>
+          </div>
+        </div>
+        <div class="vp-note">Log scale · 3 units per decade · one lane per creature</div>
+        <div class="vp-note right">Drag to pan · tap a creature</div>
+        <div class="fallback">Thirteen creatures hover over a ribbon of the spectrum drawn on a log scale, from the Visitor's 1 mm to 21 cm down in the microwave to the honeybee's 300 nm in the ultraviolet, each one's sensed range lit on the ribbon beneath it. The roster below reaches every one of them.</div>
+      </div>
+
+      <div class="roster" id="roster"></div>
+
+      <div class="holopanel glass card mode-v" id="card" aria-live="polite">
+        <div class="card-head"><span class="modetag" id="cardTag"></span><h3 id="cardName"></h3></div>
+        <div class="readouts">
+          <div class="readout"><p class="k">Wavelength</p><p class="v" id="rdWave"></p><p class="d">short edge to long edge</p></div>
+          <div class="readout"><p class="k">Frequency</p><p class="v" id="rdFreq"></p><p class="d">long edge to short edge</p></div>
+          <div class="readout"><p class="k">Photon energy</p><p class="v" id="rdEnergy"></p><p class="d">what one photon carries, low to high</p></div>
+          <div class="readout"><p class="k">Width</p><p class="v" id="rdOct"></p><p class="d" id="rdOctD"></p></div>
+        </div>
+        <p class="sentence" id="cardText"></p>
+      </div>
+    </section>
+
+    <!-- ============ stage 02: be the creature ============ -->
+    <section class="stage" id="be">
+      <div class="stage-head">
+        <div class="tag">Stage 02 · be the creature</div>
+        <h2>Borrow a pair of eyes. <em>Or a pit organ.</em></h2>
+        <p class="lede">A flower, a mouse, a person, a stone, on a lawn in the sun. The ship lights the scene with a 5778 K sun and every object's own warmth, then keeps only the light that falls inside one creature's band and paints it in the beam's colours. Switch off the sun and see who is left in the dark.</p>
+      </div>
+      <div class="be-controls">
+        <label for="beSel">Creature
+          <select id="beSel"></select>
+        </label>
+        <div class="seg" role="group" aria-label="Lighting">
+          <button type="button" id="beDay" aria-pressed="true">Daylight</button>
+          <button type="button" id="beNight" aria-pressed="false">Night</button>
+        </div>
+      </div>
+      <div class="viewport" id="vpBe" style="height: clamp(300px, 48vh, 460px)" aria-label="The reference scene as the chosen creature senses it">
+        <div class="vhud"><div class="picked" id="bePicked"></div></div>
+        <div class="vp-note">Schematic · brightest object sets the exposure</div>
+        <div class="vp-note right">Drag to walk around</div>
+        <div class="fallback">The reference scene, re-lit through one creature's band. The legend below carries the same numbers: each object's colour as the creature meets it, and the share of its light the creature can use.</div>
+      </div>
+      <div class="readouts legend" id="legend"></div>
+      <p class="sight" id="sightNote"></p>
+      <p class="note">How the ship computes it. Each object has a reflectance curve (textbook shapes: a yellow petal whose tips reflect ultraviolet and whose centre, the nectar guide, absorbs it; a leaf with chlorophyll's green bump and the near-infrared red edge; brown fur; mid-tone skin; grey stone) and a surface temperature: 34 °C for skin as the mosquito entry says, 32 °C for the mouse (a mouse's warmest skin runs about 5 °C below its 37 °C core on a thermal camera), 20 °C for everything else, emissivity 0.95 to 0.97. Sunlight is a 5778 K blackbody at Earth's distance with no atmosphere, 1367 W/m²; each object's own glow is Planck's law at its temperature. The ship integrates reflected plus emitted radiance across the creature's band, weighted by photon count for the vision creatures (an eye counts photons) and by energy for the heat-sensers and the Visitor (a heat organ feels power). Inside 380 to 750 nm the colours are the true spectral colours, balanced so a perfect white under the same light reads white; outside it they are the beam's translation colours for that band. Exposure is set so the brightest object is full bright, as an eye adapts; a night scene carrying less than a millionth of the day's signal is shown black. It is a schematic, not a retina: no opsin curves, no lens, no brain.</p>
+    </section>
+
+    <!-- ============ stage 03: fields ============ -->
+    <section class="stage wing wing-field" id="fields">
+      <div class="stage-head">
+        <div class="tag">Stage 03 · fields</div>
+        <h2>Electromagnetic senses <em>with no wavelength.</em></h2>
+        <p class="lede">Static and slowly changing electric or magnetic fields are electromagnetic, certainly, but they are not propagating light, so they have no place on a wavelength ruler. Assigning a shark a wavelength range would be physics wearing a counterfeit mustache. These senses get their own wing.</p>
+      </div>
+      <div class="grid-3">
+        <div class="holopanel glass"><img class="fcicon" src="senses/shark.png" alt="Great white shark" loading="lazy"><h3>Shark &amp; ray</h3>
+          <p>Ampullae of Lorenzini read the faint electric fields leaking from every living body: nerve and muscle activity betrayed through seawater. Weakly electric fish go further: they emit their own field and read how nearby objects distort it, an electric flashlight for the dark.</p></div>
+        <div class="holopanel glass"><img class="fcicon" src="senses/platypus.png" alt="Platypus" loading="lazy"><h3>Platypus</h3>
+          <p>The bill is packed with electroreceptors. Hunting with eyes, ears and nostrils closed, a platypus finds prey underwater by the electric fields of their muscle twitches, cross-referenced with touch to judge distance.</p></div>
+        <div class="holopanel glass"><img class="fcicon" src="senses/tern.png" alt="Arctic tern in flight" loading="lazy"><h3>Migratory bird</h3>
+          <p>Songbirds crossing continents read Earth's magnetic field for compass direction, and likely parts of their map. The leading suspect is a quantum effect: magnetically sensitive radical pairs in cryptochrome proteins of the eye, which would make the compass something a bird <em>sees</em>.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ stage 04: polarization ============ -->
+    <section class="stage wing wing-polar" id="polarization">
+      <div class="stage-head">
+        <div class="tag">Stage 04 · the polarization wing</div>
+        <h2>A second property <em>of the same photons.</em></h2>
+        <p class="lede">Light is a wave in the electric field, and that field swings <em>across</em> the direction of travel: up-and-down, side-to-side, or any angle between. That angle is polarization, and nothing in a human eye registers it. The sky is full of it all the same. Air scatters sunlight most strongly at right angles to the sun (the same 1/λ⁴ scattering that makes it blue), and light scattered through a right angle comes out almost fully polarized, so a great ring of polarized sky runs 90° from the sun all day. Some eyes read that ring as a compass; some read polarization the way yours reads colour.</p>
+      </div>
+      <div class="grid-2">
+        <div class="holopanel glass"><img class="fcicon" src="senses/cuttlefish.png" alt="Cuttlefish" loading="lazy"><h3>Cuttlefish</h3>
+          <p>Colour-blind, and yet it sees a channel you cannot: cuttlefish tell polarization angles apart to about <b>1°</b>, the finest polarization vision measured in any animal. Transparent prey that vanish in plain light stand out in polarization contrast, and the skin can flash polarized patterns invisible to most of the reef.</p></div>
+        <div class="holopanel glass"><img class="fcicon" src="senses/dungbeetle.png" alt="Dung beetle" loading="lazy"><h3>Dung beetle</h3>
+          <p>Rolls its ball in a dead-straight line away from the pile by reading the polarization pattern of the sky through a special strip along the top of each eye. The first animal shown to steer by <b>polarized moonlight</b>, a million times fainter than the day sky; on moonless nights it switches to the glow of the Milky Way.</p></div>
+        <div class="holopanel glass"><img class="fcicon" src="senses/shrimp.png" alt="Mantis shrimp" loading="lazy"><h3>Mantis shrimp</h3>
+          <p>Reads linear polarization like the cuttlefish, and then goes one further: the only animal known to detect <b>circular</b> polarization, light whose field corkscrews as it travels. It uses the channel for private signalling, and its eye has been copied into camera filters.</p></div>
+        <div class="holopanel glass"><img class="fcicon" src="senses/bee.png" alt="Honeybee" loading="lazy"><h3>Honeybee &amp; desert ant</h3>
+          <p>Karl von Frisch found in 1949 that bees steer by the sky's polarization when the sun is hidden; a patch of blue sky is enough. Desert ants of the genus <em>Cataglyphis</em> run the same compass to walk hundreds of metres out over featureless sand and straight back to a centimetre-wide nest hole.</p></div>
+      </div>
+      <div class="hatches">
+        <a class="hatch" href="lab.html#exp-sky" data-holo-tap><span class="k">Deck 03 · Light Lab</span><span class="t">The scattering that polarizes the sky</span><span class="d">The 1/λ⁴ bench, where the blue comes from</span></a>
+      </div>
+    </section>
+
+    <!-- ============ stage 05: the x-ray footnote ============ -->
+    <section class="stage wing wing-xray" id="xray">
+      <div class="stage-head">
+        <div class="tag">Stage 05 · the x-ray footnote</div>
+        <h2>An edge case, <em>halo attached.</em></h2>
+      </div>
+      <div class="holopanel glass">
+        <img class="fcicon" src="senses/elegans.png" alt="C. elegans worm" loading="lazy">
+        <h3>Laboratory only</h3>
+        <p>Laboratory experiments have found acute responses to X-rays in several animals: most strikingly, <b>C.&nbsp;elegans</b> worms perform an immediate avoidance maneuver, mediated by LITE-1, a receptor protein otherwise tuned to ultraviolet. That is real, and it is <b>not</b> a naturally evolved, image-forming X-ray eye. File under experimental edge case, radiation-warning halo attached.</p>
+      </div>
+    </section>
+
+    <footer class="deck-foot">
+      <p>All ranges are approximate and drawn from behavioral and electrophysiological studies; species vary, and the near-infrared fish work in particular reports behavioral response bands, not full visual sensitivity curves. The compact version of this deck lives as the Senses layer of the <a href="observatory.html?layer=senses">Observatory</a>.</p>
+      <p>Polarization is a second property of light rather than a wider band, which is why it has a wing of its own rather than a place on the beam.</p>
+    </footer>
   </div>
-  <nav class="gbnav" aria-label="Site pages">
-    <a class="gamebar-back" href="index.html">← HOME</a>
-    <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
-    <a class="gamebar-back" href="lab.html">LIGHT LAB</a>
-    <a class="gamebar-back" href="gamma.html">GAMMA ATTIC</a>
-  </nav>
-</header>
-<div class="wrap">
-  <h1>Every animal is issued a different slice.</h1>
-  <p class="sub">Two honest categories live on this page. <b>Vision</b> means photoreception: a pigment
-     molecule absorbs a photon and the eye builds a picture, in whatever band evolution tuned it to.
-     <b>Radiant heat</b> means the organ absorbs infrared radiation and feels the microscopic warming
-     or mechanical change it causes. That is real electromagnetic detection, but not color seen the
-     way an eye sees red or violet. For the heat-sensers, the highlighted band below is the radiation their
-     <em>target</em> emits: a warm body, a wildfire, an ankle.</p>
-
-  <h2 class="group vision">◉ VISION · photoreception</h2>
-  <div class="sensechips" id="chipsVision" role="group" aria-label="Animals with photoreceptive vision"></div>
-  <h2 class="group heat">♨ RADIANT HEAT · absorbed and felt <small>(the band shown is what the target emits)</small></h2>
-  <div class="sensechips heatrow" id="chipsHeat" role="group" aria-label="Animals that detect radiant heat"></div>
-  <h2 class="group alien">⟁ VISITOR <small>(one specimen; provenance unknown; claims self-reported)</small></h2>
-  <div class="sensechips alienrow" id="chipsAlien" role="group" aria-label="Visitors"></div>
-
-  <div id="zooFigure">
-  <p class="sensedesc" id="senseDesc"></p>
-  <svg class="spec" id="zooSvg" viewBox="0 0 1000 182" role="img"
-       aria-label="The selected creature's range, shown first as a close-up and then placed on the whole spectrum"></svg>
-  <p class="zoonote">The strip on top is the close-up, far infrared to near ultraviolet, where every
-     creature on this page lives. It funnels down to the bar underneath, which is the whole spectrum
-     from radio to gamma, and the gold window there is the sliver the close-up covers. Polarization is
-     a second property of light rather than a wider band, so it gets its own wing below.</p>
-  </div>
-
-  <div class="fields">
-    <h2>⌁ FIELDS · electromagnetic senses with no wavelength</h2>
-    <p>Static and slowly changing electric or magnetic fields are electromagnetic, certainly, but they
-       are not propagating light, so they have no place on a wavelength ruler. Assigning a shark a
-       wavelength range would be physics wearing a counterfeit mustache. These senses get their own wing:</p>
-    <div class="fieldcards">
-      <div class="fieldcard"><img class="fcicon" src="senses/shark.png" alt="Great white shark" loading="lazy"><h3>Shark &amp; ray</h3>
-        <p>Ampullae of Lorenzini read the faint electric fields leaking from every living body: nerve
-           and muscle activity betrayed through seawater. Weakly electric fish go further: they emit
-           their own field and read how nearby objects distort it, an electric flashlight for the dark.</p></div>
-      <div class="fieldcard"><img class="fcicon" src="senses/platypus.png" alt="Platypus" loading="lazy"><h3>Platypus</h3>
-        <p>The bill is packed with electroreceptors. Hunting with eyes, ears and nostrils closed, a
-           platypus finds prey underwater by the electric fields of their muscle twitches, cross-referenced
-           with touch to judge distance.</p></div>
-      <div class="fieldcard"><img class="fcicon" src="senses/tern.png" alt="Arctic tern in flight" loading="lazy"><h3>Migratory bird</h3>
-        <p>Songbirds crossing continents read Earth's magnetic field for compass direction, and likely
-           parts of their map. The leading suspect is a quantum effect: magnetically sensitive radical
-           pairs in cryptochrome proteins of the eye, which would make the compass something a bird
-           <em>sees</em>.</p></div>
-    </div>
-  </div>
-
-  <div class="polar">
-    <h2>⟋ POLARIZATION · a second property of the same photons</h2>
-    <p>Light is a wave in the electric field, and that field swings <em>across</em> the direction of
-       travel: up-and-down, side-to-side, or any angle between. That angle is polarization, and nothing
-       in a human eye registers it. The sky is full of it all the same. Air scatters sunlight most
-       strongly at right angles to the sun (the same 1/λ⁴ scattering that makes it blue), and light
-       scattered through a right angle comes out almost fully polarized, so a great ring of polarized
-       sky runs 90° from the sun all day. Some eyes read that ring as a compass; some read polarization
-       the way yours reads colour.</p>
-    <div class="fieldcards">
-      <div class="fieldcard"><img class="fcicon" src="senses/cuttlefish.png" alt="Cuttlefish" loading="lazy"><h3>Cuttlefish</h3>
-        <p>Colour-blind, and yet it sees a channel you cannot: cuttlefish tell polarization angles apart
-           to about <b>1°</b>, the finest polarization vision measured in any animal. Transparent prey
-           that vanish in plain light stand out in polarization contrast, and the skin can flash
-           polarized patterns invisible to most of the reef.</p></div>
-      <div class="fieldcard"><img class="fcicon" src="senses/dungbeetle.png" alt="Dung beetle" loading="lazy"><h3>Dung beetle</h3>
-        <p>Rolls its ball in a dead-straight line away from the pile by reading the polarization pattern
-           of the sky through a special strip along the top of each eye. The first animal shown to steer
-           by <b>polarized moonlight</b>, a million times fainter than the day sky; on moonless nights it
-           switches to the glow of the Milky Way.</p></div>
-      <div class="fieldcard"><img class="fcicon" src="senses/shrimp.png" alt="Mantis shrimp" loading="lazy"><h3>Mantis shrimp</h3>
-        <p>Reads linear polarization like the cuttlefish, and then goes one further: the only animal known
-           to detect <b>circular</b> polarization, light whose field corkscrews as it travels. It uses the
-           channel for private signalling, and its eye has been copied into camera filters.</p></div>
-      <div class="fieldcard"><img class="fcicon" src="senses/bee.png" alt="Honeybee" loading="lazy"><h3>Honeybee &amp; desert ant</h3>
-        <p>Karl von Frisch found in 1949 that bees steer by the sky's polarization when the sun is hidden;
-           a patch of blue sky is enough. Desert ants of the genus <em>Cataglyphis</em> run the same
-           compass to walk hundreds of metres out over featureless sand and straight back to a
-           centimetre-wide nest hole.</p></div>
-    </div>
-    <a class="skyline" href="lab.html#exp-sky">→ THE SCATTERING THAT POLARIZES THE SKY, IN THE LIGHT LAB</a>
-  </div>
-
-  <div class="xray">
-    <img class="fcicon" src="senses/elegans.png" alt="C. elegans worm" loading="lazy">
-    <h2>☢ THE X-RAY FOOTNOTE</h2>
-    <p>Laboratory experiments have found acute responses to X-rays in several animals: most strikingly,
-       <b>C.&nbsp;elegans</b> worms perform an immediate avoidance maneuver, mediated by LITE-1, a receptor
-       protein otherwise tuned to ultraviolet. That is real, and it is <b>not</b> a naturally evolved,
-       image-forming X-ray eye. File under experimental edge case, radiation-warning halo attached.</p>
-  </div>
-
-  <p class="foot">All ranges are approximate and drawn from behavioral and electrophysiological studies;
-     species vary, and the near-infrared fish work in particular reports behavioral response bands, not
-     full visual sensitivity curves. The compact version of this page lives as the Senses layer of the
-     <a href="observatory.html?layer=senses">Observatory</a>.</p>
-</div>
+</main>
 
 <script src="spectrum-data.js"></script>
-<script>
-(() => {
-  'use strict';
-  const C = 299792458;
-  const VIS_LO = 4e14, VIS_HI = 7.9e14;
-  // n / s: the full name, and a short form for when the band is too narrow to
-  // spell it out. The bar carried no labels at all before, which made it a
-  // coloured stripe rather than a scale.
-  const BANDS = [
-    { lo: 1e4, hi: 3e8, col: '74,150,224', n: 'RADIO', s: 'RADIO' },
-    { lo: 3e8, hi: 3e11, col: '74,200,224', n: 'MICROWAVE', s: 'MICRO' },
-    { lo: 3e11, hi: VIS_LO, col: '196,96,64', n: 'INFRARED', s: 'IR' },
-    { lo: VIS_LO, hi: VIS_HI, col: '255,255,255', n: 'VISIBLE', s: '' },
-    { lo: VIS_HI, hi: 3e16, col: '138,96,230', n: 'ULTRAVIOLET', s: 'UV' },
-    { lo: 3e16, hi: 3e19, col: '126,224,255', n: 'X-RAY', s: 'X' },
-    { lo: 3e19, hi: 1e20, col: '226,120,180', n: 'GAMMA', s: 'γ' },
-  ];
-  const F0 = 4, F1 = 20;
-  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+<script src="vendor/scifi-ui/data-readout.js"></script>
+<script type="module">
+import { ship, THREE, spectrumRibbon, label, glowSprite, colorOf } from './ship/ship.js';
+import * as P from './ship/physics.js';
+import * as Z from './senses/zoo.js';
 
-  // the creatures live in spectrum-data.js so the Observatory's Senses layer
-  // and this page can never disagree about a wavelength
-  const ZOO = window.SPECTRUM_DATA.ZOO;
-  let sel = 0;
+ship.mount({ deck: 'senses' });
 
-  const SZ_LO = 2e12, SZ_HI = 1.2e15;
-  const fmtLam = f => {
-    const l = C / f;
-    if (l >= 1e-2) return parseFloat((l * 100).toPrecision(3)) + ' cm';
-    if (l >= 1e-3) return parseFloat((l * 1e3).toPrecision(3)) + ' mm';
-    if (l >= 1e-6) return parseFloat((l * 1e6).toPrecision(3)) + ' µm';
-    return Math.round(l * 1e9) + ' nm';
-  };
+/* ---- the roster -------------------------------------------------------- */
+// the creatures live in spectrum-data.js so the Observatory's Senses layer and
+// this deck can never disagree about a wavelength; this is a copy for layout
+const ZOO = window.SPECTRUM_DATA.ZOO.map(z => Object.assign({}, z));
+// the Visitor's sentence still describes the old flat figure; aimed at the
+// beam here, and flagged for the data file (3e12 Hz is a decade above 3e11)
+{
+  const v = ZOO.find(z => z.id === 'visitor');
+  v.d = v.d.replace('falls off the animal strip entirely, so it is drawn on the whole-spectrum bar below',
+    'falls off the animal cluster entirely, a full decade of unclaimed far infrared below your skin\'s reach, so the camera has to fly down the beam to find it');
+}
+const MODES = {
+  v: { k: 'Vision', sub: 'photoreception', tag: 'Vision · photoreception', cls: 'mode-v', rgb: '126 224 255' },
+  h: { k: 'Radiant heat', sub: 'absorbed and felt; the band shown is what the target emits', tag: 'Radiant heat · target emission', cls: 'mode-h', rgb: '255 140 90' },
+  a: { k: 'Visitor', sub: 'one specimen; provenance unknown; claims self-reported', tag: 'Visitor · self-reported', cls: 'mode-a', rgb: '123 255 142' },
+};
+const BEAM_OCT = P.octaves(Math.pow(10, P.F0), Math.pow(10, P.F1));   // 53.15 octaves, 10 kHz to 100 EHz
 
-  const svg = document.getElementById('zooSvg');
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  function el(tag, attrs, parent, text) {
-    const e = document.createElementNS(SVGNS, tag);
-    for (const k in attrs) e.setAttribute(k, attrs[k]);
-    if (text != null) e.textContent = text;
-    if (parent) parent.appendChild(e);
-    return e;
+/* ---- layout on the beam ------------------------------------------------ */
+const U = 3;                                          // units per decade, said in the vp-note
+const X = f => (P.log10(f) - 12) * U;                 // 1 THz sits at the origin
+const LANE_Z = 0.8, LANE_Y = 0.24;                    // lanes step back and up, an amphitheatre
+const lanes = Z.packLanes(ZOO, 0.16);
+ZOO.forEach((z, i) => {
+  z.lane = lanes[i];
+  z.fc = Math.sqrt(z.lo * z.hi);
+  z.x = X(z.fc); z.y = z.lane * LANE_Y; z.zz = -z.lane * LANE_Z;
+  z.band = Z.bandText(z.lo, z.hi);
+});
+const ZOO_LO = 2e12, ZOO_HI = 1.2e15;                 // the animal cluster, 150 µm to 250 nm
+const zooCentre = (X(ZOO_LO) + X(ZOO_HI)) / 2, zooWidth = X(ZOO_HI) - X(ZOO_LO);
+
+/* ---- state ------------------------------------------------------------- */
+let sel = 0;
+let sun = 1;
+const listeners = [];
+function select(i, { reveal = false } = {}) {
+  sel = i;
+  for (const fn of listeners) fn(ZOO[i], reveal);
+}
+
+/* ---- the DOM roster, chips and the card -------------------------------- */
+const roster = document.getElementById('roster');
+for (const m of ['v', 'h', 'a']) {
+  const row = document.createElement('div'); row.className = 'row ' + MODES[m].cls;
+  row.innerHTML = `<div class="row-k">${MODES[m].k} <small>${MODES[m].sub}</small></div><div class="chips" role="group" aria-label="${MODES[m].k}"></div>`;
+  const chips = row.querySelector('.chips');
+  ZOO.forEach((z, i) => {
+    if (z.m !== m) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip creature'; b.dataset.i = i; b.setAttribute('aria-pressed', 'false'); b.setAttribute('data-holo-tap', '');
+    b.innerHTML = (z.icon ? `<img src="${z.icon}" alt="" loading="lazy">` : `<span class="glyph" aria-hidden="true">?</span>`) + `<span>${z.name}</span>`;
+    b.addEventListener('click', () => select(i, { reveal: true }));
+    chips.appendChild(b);
+  });
+  roster.appendChild(row);
+}
+const card = document.getElementById('card'), picked = document.getElementById('picked');
+const beSel = document.getElementById('beSel');
+ZOO.forEach((z, i) => { const o = document.createElement('option'); o.value = i; o.textContent = z.name; beSel.appendChild(o); });
+beSel.addEventListener('change', () => select(+beSel.value));
+
+const fmtOct = o => (o < 10 ? o.toFixed(2) : o.toFixed(1));
+listeners.push((z, reveal) => {
+  roster.querySelectorAll('.chip.creature').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === sel)));
+  beSel.value = sel;
+  const M = MODES[z.m];
+  card.className = 'holopanel glass card is-in ' + M.cls;
+  picked.className = 'picked ' + M.cls;
+  picked.innerHTML = `${z.name}<small>${z.band.wave}</small>`;
+  document.getElementById('cardTag').textContent = M.tag;
+  document.getElementById('cardName').textContent = z.name;
+  document.getElementById('rdWave').textContent = z.band.wave;
+  document.getElementById('rdFreq').textContent = z.band.freq;
+  document.getElementById('rdEnergy').textContent = z.band.energy;
+  document.getElementById('rdOct').innerHTML = fmtOct(z.band.octaves) + ' <span class="u">octaves</span>';
+  document.getElementById('rdOctD').innerHTML = `${P.num(z.band.decades)} decades, of the beam's ${fmtOct(BEAM_OCT)} octaves`;
+  document.getElementById('cardText').innerHTML = z.d;
+  // on a phone the roster pushes the card below the fold, so a tap on a
+  // creature updated a card the reader could not see; scroll only when it is
+  // off screen, and never on first paint
+  if (reveal) {
+    const r = card.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > innerHeight) card.scrollIntoView({ behavior: ship.motion ? 'smooth' : 'auto', block: 'nearest' });
   }
-  let OW = 1000;
-  function syncWidth() {
-    OW = svg.clientWidth || 1000;
-    svg.setAttribute('viewBox', '0 0 ' + OW + ' ' + VH);
-  }
+});
 
-  // Layout, top to bottom: the close-up first, because that is the part with
-  // the animal in it, then the funnel, then the whole spectrum underneath so
-  // you can place what you just looked at.
-  const VH = 182;
-  const STRIP_Y = 20, STRIP_H = 36;          // the magnified animal strip
-  const BRACK_Y = 16, BRACK_H = 44;          // the creature's band, straddling it
-  const FULL_Y = 136, FULL_H = 22;           // radio to gamma, its own bar
-  const fits = (t, w, fs) => t && t.length * fs * 0.62 <= w - 4;
-
-  const ovX = f => (Math.log10(f) - F0) / (F1 - F0) * OW;
-  const zx = f => (Math.log10(f) - Math.log10(SZ_LO)) / (Math.log10(SZ_HI) - Math.log10(SZ_LO)) * OW;
-
-  function buildChips() {
-    for (const [id, mode] of [['chipsVision', 'v'], ['chipsHeat', 'h'], ['chipsAlien', 'a']]) {
-      const wrap = document.getElementById(id);
-      ZOO.forEach((z, i) => {
-        if (z.m !== mode) return;
-        const b = document.createElement('button');
-        b.type = 'button';
-        if (z.icon) b.innerHTML = '<img src="' + z.icon + '" alt="" loading="lazy">';
-        b.appendChild(document.createTextNode(z.name));
-        b.dataset.i = i;
-        b.addEventListener('click', () => { sel = i; render(); revealFigure(); });
-        wrap.appendChild(b);
-      });
+/* ---- instrument 1: the menagerie ---------------------------------------- */
+const vpZoo = document.getElementById('vpZoo');
+const camZoo = document.getElementById('camZoo'), camAll = document.getElementById('camAll');
+const cam = {
+  mode: 'zoo',                                     // zoo | all | creature | free
+  goal: { x: zooCentre, y: 0.9, z: -2.2, az: 0.14, el: 0.52, d: 7 },
+  now:  { x: zooCentre, y: 0.9, z: -2.2, az: 0.14, el: 0.52, d: 7 },
+};
+const fitDistance = (width, camera) => width / 2 / (Math.tan(camera.fov * Math.PI / 360) * camera.aspect) * 1.12;
+function aim(mode, camera) {
+  cam.mode = mode;
+  const g = cam.goal;
+  if (mode === 'zoo') Object.assign(g, { x: zooCentre, y: 0.9, z: -2.2, az: 0.14, el: 0.52, d: P.clamp(fitDistance(zooWidth, camera), 5, 10) });
+  if (mode === 'all') Object.assign(g, { x: 0, y: 0.6, z: -2.6, az: 0.0, el: 0.7, d: P.clamp(fitDistance(48, camera), 12, 60) });
+  if (mode === 'creature') { const z = ZOO[sel]; Object.assign(g, { x: z.x, y: z.y + 0.38, z: z.zz, az: 0.18, el: 0.3, d: 3.4 }); }
+  camZoo.setAttribute('aria-pressed', String(mode === 'zoo'));
+  camAll.setAttribute('aria-pressed', String(mode === 'all'));
+}
+const sprites = [], halos = [];
+let zooVP = null;
+zooVP = ship.viewport(vpZoo, {
+  fov: 38,
+  setup({ scene, camera }) {
+    // the beam itself, wide enough to run under every lane
+    const ribbon = spectrumRibbon({ length: 16 * U, width: 8, intensity: 0.5, soft: 0.6 });
+    ribbon.rotation.x = -Math.PI / 2; ribbon.position.set(0, 0, -2.8);
+    scene.add(ribbon);
+    const core = spectrumRibbon({ length: 16 * U, width: 1.6, intensity: 0.9, soft: 1 });
+    core.rotation.x = -Math.PI / 2; core.position.set(0, 0.005, 0.6);
+    scene.add(core);
+    // the ruler: every decade, frequency and wavelength
+    for (const t of P.DECADE_LABELS) {
+      const l = label(t.label + ' · ' + Z.tidy(P.fmtWave(t.f, true)), { size: 20, color: '#9fb8d0' });
+      l.userData.fit(0.26); l.position.set(X(t.f), 0.02, 1.7); scene.add(l);
     }
-  }
-
-  // On a phone the three chip rows push the figure below the fold, so tapping a
-  // creature updated a picture the reader could not see. Scrolls only when the
-  // figure is not already on screen, and never on first paint.
-  function revealFigure() {
-    const fig = document.getElementById('zooFigure');
-    const r = fig.getBoundingClientRect();
-    if (r.top >= 0 && r.bottom <= innerHeight) return;
-    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    fig.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'nearest' });
-  }
-
-  function render() {
-    document.querySelectorAll('.sensechips button').forEach(b =>
-      b.setAttribute('aria-pressed', String(+b.dataset.i === sel)));
-    const z = ZOO[sel];
-    const heat = z.m === 'h', alien = z.m === 'a';
-    document.getElementById('senseDesc').innerHTML =
-      '<span class="modetag ' + (alien ? 'alien' : heat ? 'heat' : 'vision') + '">' +
-      (alien ? '⟁ VISITOR' : heat ? '♨ RADIANT HEAT' : '◉ VISION') + '</span>' + z.d;
-
-    svg.textContent = '';
-    const AC = alien ? '123,255,142' : heat ? '255,140,90' : '232,169,58';
-    const ACC = alien ? '#7bff8e' : heat ? '#ff8c5a' : '#e8a93a';
-    const wx0 = ovX(SZ_LO), wx1 = ovX(SZ_HI);
-
-    // ---- 1. the close-up, first, because the animal is in it -------------
-    BANDS.forEach(b => {
-      const lo = Math.max(b.lo, SZ_LO), hi = Math.min(b.hi, SZ_HI);
-      if (hi <= lo) return;
-      el('rect', { x: zx(lo), y: STRIP_Y, width: zx(hi) - zx(lo), height: STRIP_H,
-                   fill: 'rgb(' + b.col + ')', opacity: .4 }, svg);
+    for (const b of P.BANDS) {
+      const fc = Math.sqrt(b.lo * b.hi);
+      const l = label(b.short, { size: 22, color: '#6f8196', tracking: 5 });
+      l.userData.fit(0.22); l.position.set(X(fc), 0.02, 2.5); scene.add(l);
+    }
+    // every creature: its range as a strip of the real spectrum on its lane,
+    // a halo in the colour of its band's centre, a stalk, and the sprite
+    const stalk = [];
+    const loader = new THREE.TextureLoader();
+    ZOO.forEach((z, i) => {
+      const dec = z.band.decades;
+      const bar = spectrumRibbon({ length: Math.max(dec * U, 0.08), width: 0.36, lo: P.posOf(z.lo), hi: P.posOf(z.hi), intensity: 1.4, soft: 0.9 });
+      bar.rotation.x = -Math.PI / 2; bar.position.set(z.x, z.y + 0.012, z.zz);
+      scene.add(bar);
+      const halo = glowSprite(colorOf(z.fc), 0.9, 0.3);
+      halo.position.set(z.x, z.y + 0.5, z.zz); halo.renderOrder = 10 - z.lane;
+      scene.add(halo); halos.push(halo);
+      stalk.push(z.x, z.y + 0.012, z.zz, z.x, z.y + 0.3, z.zz);
+      const mat = new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false, opacity: 0.92 });
+      const sp = new THREE.Sprite(mat);
+      sp.position.set(z.x, z.y + 0.6, z.zz); sp.visible = false; sp.renderOrder = 20 - z.lane;
+      sp.userData.i = i; sp.userData.h = 0.62;
+      if (z.icon) loader.load(z.icon, tex => { tex.colorSpace = THREE.SRGBColorSpace; mat.map = tex; mat.needsUpdate = true; sp.userData.aspect = tex.image.width / tex.image.height; sp.visible = true; });
+      else {
+        // the Visitor arrived without a portrait: a dashed ring and a question
+        const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c = cv.getContext('2d');
+        c.strokeStyle = '#7bff8e'; c.lineWidth = 5; c.setLineDash([10, 8]); c.beginPath(); c.arc(64, 64, 52, 0, Math.PI * 2); c.stroke();
+        c.fillStyle = '#7bff8e'; c.font = '600 58px ui-monospace, Menlo, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', 64, 68);
+        const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; mat.map = tex; mat.needsUpdate = true; sp.userData.aspect = 1; sp.visible = true;
+      }
+      scene.add(sp); sprites.push(sp);
     });
-    const defs = el('defs', {}, svg);
-    const grad = el('linearGradient', { id: 'zooVis' }, defs);
-    [['0%','#c92a2a'],['18%','#f08c00'],['36%','#ffd43b'],['54%','#37b24d'],['72%','#1098ad'],['86%','#3b5bdb'],['100%','#9c36b5']]
-      .forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, grad));
-    el('rect', { x: zx(VIS_LO), y: STRIP_Y, width: zx(VIS_HI) - zx(VIS_LO), height: STRIP_H,
-                 fill: 'url(#zooVis)', opacity: .85 }, svg);
-    el('text', { x: 4, y: 12, 'font-size': 11, fill: '#6c7c8c' }, svg, fmtLam(SZ_LO));
-    el('text', { x: OW - 4, y: 12, 'font-size': 11, fill: '#6c7c8c', 'text-anchor': 'end' }, svg, fmtLam(SZ_HI));
-
-    // ---- 2. the funnel: that whole strip is this sliver ------------------
-    const SB = STRIP_Y + STRIP_H;
-    el('polygon', { points: [0, SB, OW, SB, wx1, FULL_Y, wx0, FULL_Y].join(' '),
-                    fill: 'rgba(' + AC + ',.05)' }, svg);
-    el('line', { x1: 0, y1: SB, x2: wx0, y2: FULL_Y, stroke: 'rgba(' + AC + ',.3)', 'stroke-dasharray': '3 3' }, svg);
-    el('line', { x1: OW, y1: SB, x2: wx1, y2: FULL_Y, stroke: 'rgba(' + AC + ',.3)', 'stroke-dasharray': '3 3' }, svg);
-
-    // ---- 3. the whole spectrum, its own bar, and labelled ----------------
-    BANDS.forEach(b => {
-      const x = ovX(b.lo), w = ovX(b.hi) - ovX(b.lo);
-      el('rect', { x, y: FULL_Y, width: w, height: FULL_H, fill: 'rgb(' + b.col + ')', opacity: .35 }, svg);
-      const t = fits(b.n, w, 9) ? b.n : fits(b.s, w, 9) ? b.s : null;
-      if (t) el('text', { x: x + w / 2, y: FULL_Y + FULL_H + 14, 'font-size': 9, fill: '#6c7c8c',
-                          'text-anchor': 'middle', 'letter-spacing': '.08em' }, svg, t);
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(stalk, 3));
+    scene.add(new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0xc4e4ff, transparent: true, opacity: 0.35 })));
+    aim('zoo', camera);
+    Object.assign(cam.now, cam.goal);
+  },
+  frame({ camera, dt, t }) {
+    if (cam.mode === 'zoo' || cam.mode === 'all') aim(cam.mode, camera);   // the fit follows the box's aspect
+    const k = ship.motion ? 1 - Math.exp(-dt * 3.2) : 1;
+    for (const key of ['x', 'y', 'z', 'az', 'el', 'd']) cam.now[key] += (cam.goal[key] - cam.now[key]) * k;
+    const n = cam.now;
+    camera.position.set(n.x + n.d * Math.sin(n.az) * Math.cos(n.el), n.y + n.d * Math.sin(n.el), n.z + n.d * Math.cos(n.az) * Math.cos(n.el));
+    camera.lookAt(n.x, n.y, n.z);
+    // the chosen creature swells a little and its halo wakes; the rest hover
+    sprites.forEach((sp, i) => {
+      const on = i === sel;
+      const h = sp.userData.h * (on ? 1.3 : 1);
+      sp.scale.set(h * (sp.userData.aspect || 1), h, 1);
+      sp.material.opacity += ((on ? 1 : 0.8) - sp.material.opacity) * k;
+      const z = ZOO[i];
+      const bob = ship.motion ? Math.sin(t * 1.3 + i * 1.7) * 0.03 : 0;
+      sp.position.y = z.y + 0.6 + bob;
+      halos[i].material.opacity += ((on ? 0.85 : 0.3) - halos[i].material.opacity) * k;
+      halos[i].position.y = z.y + 0.5 + bob;
     });
-    el('rect', { x: wx0, y: FULL_Y - 2, width: wx1 - wx0, height: FULL_H + 4, fill: 'none',
-                 stroke: ACC, 'stroke-width': 1.5 }, svg);
-
-    if (alien) {
-      // the visitor's band is off the animal strip entirely, so it is marked
-      // on the whole-spectrum bar and labelled up in the close-up's gutter
-      const ax0 = ovX(z.lo), ax1 = ovX(z.hi), axm = (ax0 + ax1) / 2;
-      el('rect', { x: ax0, y: FULL_Y - 4, width: Math.max(ax1 - ax0, 4), height: FULL_H + 8, rx: 3,
-                   fill: 'rgba(' + AC + ',.16)', stroke: ACC, 'stroke-width': 2,
-                   'stroke-dasharray': '5 4' }, svg);
-      el('line', { x1: axm, y1: FULL_Y - 4, x2: axm, y2: 110, stroke: 'rgba(' + AC + ',.5)',
-                   'stroke-dasharray': '3 4' }, svg);
-      el('text', { x: clamp(axm, 70, OW - 70), y: 82, 'font-size': 13, fill: '#a4ffb2',
-                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' to ' + fmtLam(z.hi));
-      el('text', { x: clamp(axm, 90, OW - 90), y: 102, 'font-size': 13.5, fill: '#cfd6e2',
-                   'text-anchor': 'middle', 'font-weight': 600 }, svg, 'THE VISITOR · SELF-REPORTED');
+  },
+  pointer(ev, vp) {
+    const el = vp.el;
+    if (ev.type === 'pointerdown') { el.__drag = { x: ev.clientX, y: ev.clientY, moved: false, cam: cam.now.x }; el.setPointerCapture && el.setPointerCapture(ev.pointerId); return; }
+    const d = el.__drag;
+    if (!d) return;
+    if (ev.type === 'pointermove') {
+      const dx = ev.clientX - d.x;
+      if (!d.moved && Math.abs(dx) > 6) { d.moved = true; el.classList.add('is-grabbing'); cam.mode = 'free'; camZoo.setAttribute('aria-pressed', 'false'); camAll.setAttribute('aria-pressed', 'false'); }
+      if (d.moved) {
+        // a pixel of drag is a slice of the view's width at the target's distance
+        const per = 2 * cam.now.d * Math.tan(vp.camera.fov * Math.PI / 360) * vp.camera.aspect / vp.size.w;
+        cam.goal.x = d.cam - dx * per; cam.now.x = cam.goal.x;
+      }
       return;
     }
-    const x0 = zx(z.lo), x1 = zx(z.hi);
-    el('rect', { x: x0, y: BRACK_Y, width: Math.max(x1 - x0, 4), height: BRACK_H, rx: 4,
-                 fill: 'rgba(' + AC + ',.15)', stroke: ACC, 'stroke-width': 2,
-                 'stroke-dasharray': heat ? '6 4' : 'none' }, svg);
-    el('line', { x1: x0, y1: BRACK_Y + BRACK_H, x2: x0, y2: 68, stroke: 'rgba(' + AC + ',.6)' }, svg);
-    el('line', { x1: x1, y1: BRACK_Y + BRACK_H, x2: x1, y2: 68, stroke: 'rgba(' + AC + ',.6)' }, svg);
-    const lab = heat ? '#ffb28f' : '#ffd479';
-    if (x1 - x0 > 110) {
-      el('text', { x: clamp(x0, 34, OW - 34), y: 82, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.lo));
-      el('text', { x: clamp(x1, 34, OW - 34), y: 82, 'font-size': 13, fill: lab, 'text-anchor': 'middle' }, svg, fmtLam(z.hi));
-    } else {
-      el('text', { x: clamp((x0 + x1) / 2, 60, OW - 60), y: 82, 'font-size': 13, fill: lab,
-                   'text-anchor': 'middle' }, svg, fmtLam(z.lo) + ' to ' + fmtLam(z.hi));
+    el.classList.remove('is-grabbing');
+    if (ev.type === 'pointerup' && !d.moved) {
+      vp.ray.camera = vp.camera;
+      const hit = vp.ray.intersectObjects(sprites.filter(s => s.visible), false)[0];
+      if (hit) select(hit.object.userData.i, { reveal: false });
     }
-    el('text', { x: clamp((x0 + x1) / 2, 80, OW - 80), y: 102, 'font-size': 13.5, fill: '#cfd6e2',
-                 'text-anchor': 'middle', 'font-weight': 600 }, svg,
-       z.name.toUpperCase() + (heat ? ' · TARGET EMISSION' : ''));
-  }
+    el.__drag = null;
+  },
+});
+camZoo.addEventListener('click', () => aim('zoo', zooVP.camera));
+camAll.addEventListener('click', () => aim('all', zooVP.camera));
+listeners.push(() => aim('creature', zooVP.camera));
 
-  buildChips();
-  syncWidth();
-  render();
-  addEventListener('resize', () => { syncWidth(); render(); });
-})();
+/* ---- instrument 2: be the creature -------------------------------------- */
+const legend = document.getElementById('legend'), sightNote = document.getElementById('sightNote'), bePicked = document.getElementById('bePicked');
+const beDay = document.getElementById('beDay'), beNight = document.getElementById('beNight');
+const parts = {};                                   // object id -> [materials]
+const be = { az: 0.35, azGoal: 0.35 };
+const dayPeak = new Map();                          // creature id -> daylight peak, the reference for "dark"
+function computeSight() {
+  const z = ZOO[sel];
+  if (!dayPeak.has(z.id)) dayPeak.set(z.id, Z.expose(Z.sight(z), 0).peak);
+  const rows = Z.sight(z, { sun });
+  return Z.expose(rows, dayPeak.get(z.id));
+}
+const pct = x => (x >= 0.1 ? Math.round(x * 100) + '%' : x >= 0.001 ? (x * 100).toFixed(1) + '%' : x > 0 ? (x * 100).toPrecision(1) + '%' : '0%');
+const css = rgb => rgb.map(v => Math.round(v * 255)).join(' ');
+const ratioText = r => (r < 1.5 ? r.toFixed(2) : r < 10 ? r.toFixed(1) : P.ratioWord(r)) + ' times';
+function renderSight() {
+  const z = ZOO[sel], M = MODES[z.m];
+  const S = computeSight();
+  bePicked.className = 'picked ' + M.cls;
+  bePicked.innerHTML = `${z.name}<small>${sun ? 'daylight' : 'night'} · ${z.band.wave}</small>`;
+  legend.innerHTML = S.rows.map(r => `
+    <div class="readout" style="--sw: ${S.dark ? '30 34 40' : css(r.rgb)}; --w: ${(r.level * 100).toFixed(0)}%">
+      <span class="sw" aria-hidden="true"></span>
+      <p class="k">${r.name}</p>
+      <p class="v">${pct(r.fraction)}</p>
+      <p class="d">of its light lands in this band; brightness ${S.dark ? '0' : P.num(r.level)} of the brightest</p>
+      <div class="bar" aria-hidden="true"><i></i></div>
+    </div>`).join('');
+  // the scene: reflected light takes the lamps, the object's own glow is emissive
+  for (const r of S.rows) {
+    const mats = parts[r.id] || [];
+    const refl = r.rgb.map((v, k) => Math.max(0, v - r.emitRgb[k]));
+    for (const m of mats) { m.color.setRGB(...refl); m.emissive.setRGB(...r.emitRgb); }
+  }
+  if (beScene) beScene.sunGlow.visible = !!sun;
+  // the sentence
+  const by = S.rows.slice().sort((a, b) => b.level - a.level);
+  const b = by[0], s = by[by.length - 1];
+  const emitShare = b.col.reduce((a, v) => a + v, 0) > 0 ? b.emitCol.reduce((a, v) => a + v, 0) / b.col.reduce((a, v) => a + v, 0) : 0;
+  let text;
+  if (S.dark) {
+    text = `<b>${z.name}</b> sees nothing here at night. Through its band the scene carries ${S.peak > 0 ? 'about ' + P.sci(S.peak / dayPeak.get(z.id)) + ' of' : 'none of'} the daylight signal, far below the millionth the ship allows for, so it shows black. Switch the sun back on, or borrow a heat organ.`;
+  } else {
+    text = `Through <b>${z.name}</b>'s band the <b>${b.name}</b> is the brightest thing in the scene and the ${s.name} is ${ratioText(b.level / Math.max(s.level, 1e-12))} dimmer.`;
+    if (emitShare > 0.02) text += ` ${pct(emitShare)} of the ${b.name}'s signal is its own warmth rather than sunlight.`;
+    if (z.m === 'h' && !sun) text += ` With the sun gone nothing has changed for a heat organ: warm bodies glow on their own.`;
+    if (z.m === 'a') text += ` Down in the microwave the Rayleigh-Jeans tail makes brightness simply proportional to temperature, so a 34 °C person outshines a 20 °C stone by a few percent and everything else is grey.`;
+    if (z.m === 'v' && z.id !== 'tilapia') text += ` In the visible band an eye sees reflected sunlight; nothing here is warm enough to glow at these wavelengths.`;
+    if (z.id === 'tilapia') text += ` Just past your red edge the leaf's red edge begins: chlorophyll stops absorbing and foliage turns bright.`;
+  }
+  sightNote.innerHTML = text;
+}
+let beScene = null;
+ship.viewport(document.getElementById('vpBe'), {
+  fov: 36,
+  setup({ scene, camera }) {
+    camera.position.set(0, 2.4, 7);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.1));
+    const sunL = new THREE.DirectionalLight(0xffffff, 1.8); sunL.position.set(3, 6, 2); scene.add(sunL);
+    const mat = id => { const m = new THREE.MeshLambertMaterial({ color: 0x222222 }); (parts[id] = parts[id] || []).push(m); return m; };
+    const mesh = (g, id, x, y, z) => { const m = new THREE.Mesh(g, mat(id)); m.position.set(x, y, z); scene.add(m); return m; };
+    // the lawn
+    const lawn = mesh(new THREE.CircleGeometry(6, 48), 'leaf', 0, 0, 0); lawn.rotation.x = -Math.PI / 2;
+    // the flower: stem, a leaf, eight petals, the nectar guide at the centre
+    mesh(new THREE.CylinderGeometry(0.035, 0.05, 1.3, 10), 'leaf', -1.3, 0.65, 0.3);
+    const leaf = mesh(new THREE.SphereGeometry(0.22, 14, 10), 'leaf', -1.05, 0.5, 0.42); leaf.scale.set(1.3, 0.25, 0.7); leaf.rotation.z = 0.5;
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * Math.PI * 2;
+      const p = mesh(new THREE.SphereGeometry(0.2, 14, 10), 'petal', -1.3 + Math.cos(a) * 0.3, 1.32, 0.3 + Math.sin(a) * 0.3);
+      p.scale.set(1.5, 0.3, 0.8); p.rotation.y = -a;
+    }
+    const centre = mesh(new THREE.SphereGeometry(0.16, 16, 12), 'guide', -1.3, 1.36, 0.3); centre.scale.y = 0.45;
+    // the mouse: body, head, ears, tail
+    const body = mesh(new THREE.SphereGeometry(0.3, 18, 12), 'mouse', 0.9, 0.24, 1.1); body.scale.set(1.6, 0.8, 0.9);
+    mesh(new THREE.SphereGeometry(0.17, 16, 12), 'mouse', 1.42, 0.3, 1.1);
+    mesh(new THREE.SphereGeometry(0.07, 10, 8), 'mouse', 1.44, 0.46, 1.0);
+    mesh(new THREE.SphereGeometry(0.07, 10, 8), 'mouse', 1.44, 0.46, 1.2);
+    const tail = mesh(new THREE.CylinderGeometry(0.02, 0.035, 0.9, 8), 'mouse', 0.1, 0.12, 1.2); tail.rotation.z = Math.PI / 2 + 0.25;
+    // the person, standing, bare skin at 34 C
+    mesh(new THREE.CapsuleGeometry(0.3, 0.9, 6, 16), 'skin', 2.1, 1.05, -0.9);
+    mesh(new THREE.SphereGeometry(0.22, 18, 14), 'skin', 2.1, 1.82, -0.9);
+    const legL = mesh(new THREE.CapsuleGeometry(0.11, 0.5, 4, 10), 'skin', 1.96, 0.36, -0.9);
+    const legR = mesh(new THREE.CapsuleGeometry(0.11, 0.5, 4, 10), 'skin', 2.24, 0.36, -0.9);
+    const armL = mesh(new THREE.CapsuleGeometry(0.08, 0.6, 4, 10), 'skin', 1.72, 1.0, -0.9); armL.rotation.z = 0.18;
+    const armR = mesh(new THREE.CapsuleGeometry(0.08, 0.6, 4, 10), 'skin', 2.48, 1.0, -0.9); armR.rotation.z = -0.18;
+    void legL; void legR;
+    // the stone
+    const stone = mesh(new THREE.DodecahedronGeometry(0.38, 0), 'stone', -0.1, 0.3, 1.5); stone.rotation.set(0.3, 0.5, 0.1); stone.scale.y = 0.75;
+    // the sun, as a glow in the corner, gone at night
+    const sunGlow = glowSprite(0xfff1cc, 2.4, 0.9); sunGlow.position.set(3.2, 4.2, -5); scene.add(sunGlow);
+    beScene = { sunGlow };
+    renderSight();
+  },
+  frame({ camera, dt }) {
+    const k = ship.motion ? 1 - Math.exp(-dt * 4) : 1;
+    be.az += (be.azGoal - be.az) * k;
+    camera.position.set(Math.sin(be.az) * 7, 2.4, Math.cos(be.az) * 7);
+    camera.lookAt(0.3, 0.7, 0.2);
+  },
+  pointer(ev, vp) {
+    const el = vp.el;
+    if (ev.type === 'pointerdown') { el.__drag = { x: ev.clientX, az: be.azGoal }; el.setPointerCapture && el.setPointerCapture(ev.pointerId); el.classList.add('is-grabbing'); return; }
+    if (!el.__drag) return;
+    if (ev.type === 'pointermove') { be.azGoal = el.__drag.az + (ev.clientX - el.__drag.x) * 0.008; return; }
+    el.__drag = null; el.classList.remove('is-grabbing');
+  },
+});
+beDay.addEventListener('click', () => { sun = 1; beDay.setAttribute('aria-pressed', 'true'); beNight.setAttribute('aria-pressed', 'false'); renderSight(); });
+beNight.addEventListener('click', () => { sun = 0; beDay.setAttribute('aria-pressed', 'false'); beNight.setAttribute('aria-pressed', 'true'); renderSight(); });
+listeners.push(() => renderSight());
+
+/* ---- first light ------------------------------------------------------- */
+select(0);
+if (document.body.classList.contains('no-webgl')) renderSight();   // the legend works from the DOM alone
+ship.watchEntrances && ship.watchEntrances();
 </script>
-<script src="share.js"></script>
+<script src="vendor/scifi-ui/hologram-tap.js"></script>
 </body>
 </html>

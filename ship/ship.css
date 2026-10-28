@@ -63,7 +63,7 @@ body.no-webgl .hull { display: none; }
 /* ---- the deck bar ------------------------------------------------------- */
 .deckbar {
   position: sticky; top: 0; z-index: 20;
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px;
+  display: flex; justify-content: space-between; align-items: center; gap: 18px;
   height: var(--bar-h); padding: 0 var(--gutter);
   background: linear-gradient(to bottom, rgb(4 8 16 / .92), rgb(4 8 16 / .72));
   backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
@@ -80,7 +80,10 @@ body.no-webgl .hull { display: none; }
 .deckbar .brand img { width: 26px; height: 26px; flex: none; filter: drop-shadow(0 0 8px rgb(var(--deck) / .5)); }
 .deckbar .brand .name { font-family: var(--mono); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; white-space: nowrap; }
 .deckbar .brand .sub { display: block; font-size: 9.5px; letter-spacing: .26em; color: rgb(var(--dim)); margin-top: 2px; white-space: nowrap; }
-.decknav { display: flex; justify-content: center; gap: 6px; min-width: 0; }
+.decknav {
+  position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 21; height: var(--bar-h);
+  display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0;
+}
 .decknav a {
   position: relative; font-family: var(--mono); font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase;
   color: rgb(var(--dim)); text-decoration: none; padding: 9px 12px; border-radius: 6px; white-space: nowrap;
@@ -101,10 +104,9 @@ body.no-webgl .hull { display: none; }
 .deckbar .share:hover, .deckbar .share.holo-on { color: rgb(var(--deck)); border-color: rgb(var(--deck) / .6); box-shadow: 0 0 16px rgb(var(--deck) / .25); }
 
 /* on a phone the deck rail becomes a dock along the bottom edge */
-@media (max-width: 760px) {
-  .deckbar { grid-template-columns: 1fr auto; }
+@media (max-width: 980px) {
   .decknav {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; justify-content: space-around; gap: 0;
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; transform: none; height: auto; z-index: 20; justify-content: space-around; gap: 0;
     background: linear-gradient(to top, rgb(4 8 16 / .96), rgb(4 8 16 / .80));
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-top: 1px solid rgb(var(--line) / .14); padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
@@ -114,17 +116,18 @@ body.no-webgl .hull { display: none; }
   .decknav a[aria-current="page"]::after { left: 6px; right: 6px; bottom: 2px; }
   body { padding-bottom: 64px; }
 }
+@media (max-width: 480px) { .deckbar .brand .sub { display: none; } .decknav a { padding: 8px 3px; letter-spacing: .06em; font-size: 8.5px; } }
 
 /* ---- page structure ----------------------------------------------------- */
 .deck-wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter); }
 .stage { position: relative; padding: clamp(48px, 8vh, 96px) 0; }
 .stage + .stage { border-top: 1px solid rgb(var(--line) / .08); }
 .stage-head { display: grid; gap: 10px; margin-bottom: 28px; max-width: 760px; }
-.stage-head .tag {
+.tag {
   font-family: var(--mono); font-size: 10.5px; letter-spacing: .3em; text-transform: uppercase; color: rgb(var(--deck));
   display: flex; align-items: center; gap: 12px;
 }
-.stage-head .tag::before { content: ""; width: 26px; height: 1px; background: rgb(var(--deck)); box-shadow: 0 0 8px rgb(var(--deck)); }
+.tag::before { content: ""; width: 26px; height: 1px; background: rgb(var(--deck)); box-shadow: 0 0 8px rgb(var(--deck)); }
 h1, h2, h3 { margin: 0; font-weight: 300; letter-spacing: -.01em; line-height: 1.1; color: rgb(var(--ink)); }
 h1 { font-size: clamp(34px, 5.2vw, 64px); }
 h2 { font-size: clamp(26px, 3.4vw, 40px); }
@@ -155,19 +158,21 @@ p.note { font-size: 13px; color: rgb(var(--dim)); line-height: 1.6; max-width: 7
 .viewport > .corner::before { left: 8px; bottom: 8px; border-left-width: 1px; border-bottom-width: 1px; }
 .viewport > .corner::after { right: 8px; bottom: 8px; border-right-width: 1px; border-bottom-width: 1px; }
 /* the overlay layer for anything a deck draws over its 3D view */
-.hud { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-.hud > * { pointer-events: auto; }
-.hud .label {
+.vhud { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.vhud > * { pointer-events: auto; }
+.vhud .label {
   position: absolute; font-family: var(--mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
   color: rgb(var(--line) / .7); white-space: nowrap; transform: translate(-50%, 0);
 }
-.hud .tick { position: absolute; bottom: 10px; font-family: var(--mono); font-size: 9.5px; color: rgb(var(--dim) / .8); transform: translateX(-50%); white-space: nowrap; }
-.hud .tick::before { content: ""; position: absolute; left: 50%; bottom: 100%; width: 1px; height: 6px; background: rgb(var(--line) / .35); }
+.vhud .tick { position: absolute; bottom: 10px; font-family: var(--mono); font-size: 9.5px; color: rgb(var(--dim) / .8); transform: translateX(-50%); white-space: nowrap; }
+.vhud .tick::before { content: ""; position: absolute; left: 50%; bottom: 100%; width: 1px; height: 6px; background: rgb(var(--line) / .35); }
 .vp-note {
   position: absolute; left: 14px; bottom: 12px; z-index: 2; font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
   text-transform: uppercase; color: rgb(var(--dim) / .85); pointer-events: none;
 }
 .vp-note.right { left: auto; right: 14px; text-align: right; }
+.vp-note { max-width: 60%; line-height: 1.4; }
+@media (max-width: 640px) { .vp-note.right { display: none; } .vp-note { max-width: 90%; } }
 body.no-webgl .viewport .fallback { display: grid; }
 .viewport .fallback {
   display: none; position: absolute; inset: 0; place-items: center; z-index: 1; padding: 24px; text-align: center;

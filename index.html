@@ -1,1479 +1,991 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Radio to Gamma</title>
-<meta name="description" content="One family of waves, sixteen orders of magnitude. Play the electromagnetic spectrum like an instrument.">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Radio to Gamma">
+<meta name="description" content="One phenomenon, sixteen orders of magnitude. Step aboard and drag two probes along the whole electromagnetic spectrum: the beam, an apple, and everything that glows.">
 <meta property="og:title" content="Radio to Gamma">
-<meta property="og:description" content="One family of waves, sixteen orders of magnitude. Play the electromagnetic spectrum like an instrument.">
+<meta property="og:description" content="One phenomenon, sixteen orders of magnitude. Step aboard and drag two probes along the whole electromagnetic spectrum.">
+<meta property="og:type" content="website">
 <meta property="og:url" content="https://radiotogamma.com/">
 <meta property="og:image" content="https://radiotogamma.com/og-card.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://radiotogamma.com/og-card.jpg">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
-<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="ship/ship.css">
 <style>
+/* deck 01, the Bridge */
+body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
+.hero-head { display: grid; gap: 14px; max-width: 820px; margin-bottom: 22px; }
+.hero-head .lede { font-size: clamp(16px, 1.6vw, 20px); }
+#vpBeam { height: clamp(380px, 62vh, 620px); cursor: crosshair; }
+#vpBeam .probe { --p: var(--pc); }
+#probeA { --pc: 126 224 255; }
+#probeB { --pc: 255 196 90; }
+.probe .cap small { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+.readout.a { --p: 126 224 255; }
+.readout.b { --p: 255 196 90; }
+.readout.r { --p: 178 216 248; }
+.readout .v.ratio { font-size: clamp(26px, 3vw, 36px); }
+.invite { margin-top: 16px; display: grid; gap: 8px; }
+.invite p { margin: 0; font-size: 15px; color: rgb(var(--ink) / .86); }
 
-  .wrap { max-width: 760px; margin: 0 auto; padding: 26px 20px 60px; }
-  .specval, .specticks, .specmark::after, .specband span, .lane-tag, .specwavenote,
-  .speclabel, .applepanel-tag, .applebadge, .trylab, .visfun summary, .applestat .specval {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
-  .sub { font-size: 13.5px; color: #9aa2b1; margin: 0 0 22px; }
-  .sub b { color: #eff4fb; font-weight: 600; }
+/* the visible band, opened out: a true-colour strip with its own probe */
+.visstrip { position: relative; height: 54px; border-radius: 8px; margin-top: 14px; overflow: visible; cursor: crosshair; }
+.visstrip canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 8px; }
+.visstrip .probe { --p: 255 255 255; }
+.visstrip .probe::before { box-shadow: 0 0 10px #fff, 0 0 2px #000; }
+.visstrip .probe .cap { background: #fff; color: #000; box-shadow: 0 0 12px rgb(255 255 255 / .8); }
+.visticks { position: relative; height: 18px; font-family: var(--mono); font-size: 9.5px; color: rgb(var(--dim)); }
+.visticks span { position: absolute; transform: translateX(-50%); top: 4px; }
+#vpPrism { height: clamp(260px, 42vh, 380px); }
 
-  /* the wave: the main draw, so it comes first and runs bigger here than it
-     ever could shoehorned under everything else on the title screen */
-  .specwavebox {
-    position: relative; height: 150px; margin-bottom: 6px;
-    border: 1px solid rgba(196,228,255,.18); background: #05070c;
-  }
-  .specwavebox canvas { display: block; width: 100%; height: 100%; }
-  .specwavebox .lane-tag {
-    position: absolute; left: 8px; font-size: 11px; letter-spacing: .06em;
-    top: 8px; color: #7ee0ff;
-  }
-  .specwavebox .lane-tag.b { top: auto; bottom: 8px; color: #e8a93a; }
-  .specwavenote { font-size: 11.5px; color: #5c6b7a; margin: 6px 0 26px; }
+/* the apple bench */
+#vpApple { height: clamp(320px, 52vh, 480px); }
+.applebar { position: relative; height: 46px; border-radius: 8px; margin-top: 10px; cursor: crosshair; }
+.applebar canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 8px; opacity: .85; }
+.applebar .probe { --p: 255 255 255; }
+.applebar .probe .cap { background: #fff; color: #000; }
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 14px; }
+.verdict { padding: 16px 18px; border-radius: 10px; border: 1px solid rgb(var(--line) / .14); background: rgb(var(--holo-panel, 15 18 24) / .55); position: relative; }
+.verdict::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px; border-radius: 2px; background: rgb(var(--p)); box-shadow: 0 0 10px rgb(var(--p) / .7); }
+.verdict.therm { --p: 255 196 90; }
+.verdict.mol { --p: 138 96 230; }
+.verdict .k { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: rgb(var(--p) / .95); margin-bottom: 6px; }
+.verdict .v { font-size: 19px; font-weight: 500; color: rgb(var(--ink)); }
+.verdict .n { font-size: 13px; color: rgb(var(--dim)); line-height: 1.55; margin-top: 6px; }
+.verdict .badge { display: inline-block; margin-top: 10px; font-family: var(--mono); font-size: 10px; letter-spacing: .18em; padding: 4px 8px; border: 1px solid rgb(var(--line) / .3); border-radius: 4px; color: rgb(var(--ink) / .8); }
 
-  /* the bar always fills the viewport now, radio to gamma in one screen with
-     no scrolling required; .specscroll is kept as a harmless no-op wrapper
-     in case a future band count ever needs it back */
-  .specscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* the glow bench */
+#vpGlow { height: clamp(340px, 54vh, 500px); }
+.glowline { font-size: 15px; margin-top: 8px; color: rgb(var(--ink) / .86); }
+.glowline b { font-family: var(--mono); font-weight: 500; font-size: 18px; }
 
-  /* The bars and their markers are dragged, and a drag is also how iOS starts
-     selecting text, so grabbing a marker would highlight the paragraph behind
-     it and raise the Copy menu. Scoped to the draggable furniture only: unlike
-     the game pages, the prose here is worth being able to select. */
-  .specbar, .specmark, .specvisbar, canvas {
-    -webkit-user-select: none; -moz-user-select: none; user-select: none;
-    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
-  }
-
-  .specbar {
-    position: relative; height: 40px; margin: 0 0 4px;
-    border: 1px solid rgba(196,228,255,.18); background: #05070c;
-    touch-action: none; cursor: pointer;
-  }
-  .specband { position: absolute; top: 0; bottom: 0; pointer-events: none; overflow: hidden; }
-  .specband span {
-    position: absolute; left: 5px; top: 50%; transform: translateY(-50%);
-    font-size: 11px; letter-spacing: .06em; color: rgba(239,244,251,.8); white-space: nowrap;
-  }
-  .specmark {
-    position: absolute; top: -8px; bottom: -8px; width: 2px; margin-left: -1px;
-    background: #eff4fb; cursor: grab; touch-action: none;
-  }
-  .specmark::before { content: ""; position: absolute; left: -15px; right: -15px; top: 0; bottom: 0; }
-  .specmark::after {
-    content: attr(data-tag); position: absolute; left: 50%; transform: translateX(-50%);
-    top: -20px; font-size: 12px; white-space: nowrap; color: inherit;
-  }
-  .specmark:focus-visible { outline: 2px solid #7ee0ff; outline-offset: 3px; }
-  /* On the visible zoom the tag flips below the bar: above it lands exactly in
-     the caption line ("Visible light, magnifieB:"), a collision that predates
-     the rainbow button but got more visible next to it. The bar's own 24px
-     bottom margin has room for the letter. */
-  .specvisbar .specmark::after { top: auto; bottom: -20px; }
-  .specbar .lmdot { position: absolute; bottom: 2px; width: 3px; height: 3px; margin-left: -1.5px;
-                    border-radius: 50%; background: rgba(239,244,251,.55); pointer-events: none; }
-  .specmeta b { color: #eff4fb; font-weight: 600; }
-  .specmark.a { background: #7ee0ff; color: #7ee0ff; }
-  .specmark.b { background: #e8a93a; color: #e8a93a; }
-
-  .specticks { position: relative; height: 18px; margin-bottom: 22px; font-size: 11px; color: #6c7c8c; }
-  .specticks i { position: absolute; transform: translateX(-50%); font-style: normal; white-space: nowrap; }
-
-  .cap { font-size: 12.5px; color: #8b98a8; margin: 0 0 7px; }
-  .bandzone { border: 1px solid rgba(196,228,255,.14); padding: 12px 14px; margin: 0 0 24px; }
-  .bandzone .bandhook { font-size: 13px; color: #9aa2b1; line-height: 1.55; margin: 0 0 10px; }
-  .bandzone .bandhook b { color: #eff4fb; }
-  .bandzone .trylab { margin: 0; }
-  .specvisbar {
-    position: relative; height: 26px; margin-bottom: 24px; touch-action: none; cursor: pointer;
-    border: 1px solid rgba(196,228,255,.18);
-    background: linear-gradient(90deg, #ff2d2d 0%, #ff7b00 12%, #ffd400 26%,
-                                       #7bff2d 44%, #00e5ff 63%, #2b5cff 80%, #7a2bff 100%);
-  }
-  .specvisbar.off { filter: grayscale(1) brightness(.42); }
-  .colophon { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin: 30px 0 0;
-              padding-top: 14px; border-top: 1px solid rgba(196,228,255,.1); }
-  .specvisbar .specmark { top: -5px; bottom: -5px; }
-
-  /* the sunset lab: one slider, real 1/lambda^4 scattering behind the colors */
-  .sunsetlab { margin: 10px 0 2px; }
-  .sunsetscene { position: relative; height: 110px; border: 1px solid rgba(196,228,255,.18); overflow: hidden; }
-  .sunsetsun { position: absolute; left: 50%; width: 34px; height: 34px; border-radius: 50%;
-               transform: translateX(-50%); }
-  .sunsetlab input[type=range] {
-    -webkit-appearance: none; appearance: none; width: 100%; height: 38px;
-    margin: 8px 0 4px; background: transparent; cursor: ew-resize; touch-action: pan-y; }
-  .sunsetlab input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 4px;
-    background: linear-gradient(90deg, #7ec8ff, #ffd479 55%, #ff7b3d);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
-  .sunsetlab input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
-    width: 28px; height: 28px; border-radius: 50%; margin-top: -10px;
-    background: radial-gradient(circle at 34% 30%, #ffffff, #ffe2a8 45%, #e8a93a 90%);
-    border: 2px solid #eff4fb; cursor: grab;
-    box-shadow: 0 0 14px rgba(232,169,58,.9), 0 3px 8px rgba(0,0,0,.6);
-    transition: box-shadow .12s, transform .12s; }
-  .sunsetlab input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.08); }
-  .sunsetlab input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.18);
-    box-shadow: 0 0 24px rgba(232,169,58,1), 0 3px 10px rgba(0,0,0,.7); }
-  .sunsetlab input[type=range]::-moz-range-track { height: 8px; border-radius: 4px;
-    background: linear-gradient(90deg, #7ec8ff, #ffd479 55%, #ff7b3d);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
-  .sunsetlab input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%;
-    background: radial-gradient(circle at 34% 30%, #ffffff, #ffe2a8 45%, #e8a93a 90%);
-    border: 2px solid #eff4fb; cursor: grab;
-    box-shadow: 0 0 14px rgba(232,169,58,.9), 0 3px 8px rgba(0,0,0,.6); }
-  .sunsetnote { font-size: 12px; color: #8b98a8; margin: 0; line-height: 1.5; }
-
-  .specread { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
-  .specread .r { grid-column: 1 / -1; }
-  @media (min-width: 560px) { .specread { grid-template-columns: 1fr 1fr 1fr; }
-                              .specread .r { grid-column: auto; } }
-  .speccard { border: 1px solid rgba(196,228,255,.14); padding: 11px 13px; }
-  .speccard.a { border-left: 3px solid #7ee0ff; }
-  .speccard.b { border-left: 3px solid #e8a93a; }
-  .speccard.r { border-left: 3px solid #a07cff; }
-  .speclabel { font-size: 11.5px; letter-spacing: .1em; color: #6c7c8c; }
-  .specval { font-size: 21px; color: #eff4fb; margin-top: 4px; font-variant-numeric: tabular-nums; }
-  .specmeta { font-size: 12.5px; color: #9aa2b1; margin-top: 4px; }
-  .u { text-transform: none; }   /* a unit symbol must never sit inside text-transform: uppercase */
-
-  .specpresets { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 34px; }
-  .specpresets button {
-    font: inherit; font-size: 12.5px; cursor: pointer; background: none; color: #9aa2b1;
-    border: 1px solid rgba(196,228,255,.14); padding: 8px 10px;
-  }
-  .specpresets button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
-
-  /* for scale: an apple sitting in the beam for a minute, band by band */
-  .specmark.apple { background: #ff6b5e; color: #ff6b5e; }
-
-  /* The rainbow button: a small arc of the actual band, tappable. It only
-     exists while marker B sits inside visible light, so finding it is part of
-     the toy. The arc is a top-half ring wearing the spectrum as a gradient. */
-  .barwrap { position: relative; }
-  .rainbow-flag { position: absolute; top: -21px; transform: translateX(-50%); z-index: 3;
-                  padding: 2px 6px 0; background: #04070a; }
-  .rainbow {
-    display: inline-block; vertical-align: middle; margin-left: 10px;
-    padding: 3px 9px 1px; cursor: pointer;
-    background: none; border: 1px solid rgb(126 224 255 / .3); border-radius: 3px;
-    transition: border-color .2s ease;
-  }
-  .rainbow:hover, .rainbow:focus-visible { border-color: rgb(126 224 255 / .8); }
-  .rainbow[aria-expanded="true"] { border-color: rgb(126 224 255 / .8); background: rgb(126 224 255 / .08); }
-  .rainbow-arc {
-    display: block; width: 34px; height: 17px;
-    border-radius: 17px 17px 0 0;
-    background: linear-gradient(90deg, #ff3b30, #ff9500, #ffe600, #35e05a, #35c8e0, #4a6ee0, #9b4ae0);
-    -webkit-mask: radial-gradient(17px 17px at 50% 100%, transparent 8px, #000 9px);
-            mask: radial-gradient(17px 17px at 50% 100%, transparent 8px, #000 9px);
-    transition: filter .25s ease;
-  }
-  /* Out of the visible band the rainbow stays put but goes gray, the same
-     move the magnified bar makes — Amy couldn't find a button that vanished,
-     and a gray rainbow both advertises the doorway and hints at how to light
-     it up. It stays tappable: the fun list doesn't care where the marker is. */
-  .rainbow.off { border-color: rgb(126 224 255 / .15); }
-  .rainbow.off .rainbow-arc { filter: grayscale(1) brightness(.65); }
-
-  /* the fun list: same doorway idiom as the rest of the site's link rows */
-  .visfun { margin: 14px 0 4px; display: grid; gap: 7px; }
-  .visfun details {
-    border: 1px solid rgb(196 228 255 / .16);
-  }
-  .visfun summary {
-    cursor: pointer; list-style: none; padding: 10px 12px;
-    font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
-    color: #9aa2b1; transition: color .2s ease;
-  }
-  .visfun summary::-webkit-details-marker { display: none; }
-  .visfun summary::after { content: ' +'; color: rgb(126 224 255 / .6); }
-  .visfun details[open] summary { color: #7ee0ff; }
-  .visfun details[open] summary::after { content: ' \2212'; }
-  .visfun .trylab, .bandzone .trylab { display: inline-block; margin: 4px 0 10px; font-size: 12px;
-    letter-spacing: .08em; color: #7ee0ff; text-decoration: none;
-    border: 1px solid rgba(126,224,255,.35); padding: 6px 10px; }
-  .visfun .trylab:hover, .bandzone .trylab:hover { border-color: #7ee0ff; background: rgba(126,224,255,.08); }
-  .visfun details p {
-    margin: 0; padding: 0 12px 12px;
-    font-size: 14px; line-height: 1.6; color: #9aa2b1; max-width: 70ch;
-  }
-  /* locator: the full spectrum in miniature, with the zoomed window marked */
-  .specmini { position: relative; height: 10px; margin: 0 0 8px;
-              border: 1px solid rgba(196,228,255,.14); background: #05070c; }
-  .specmini .specband span { display: none; }
-  .specmini-win { position: absolute; top: -3px; bottom: -3px; z-index: 1;
-                  border: 1px solid rgba(126,224,255,.8); background: rgba(126,224,255,.1); }
-  .applerow { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
-  .applecanvas { width: 128px; height: 128px; flex: 0 0 auto; background: #05070c;
-                 border: 1px solid rgba(196,228,255,.14); }
-  .appletext { flex: 1 1 220px; min-width: 220px; }
-  .appleverdict { font-size: 17px; color: #eff4fb; margin-bottom: 5px; }
-  .applenote { font-size: 13px; color: #9aa2b1; line-height: 1.55; }
-  .applecaveat { font-size: 11.5px; color: #5c6b7a; margin: 10px 0 0; }
-  .windbox { border: 1px solid rgba(196,228,255,.14); padding: 15px 18px; margin: 30px 0 0; }
-  .windbox h2 { font-size: 13px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 9px; font-weight: 600; }
-  .windbox p { font-size: 13.5px; color: #9aa2b1; line-height: 1.65; margin: 0 0 10px;
-               font-family: "Segoe UI", system-ui, sans-serif; max-width: 74ch; }
-  .windbox p:last-child { margin-bottom: 0; }
-  .windbox b { color: #cfe6e6; }
-
-  /* dial two: beam power, same custom-slider idiom as the sunset lab, but the
-     track runs cold blue to searing red because it is a power ramp, not a sky */
-  .applepow input[type=range] {
-    -webkit-appearance: none; appearance: none; width: 100%; height: 38px;
-    margin: 2px 0 0; background: transparent; cursor: ew-resize; touch-action: pan-y; }
-  .applepow input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 4px;
-    background: linear-gradient(90deg, #14293b, #2e6d8a 38%, #7ee0ff 66%, #ffd479 84%, #ff6b5e);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
-  .applepow input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
-    width: 28px; height: 28px; border-radius: 50%; margin-top: -10px;
-    background: radial-gradient(circle at 34% 30%, #ffffff, #bfeaff 45%, #5ec8ef 90%);
-    border: 2px solid #eff4fb; cursor: grab;
-    box-shadow: 0 0 14px rgba(126,224,255,.9), 0 3px 8px rgba(0,0,0,.6);
-    transition: box-shadow .12s, transform .12s; }
-  .applepow input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.08); }
-  .applepow input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.18);
-    box-shadow: 0 0 24px rgba(126,224,255,1), 0 3px 10px rgba(0,0,0,.7); }
-  .applepow input[type=range]::-moz-range-track { height: 8px; border-radius: 4px;
-    background: linear-gradient(90deg, #14293b, #2e6d8a 38%, #7ee0ff 66%, #ffd479 84%, #ff6b5e);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.5); }
-  .applepow input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%;
-    background: radial-gradient(circle at 34% 30%, #ffffff, #bfeaff 45%, #5ec8ef 90%);
-    border: 2px solid #eff4fb; cursor: grab;
-    box-shadow: 0 0 14px rgba(126,224,255,.9), 0 3px 8px rgba(0,0,0,.6); }
-  .applepowline { font-size: 12.5px; color: #8b98a8; margin: 2px 0 14px; }
-  .applepowline b { color: #eff4fb; font-weight: 600; }
-
-  .applestats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 14px; }
-  .applestat { border: 1px solid rgba(196,228,255,.14); padding: 11px 13px; min-width: 0; }
-  .applestat.p { border-left: 3px solid #ff6b5e; }
-  .applestat.e { border-left: 3px solid #e8a93a; }
-  .applestat .specval { font-size: 19px; }
-  @media (max-width: 559px) { .applestats { grid-template-columns: 1fr; } }
-
-  /* dial three: the glow. The orb wears the blackbody colour; the slider runs
-     black through ember, white and blue-white, the way a heated thing does. */
-  .glowcap { margin-top: 34px; }
-  .glowrow { display: flex; gap: 18px; align-items: center; margin: 0 0 6px; }
-  .gloworb { width: 72px; height: 72px; border-radius: 50%; flex: none; background: #0a0c10;
-             border: 1px solid rgba(196,228,255,.18); transition: box-shadow .2s, background .2s; }
-  .glowctl { flex: 1; min-width: 0; }
-  .glowctl input[type=range]::-webkit-slider-runnable-track {
-    background: linear-gradient(90deg, #06080d, #3a1010 38%, #ff5a1f 56%, #ffd9a0 70%, #ffffff 80%, #9fc4ff); }
-  .glowctl input[type=range]::-moz-range-track {
-    background: linear-gradient(90deg, #06080d, #3a1010 38%, #ff5a1f 56%, #ffd9a0 70%, #ffffff 80%, #9fc4ff); }
-  .glowctl input[type=range]::-webkit-slider-thumb {
-    background: radial-gradient(circle at 34% 30%, #ffffff, #ffe2a8 45%, #ff8a3a 90%); }
-  .glowctl input[type=range]::-moz-range-thumb {
-    background: radial-gradient(circle at 34% 30%, #ffffff, #ffe2a8 45%, #ff8a3a 90%); }
-  .glowbar { height: 64px; }
-  .glowbar canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-  .specmark.glow { background: #ffd479; color: #ffd479; }
-  .applestat.g { border-left: 3px solid #ffd479; }
-  .glownote { margin: 0 0 12px; }
-  .appleouts { flex: 1 1 260px; min-width: 240px; display: grid;
-               grid-template-columns: 1fr 1fr; gap: 10px; }
-  .applepanel { border: 1px solid rgba(196,228,255,.14); padding: 10px 12px; min-width: 0; }
-  .applepanel.therm { border-left: 3px solid #e8a93a; }
-  .applepanel.mol { border-left: 3px solid #a07cff; }
-  .applepanel-tag { font-size: 11px; letter-spacing: .1em; color: #6c7c8c; margin-bottom: 6px; }
-  .applepanel .appleverdict { font-size: 15px; }
-  .applebadge { display: inline-block; font-size: 10.5px; letter-spacing: .08em;
-                border: 1px solid rgba(196,228,255,.25); padding: 2px 6px; margin-top: 8px;
-                color: #9aa2b1; }
-  @media (max-width: 679px) { .appleouts { grid-template-columns: 1fr; } }
-  .applesets { margin: 14px 0 6px; }
-
+.wind p { font-size: 15.5px; }
+/* the vertical beam: a probe becomes a horizontal line across the box */
+#vpBeam.is-vertical .probe { top: 0; bottom: auto; left: 50%; width: 100%; height: 28px; transform: translate(-50%, -50%); }
+#vpBeam.is-vertical .probe::before { left: 0; right: 0; top: 50%; bottom: auto; width: auto; height: 1px; transform: translateY(-50%); }
+#vpBeam.is-vertical .probe .cap { left: 10px; top: 50%; transform: translateY(-50%); }
+@media (max-width: 600px) {
+  #vpBeam { height: 560px; }
+  .probe .cap small { display: none; }
+}
 </style>
 </head>
 <body>
-<header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
-  <div class="gbrand">
-    <img class="gamebar-icon" src="favicon.png" alt="">
-    <span class="gamebar-name">RADIO TO GAMMA</span>
-    <span style="flex:1"></span>
-    <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
-  </div>
-  <nav class="gbnav" aria-label="Site pages">
-    <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
-    <a class="gamebar-back" href="lab.html">LIGHT LAB</a>
-    <a class="gamebar-back" href="gamma.html">GAMMA ATTIC</a>
-    <a class="gamebar-back" href="senses.html">SPECTRAL ZOO</a>
-    <a class="gamebar-back" href="https://hbdanny.com/games/dust-off/">DUST OFF</a>
-  </nav>
-</header>
-<div class="wrap">
-  <h1 id="specHead">Radio to gamma</h1>
-  <p class="sub" id="subLine"><b>FM radio</b> and <b>green laser light</b> are the same phenomenon,
-     <b>5.6 million</b>&times; apart in frequency. End to end, this bar covers a ten-quadrillion-fold
-     range. Drag a marker.</p>
+<main class="deck">
+<div class="deck-wrap">
 
-  <div class="specwavebox">
-    <span class="lane-tag a">A</span>
-    <span class="lane-tag b">B</span>
-    <canvas id="specWave"></canvas>
-  </div>
-  <p class="specwavenote" id="waveNote"></p>
-
-  <div class="barwrap">
-  <button class="rainbow rainbow-flag" id="rainbowFlag" type="button"
-          aria-label="Open the visible spectrum" title="Open the visible spectrum">
-    <span class="rainbow-arc" aria-hidden="true"></span>
-  </button>
-  <div class="specscroll">
-    <div class="specbar" id="specBar">
-      <div class="specmark a" id="markA" tabindex="0" role="slider" aria-label="Marker A frequency"></div>
-      <div class="specmark b" id="markB" tabindex="0" role="slider" aria-label="Marker B frequency"></div>
+  <!-- ====================== stage 00 · the beam ====================== -->
+  <section class="stage hero" id="beam" aria-labelledby="h0">
+    <div class="hero-head">
+      <div class="tag">Deck 01 · the Bridge</div>
+      <h1 id="h0">One phenomenon. <em>Sixteen orders of magnitude.</em></h1>
+      <p class="lede" id="subLine"><b>FM radio</b> and <b>green laser light</b> are the same phenomenon,
+        <b>5.6 million</b>&times; apart in frequency. The beam below runs from 10 kHz to 100 EHz, a
+        ten-quadrillion-fold range, end to end. Grab a probe.</p>
     </div>
-    <div class="specticks" id="specTicks"></div>
-  </div>
-  </div>
 
-  <!-- every band invites you somewhere: B's band decides which card shows in
-       this slot. Visible gets the full magnified bar and play zone; the rest
-       get a one-line hook and a doorway to the page that does it justice. -->
-  <div class="bandzone" id="bandZone" hidden>
-    <p class="bandhook" id="bandHook"></p>
-    <a class="trylab" id="bandLink" href="#"></a>
-  </div>
-
-  <div id="visZone" hidden>
-  <p class="cap">Visible light, magnified:</p>
-  <div class="specvisbar" id="specVis">
-    <div class="specmark b" id="markV" tabindex="0" role="slider" aria-label="Marker B within visible light"></div>
-  </div>
-
-  <!-- Opens from the rainbow button, which itself only appears while marker B
-       is inside the visible band: park yourself in the light you can see, and
-       the page offers things to do with it. -->
-  <div class="visfun" id="visFun" hidden>
-    <details>
-      <summary>Split it with a prism</summary>
-      <p>Glass slows every frequency on this strip by a slightly different
-      amount, so each one bends through a slightly different angle, and white
-      light fans out into exactly the band drawn above. Newton did it with a
-      prism in 1666 and named seven colours, but seven was taste: the band is
-      a continuum, one colour per frequency, no seams.</p>
-      <a class="trylab" href="lab.html#exp-prism">→ RUN THIS EXPERIMENT IN THE LIGHT LAB</a>
-    </details>
-    <details>
-      <summary>Ever wondered why CDs and DVDs reflect rainbows?</summary>
-      <p>Do you even know what a CD looks like up close, in real life? The
-      Light Lab has one: tilt it under a lamp, then dive forty-thousand-fold
-      into its surface to the micrometre-sized pits that build the rainbow, and watch the light itself sort into colours.</p>
-      <a class="trylab" href="lab.html#exp-cd">→ EXPLORE THE PHYSICS</a>
-    </details>
-    <details>
-      <summary>Make a rainbow with a garden hose</summary>
-      <p>Each droplet refracts sunlight on the way in, reflects it off the
-      back, and refracts it again on the way out. Red exits at about 42
-      degrees from the antisolar point and violet nearer 40, which is why the
-      bow is a band and red is on the outside. Sun behind you, mist in front,
-      look at your shadow's head height.</p>
-      <a class="trylab" href="lab.html#exp-hose">→ RUN THIS EXPERIMENT IN THE LIGHT LAB</a>
-    </details>
-    <details>
-      <summary>Why the sky is blue, and sunsets are not</summary>
-      <p>Air molecules scatter light in proportion to the fourth power of its
-      frequency, so the blue end of this strip scatters roughly ten times as
-      strongly as the red end. Look anywhere but at the sun and scattered
-      blue is what reaches you. At sunset the light crosses so much air that
-      the blue has been scattered away en route, and what survives the trip
-      is the red. Try it: drag the sun down.</p>
-      <div class="sunsetlab">
-        <div class="sunsetscene" id="sunsetScene" aria-hidden="true"><div class="sunsetsun" id="sunsetSun"></div></div>
-        <input type="range" id="sunsetRange" min="0" max="1000" value="0"
-               aria-label="How much air the sunlight crosses, from noon overhead to setting on the horizon">
-        <p class="sunsetnote" id="sunsetNote"></p>
+    <div id="vpBeam" aria-label="The spectrum beam: two draggable probes on a bar from ten kilohertz to one hundred exahertz">
+      <div class="vhud">
+        <div class="probe" id="probeA" tabindex="0" role="slider" aria-label="Probe A frequency"><span class="cap">A<small id="capA"></small></span></div>
+        <div class="probe" id="probeB" tabindex="0" role="slider" aria-label="Probe B frequency"><span class="cap">B<small id="capB"></small></span></div>
       </div>
-      <a class="trylab" href="lab.html#exp-sky">→ RUN THIS EXPERIMENT IN THE LIGHT LAB</a>
-    </details>
-    <details>
-      <summary>Blow a soap bubble</summary>
-      <p>No pigment, no prism, no grating. A soap film is a few hundred nanometres thick, so
-      light reflecting off its back surface returns a fraction of a wavelength behind light
-      reflecting off the front. Colours whose waves land in step show; colours that land out of
-      step cancel. The swirl is the thickness of the film, made visible, and the black patch that
-      spreads just before it pops is the film gone thinner than any colour can survive.</p>
-      <a class="trylab" href="lab.html#exp-film">→ WATCH ONE DRAIN IN THE LIGHT LAB</a>
-    </details>
-    <details>
-      <summary>Why a hologram shifts when you tilt it</summary>
-      <p>A hologram is not a picture of a thing. It is a recording of an interference pattern: the
-      light from the object met a second beam at the plate, and where the two arrived in step they
-      wrote a bright fringe, where out of step a dark one. Lighting those fringes again hands the
-      original wave back, direction and all, which is why the scene has depth and shifts as you move.
-      Cut a photograph in half and half the scene is gone; cut a hologram in half and you have only
-      stepped back from the window.</p>
-      <a class="trylab" href="lab.html#exp-holo">→ RECORD ONE IN THE LIGHT LAB</a>
-    </details>
-  </div>
-  </div>
-
-  <div class="specread">
-    <div class="speccard a"><div class="speclabel">MARKER A</div>
-      <div class="specval" id="valA"></div><div class="specmeta" id="metaA"></div></div>
-    <div class="speccard b"><div class="speclabel">MARKER B</div>
-      <div class="specval" id="valB"></div><div class="specmeta" id="metaB"></div></div>
-    <div class="speccard r"><div class="speclabel">HIGHER BY</div>
-      <div class="specval" id="valR"></div><div class="specmeta" id="metaR"></div></div>
-  </div>
-
-  <div class="specpresets" id="specPresets"></div>
-
-  <p class="cap">For scale: point a beam at an apple. Dial one is frequency. The eventful stretch is the high end, so this bar is zoomed; the strip shows where the window sits on the full spectrum:</p>
-  <div class="specmini" id="appleMini" aria-hidden="true"><div class="specmini-win" id="appleMiniWin"></div></div>
-  <div class="specscroll">
-    <div class="specbar" id="appleBar">
-      <div class="specmark apple" id="markApple" tabindex="0" role="slider" aria-label="Exposure frequency on an apple"></div>
+      <div class="vp-note" id="waveNote"></div>
+      <div class="vp-note right">Drag a probe · click the beam · arrow keys step a tenth of a decade</div>
+      <div class="fallback">A bar from 10 kHz to 100 EHz with two probes, A on FM radio at 100 MHz and B on a green laser at 564 THz. The readouts below are live without the 3D view.</div>
     </div>
-    <div class="specticks" id="appleTicks"></div>
-  </div>
-  <p class="cap">Dial two is power, held on the apple for 60&nbsp;s:</p>
-  <div class="applepow">
-    <input type="range" id="applePower" min="0" max="1000" value="500"
-           aria-label="Beam power, from one microwatt to one megawatt">
-    <p class="applepowline" id="applePowLine"></p>
-  </div>
-  <div class="applestats">
-    <div class="applestat p"><div class="speclabel">PHOTONS PER SECOND</div>
-      <div class="specval" id="applePhot"></div><div class="specmeta" id="applePhotMeta"></div></div>
-    <div class="applestat e"><div class="speclabel">ENERGY DELIVERED IN 60 <span class="u">s</span></div>
-      <div class="specval" id="appleEnergy"></div><div class="specmeta" id="appleEnergyMeta"></div></div>
-  </div>
-  <div class="applerow">
-    <canvas class="applecanvas" id="appleCanvas" width="256" height="256"></canvas>
-    <div class="appleouts">
-      <div class="applepanel therm"><div class="applepanel-tag">THERMAL &middot; TOTAL ENERGY</div>
-        <div class="appleverdict" id="appleThermV"></div>
-        <div class="applenote" id="appleThermN"></div></div>
-      <div class="applepanel mol"><div class="applepanel-tag">MOLECULAR &middot; PER PHOTON</div>
-        <div class="appleverdict" id="appleMolV"></div>
-        <div class="applenote" id="appleMolN"></div>
-        <div class="applebadge" id="appleMolB"></div></div>
-    </div>
-  </div>
-  <div class="specpresets applesets" id="applePresets"></div>
-  <p class="applecaveat">
-    The two dials are the whole lesson. Frequency decides what each photon can do: nudge,
-    excite, break a bond, or ionize. Power times time decides how much arrives. Pour megawatts
-    into radio and it cooks. A gamma trickle cannot warm a thing, yet every photon still
-    ionizes. That is why your router is harmless and a sterilizer plant is not.
-    Please do not eat any irradiated apples!
-  </p>
 
-  <p class="cap glowcap">Everything warm glows. Dial three is temperature. Every object above absolute zero
-     radiates across this whole bar, and one number decides where the glow peaks:</p>
-  <div class="glowrow">
-    <div class="gloworb" id="glowOrb" aria-hidden="true"></div>
-    <div class="glowctl applepow">
-      <input type="range" id="glowT" min="0" max="1000" value="500"
-             aria-label="Temperature, from one millikelvin to ten billion kelvin">
-      <p class="applepowline" id="glowLine"></p>
+    <div class="readouts">
+      <div class="readout a" data-holo-tap><p class="k">Probe A</p><p class="v" id="valA"></p><p class="d" id="metaA"></p></div>
+      <div class="readout b" data-holo-tap><p class="k">Probe B</p><p class="v" id="valB"></p><p class="d" id="metaB"></p></div>
+      <div class="readout r" data-holo-tap><p class="k">Higher by</p><p class="v ratio" id="valR"></p><p class="d" id="metaR"></p></div>
     </div>
-  </div>
-  <div class="specscroll">
-    <div class="specbar glowbar" id="glowBar">
-      <canvas id="glowCurve"></canvas>
-      <div class="specmark glow" id="markGlow" tabindex="0" role="slider" aria-label="Peak of the glow"></div>
+    <div class="chips" id="presets" aria-label="Landmarks"></div>
+
+    <div class="invite" id="invite" hidden>
+      <p id="inviteHook"></p>
+      <div class="hatches"><a class="hatch" id="inviteLink" href="#"><span class="k" id="inviteK"></span><span class="t" id="inviteT"></span></a></div>
     </div>
-    <div class="specticks" id="glowTicks"></div>
-  </div>
-  <div class="applestats">
-    <div class="applestat g"><div class="speclabel">PEAK OF THE GLOW</div>
-      <div class="specval" id="glowPeak"></div><div class="specmeta" id="glowPeakMeta"></div></div>
-    <div class="applestat e"><div class="speclabel">RADIATED, PER SQUARE METRE</div>
-      <div class="specval" id="glowPow"></div><div class="specmeta" id="glowPowMeta"></div></div>
-  </div>
-  <p class="applenote glownote" id="glowNote"></p>
-  <div class="specpresets applesets" id="glowPresets"></div>
-  <p class="applecaveat">
-    Planck's law, drawn per unit wavelength and scaled to its own peak; the marker sits at Wien's
-    λ<sub>max</sub> = 2.898 mm·K ÷ T. Counted per unit frequency instead, the peak lands 1.76× lower,
-    which is why the cosmic microwave background is quoted both at 1.06 mm and at 160 GHz: the same
-    glow, sliced two ways. Radiated power is Stefan-Boltzmann, σT⁴, for a perfect emitter.
-  </p>
+  </section>
 
-  <div class="windbox">
-    <h2>✦ EVEN THE WIND IS SUNLIGHT</h2>
-    <p><b>All wind is reprocessed sunlight.</b> The Sun delivers energy to Earth purely as
-       electromagnetic radiation. It lands unevenly: equator vs poles, land vs sea, day vs
-       night. The uneven heating makes pressure differences, and air falls down those
-       gradients. Roughly 1 to 2% of incoming solar power ends up as wind. So every gust is EM
-       energy that arrived as photons, thermalized, and got converted into moving air. A wind
-       turbine is, with a couple of steps in between, solar powered.</p>
-    <p><b>And we measure wind with EM.</b> Doppler weather radar bounces microwaves off
-       raindrops and reads the frequency shift of the echo: moving droplets compress or
-       stretch the returning wave, and that shift is the wind speed. Lidar does the same trick
-       with laser light off dust and aerosols; satellite scatterometers read ocean wind from
-       how microwaves scatter off wind-roughened water. Wind has no EM signature of its own,
-       so we interrogate it with EM and read the answer in the Doppler shift.</p>
-  </div>
+  <!-- ====================== stage 01 · visible ====================== -->
+  <section class="stage" id="visible" aria-labelledby="h1">
+    <div class="stage-head">
+      <div class="tag">Stage 01 · the sliver you can see</div>
+      <h2 id="h1">Visible light, <em>opened out</em></h2>
+      <p class="lede">On the beam above, everything an eye can see is one thin line, a single octave in fifty-three. The ship opens it out here. White light goes into the glass; the band comes out, one colour per frequency, no seams.</p>
+    </div>
+    <div id="vpPrism" aria-label="A prism splitting white light into the visible spectrum">
+      <div class="vp-note">Dispersion from a real glass: BK7, Cauchy fit · angles exaggerated 3x so the fan is visible</div>
+      <div class="fallback">White light entering a glass prism fans into red through violet; the strip below is the same band, to scale in frequency.</div>
+    </div>
+    <div class="visstrip" id="visStrip" aria-label="Visible light, 380 to 750 nanometres">
+      <canvas id="visCanvas" aria-hidden="true"></canvas>
+      <div class="probe" id="probeV" tabindex="0" role="slider" aria-label="Probe B within visible light"><span class="cap">B</span></div>
+    </div>
+    <div class="visticks" id="visTicks" aria-hidden="true"></div>
+    <p class="note" id="visNote"></p>
 
-  <p class="colophon">Everything on this site runs the real physics in miniature: Planck's
-     E&nbsp;=&nbsp;hf behind every readout, Snell and dispersion in the prism, the grating
-     equation on a real 1.6&nbsp;µm track pitch in the CD, the 42° droplet cone, Rayleigh's
-     1/λ⁴ in the sky. Illustrative in scale, honest in mechanism; if a number here
-     disagrees with your textbook, trust the textbook and tell us.
-     Studio lighting HDRI by <a href="https://polyhaven.com" style="color:#7ee0ff">Poly Haven</a> (CC0).</p>
-  <p class="colophon" style="border-top:0; padding-top:0; margin-top:10px">Built by Amy Robinson Sterling
-     <a href="https://x.com/amyneurons" style="color:#7ee0ff">@amyneurons</a>, with Fable and Sol.</p>
+    <div class="hatches">
+      <a class="hatch" href="lab.html#exp-prism" data-holo-tap><span class="k">Light Lab · bench 1</span><span class="t">Split it with a prism</span><span class="d">Glass slows every frequency by a slightly different amount. Newton named seven colours in 1666, but seven was taste.</span></a>
+      <a class="hatch" href="lab.html#exp-cd" data-holo-tap><span class="k">Light Lab · bench 2</span><span class="t">Why a CD reflects rainbows</span><span class="d">Dive forty-thousand-fold into a disc's surface, to the 1.6 µm tracks that sort light into colours.</span></a>
+      <a class="hatch" href="lab.html#exp-hose" data-holo-tap><span class="k">Light Lab · bench 3</span><span class="t">Make a rainbow with a hose</span><span class="d">Red leaves a droplet at about 42 degrees from the antisolar point, violet nearer 40. Sun behind you, mist in front.</span></a>
+      <a class="hatch" href="lab.html#exp-sky" data-holo-tap><span class="k">Light Lab · bench 4</span><span class="t">Why the sky is blue, and sunsets are not</span><span class="d">Air scatters light as the fourth power of frequency. Blue at 460 nm scatters 3.3 times harder than red at 620.</span></a>
+      <a class="hatch" href="lab.html#exp-film" data-holo-tap><span class="k">Light Lab · bench 5</span><span class="t">Blow a soap bubble</span><span class="d">No pigment. A film a few hundred nanometres thick, and colours that land in step with themselves.</span></a>
+      <a class="hatch" href="lab.html#exp-holo" data-holo-tap><span class="k">Light Lab · bench 6</span><span class="t">Why a hologram shifts when you tilt it</span><span class="d">Not a picture of a thing: a recording of an interference pattern that hands the original wave back.</span></a>
+    </div>
+  </section>
+
+  <!-- ====================== stage 02 · the apple ====================== -->
+  <section class="stage" id="apple" aria-labelledby="h2">
+    <div class="stage-head">
+      <div class="tag">Stage 02 · for scale, an apple</div>
+      <h2 id="h2">Point a beam at <em>an apple</em></h2>
+      <p class="lede">Two dials are the whole lesson. Frequency decides what each photon <b>can</b> do: nudge, excite, break a bond, ionize. Power times time decides how much arrives. Hold the beam on the apple for sixty seconds and the ship reads out what happened to it.</p>
+    </div>
+    <div id="vpApple" aria-label="An apple under a beam of light">
+      <div class="vp-note" id="appleVpNote">Photons shown: a few, for a few. The counter below is the real number.</div>
+      <div class="fallback">An apple sits under a beam whose colour follows the frequency dial. The verdicts below are computed without the 3D view.</div>
+    </div>
+
+    <div class="dial">
+      <div class="dial-k"><span>Dial one · frequency</span><b id="appleFLine"></b></div>
+      <div class="applebar" id="appleBar" aria-hidden="false">
+        <canvas id="appleBarCanvas" aria-hidden="true"></canvas>
+        <div class="probe" id="probeApple" tabindex="0" role="slider" aria-label="Exposure frequency on the apple"><span class="cap">f</span></div>
+      </div>
+      <div class="visticks" id="appleTicks" aria-hidden="true"></div>
+      <p class="caveat">The eventful stretch is the high end, so this dial runs 100 MHz to 100 EHz, the top twelve decades of the beam.</p>
+    </div>
+    <div class="dial">
+      <div class="dial-k"><span>Dial two · beam power, held for 60 s</span><b id="applePLine"></b></div>
+      <input type="range" class="beam" id="applePower" min="0" max="1000" value="500" aria-label="Beam power, from one microwatt to one megawatt">
+    </div>
+
+    <div class="readouts">
+      <div class="readout" data-holo-tap><p class="k">Photons per second</p><p class="v" id="applePhot"></p><p class="d" id="applePhotMeta"></p></div>
+      <div class="readout" data-holo-tap><p class="k">Energy delivered in 60 s</p><p class="v" id="appleEnergy"></p><p class="d" id="appleEnergyMeta"></p></div>
+    </div>
+    <div class="verdicts">
+      <div class="verdict therm" data-holo-tap><div class="k">Thermal · total energy</div><div class="v" id="appleThermV"></div><div class="n" id="appleThermN"></div></div>
+      <div class="verdict mol" data-holo-tap><div class="k">Molecular · per photon</div><div class="v" id="appleMolV"></div><div class="n" id="appleMolN"></div><span class="badge" id="appleMolB"></span></div>
+    </div>
+    <div class="chips" id="applePresets" aria-label="Apple presets"></div>
+    <p class="note">Pour megawatts into radio and it cooks. A gamma trickle cannot warm a thing, yet every photon still ionizes. That is why your router is harmless and a sterilizer plant is not. The apple is modelled as 100 g of water; the absorbed fraction per band is a rough figure, stated in the readout. Please do not eat any irradiated apples.</p>
+  </section>
+
+  <!-- ====================== stage 03 · the glow ====================== -->
+  <section class="stage" id="glow" aria-labelledby="h3">
+    <div class="stage-head">
+      <div class="tag">Stage 03 · everything warm glows</div>
+      <h2 id="h3">Dial three is <em>temperature</em></h2>
+      <p class="lede">Every object above absolute zero radiates across this whole beam, and one number decides where the glow peaks. The body floats over the frequency it peaks at. Below the Draper point, 798 K, it glows and you cannot see it.</p>
+    </div>
+    <div id="vpGlow" aria-label="A glowing body over the spectrum, with its Planck curve">
+      <div class="vhud"><div class="probe" id="probeGlow" tabindex="0" role="slider" aria-label="Peak of the glow"><span class="cap">peak</span></div></div>
+      <div class="vp-note">Planck's law per unit wavelength, scaled to its own peak</div>
+      <div class="fallback">A glowing sphere sits over the spectrum at the frequency where its Planck curve peaks; the curve itself is drawn across the beam.</div>
+    </div>
+    <div class="dial">
+      <div class="dial-k"><span>Temperature · 1 mK to 10 billion K</span><b id="glowLine"></b></div>
+      <input type="range" class="beam" id="glowT" min="0" max="1000" value="500" aria-label="Temperature, from one millikelvin to ten billion kelvin">
+    </div>
+    <div class="readouts">
+      <div class="readout" data-holo-tap><p class="k">Peak of the glow</p><p class="v" id="glowPeak"></p><p class="d" id="glowPeakMeta"></p></div>
+      <div class="readout" data-holo-tap><p class="k">Radiated, per square metre</p><p class="v" id="glowPow"></p><p class="d" id="glowPowMeta"></p></div>
+    </div>
+    <p class="glowline" id="glowNote"></p>
+    <div class="chips" id="glowPresets" aria-label="Temperature presets"></div>
+    <p class="note">Planck's law, drawn per unit wavelength and scaled to its own peak; the marker sits at Wien's λ<sub>max</sub> = 2.898 mm·K ÷ T. Counted per unit frequency instead, the peak lands 1.76× lower, which is why the cosmic microwave background is quoted both at 1.06 mm and at 160 GHz: the same glow, sliced two ways. Radiated power is Stefan-Boltzmann, σT⁴, for a perfect emitter.</p>
+  </section>
+
+  <!-- ====================== stage 04 · the wind ====================== -->
+  <section class="stage" id="wind" aria-labelledby="h4">
+    <div class="holopanel glass wind rise">
+      <h3 id="h4">Even the wind is sunlight</h3>
+      <p><b>All wind is reprocessed sunlight.</b> The Sun delivers energy to Earth purely as electromagnetic radiation. It lands unevenly: equator against poles, land against sea, day against night. The uneven heating makes pressure differences, and air falls down those gradients. Roughly 1 to 2% of incoming solar power ends up as wind. So every gust is EM energy that arrived as photons, thermalized, and got converted into moving air. A wind turbine is, with a couple of steps in between, solar powered.</p>
+      <p><b>And we measure wind with EM.</b> Doppler weather radar bounces microwaves off raindrops and reads the frequency shift of the echo: moving droplets compress or stretch the returning wave, and that shift is the wind speed. Lidar does the same trick with laser light off dust and aerosols; satellite scatterometers read ocean wind from how microwaves scatter off wind-roughened water. Wind has no EM signature of its own, so we interrogate it with EM and read the answer in the Doppler shift.</p>
+    </div>
+    <div class="hatches">
+      <a class="hatch" href="observatory.html" data-holo-tap><span class="k">Deck 02</span><span class="t">The Observatory</span><span class="d">Pick any two signals in the known universe and compare every number.</span></a>
+      <a class="hatch" href="lab.html" data-holo-tap><span class="k">Deck 03</span><span class="t">The Light Lab</span><span class="d">Six benches. Predict first. Then break something.</span></a>
+      <a class="hatch" href="gamma.html" data-holo-tap><span class="k">Deck 04</span><span class="t">The Gamma Attic</span><span class="d">The sliver at the top of the beam is secretly thirty-five octaves tall.</span></a>
+      <a class="hatch" href="senses.html" data-holo-tap><span class="k">Deck 05</span><span class="t">The Spectral Zoo</span><span class="d">Who senses what: bees, vipers, sharks, and a shrimp with twelve kinds of eye.</span></a>
+    </div>
+  </section>
+
+  <footer class="deck-foot">
+    <p>Everything aboard runs the real physics in miniature: Planck's E = hf behind every readout, Snell and dispersion in the prism, the grating equation on a real 1.6 µm track pitch in the CD, the 42° droplet cone, Rayleigh's 1/λ⁴ in the sky. Illustrative in scale, honest in mechanism; if a number here disagrees with your textbook, trust the textbook and tell us. Studio lighting HDRI by <a href="https://polyhaven.com">Poly Haven</a> (CC0).</p>
+    <p>Built by Amy Robinson Sterling <a href="https://x.com/amyneurons">@amyneurons</a>, with Fable and Sol.</p>
+  </footer>
 </div>
+</main>
+
 <script src="spectrum-data.js"></script>
-<script>
-// Every figure here is derived from the two marker positions, so the readouts
-// and the ratio cannot drift apart from one another.
-(() => {
-  const C = 299792458;
-  const F0 = 4, F1 = 20;                            // decades, 10 kHz to 100 EHz
-  const VIS_LO = C / 750e-9, VIS_HI = C / 380e-9;
+<script type="module">
+import { ship, THREE, spectrumRibbon, spectrumTexture, label, glowSprite, colorOf, colorOfRGB } from './ship/ship.js';
+import * as P from './ship/physics.js';
 
-  const BANDS = [
-    { lo: 1e4, hi: 3e8, name: 'radio', col: 'rgba(74,150,224,.22)' },
-    { lo: 3e8, hi: 3e11, name: 'microwave', short: 'MW', col: 'rgba(74,200,224,.20)' },
-    { lo: 3e11, hi: VIS_LO, name: 'infrared', col: 'rgba(196,96,64,.20)' },
-    { lo: VIS_LO, hi: VIS_HI, name: 'visible',
-      col: 'linear-gradient(90deg, #ff2d2d, #ff7b00, #ffd400, #7bff2d, #00e5ff, #2b5cff, #7a2bff)' },
-    { lo: VIS_HI, hi: 3e16, name: 'UV', col: 'rgba(138,96,230,.24)' },
-    { lo: 3e16, hi: 3e19, name: 'x-ray', col: 'rgba(126,224,255,.16)' },
-    { lo: 3e19, hi: 1e20, name: 'gamma', col: 'rgba(226,120,180,.20)' },
-  ];
-  // the landmarks are the observatory's, read from spectrum-data.js, so a
-  // name or a frequency can never differ between the two pages
-  const { LANDMARKS } = window.SPECTRUM_DATA;
-  const lmById = Object.fromEntries(LANDMARKS.map(l => [l.id, l]));
-  const PRESETS = ['fm-radio', 'wifi', 'microwave-oven', 'body-heat', 'red-laser', 'dust-off',
-                   'blue-laser', 'uvb', 'dental-xray'].map(id => [lmById[id].name, lmById[id].hz]);
-  // the landmark a frequency sits on, if it sits on one
-  const lmAt = f => LANDMARKS.find(l => Math.abs(Math.log10(f / l.hz)) < 0.002) || null;
-  // Dragging on a sixteen-decade bar is coarse (a marker is two pixels wide),
-  // so a marker released within a few pixels of a landmark settles onto it
-  // and the readout names it. Keyboard steps never snap.
-  function snapF(f, hostEl) {
-    const w = hostEl.getBoundingClientRect().width || 700;
-    const radius = 7 / w * (F1 - F0);              // seven pixels, in decades
-    let best = null, bd = radius;
-    for (const l of LANDMARKS) { const d = Math.abs(Math.log10(f / l.hz)); if (d < bd) { bd = d; best = l; } }
-    return best ? best.hz : f;
+ship.mount({ deck: 'bridge' });
+
+const { C, F0, F1, VIS_LO, VIS_HI, clamp } = P;
+const L = 16;                                   // beam length in scene units: one per decade
+const xOf = f => (P.posOf(f) - 0.5) * L;
+const fOfX = x => P.freqAt(x / L + 0.5);
+const LANDMARKS = P.landmarks();
+const lmById = id => P.landmarkById(id);
+const TAU = Math.PI * 2;
+const plain = s => s.replace(/<[^>]+>/g, '');
+
+/* a probe is a slider to assistive tech: range and position in log10 Hz, the
+   spoken value in real units */
+function aria(el, f, lo, hi) {
+  el.setAttribute('aria-valuemin', lo.toFixed(2)); el.setAttribute('aria-valuemax', hi.toFixed(2));
+  el.setAttribute('aria-valuenow', Math.log10(f).toFixed(2)); el.setAttribute('aria-valuetext', P.fmtFreq(f, true));
+}
+/* keyboard steps a tenth of a decade, shift a half; never snaps */
+function keys(el, get, set) {
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const dir = (e.key === 'ArrowRight' || e.key === 'ArrowUp') ? 1 : -1;
+    set(Math.pow(10, Math.log10(get()) + (e.shiftKey ? 0.5 : 0.1) * dir));
+  });
+}
+/* a spectrum strip on a 2D canvas, for the dials that live in the DOM */
+function paintStrip(cv, lo, hi) {
+  const ctx = cv.getContext('2d'), W = cv.width = 1024, Hh = cv.height = 8;
+  const tex = spectrumTexture().image.data, TW = spectrumTexture().image.width;
+  for (let x = 0; x < W; x++) {
+    const f = Math.pow(10, Math.log10(lo) + x / (W - 1) * Math.log10(hi / lo));
+    let c;
+    if (f >= VIS_LO && f <= VIS_HI) c = P.lambdaRGB(C / f * 1e9);   // true colour, per pixel
+    else { const i = Math.round(P.posOf(f) * (TW - 1)) * 4; c = [tex[i], tex[i + 1], tex[i + 2]]; }
+    ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x, 0, 1, Hh);
   }
+}
+/* drag on a DOM strip: pointer x across the element → a 0..1 position */
+function dragStrip(host, handle, onPos, onEnd) {
+  const pos = e => { const r = host.getBoundingClientRect(); return clamp((e.clientX - r.left) / r.width, 0, 1); };
+  const start = e => {
+    if (e.button != null && e.button !== 0) return;
+    e.preventDefault(); handle.setPointerCapture(e.pointerId); onPos(pos(e));
+    const move = ev => onPos(pos(ev));
+    const up = () => { handle.removeEventListener('pointermove', move); if (onEnd) onEnd(); };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up, { once: true }); handle.addEventListener('pointercancel', up, { once: true });
+  };
+  handle.addEventListener('pointerdown', start);
+  host.addEventListener('pointerdown', e => { if (e.target === handle || handle.contains(e.target)) return; onPos(pos(e)); if (onEnd) onEnd(); });
+}
 
-  const bar = document.getElementById('specBar');
-  const vis = document.getElementById('specVis');
-  const mA = document.getElementById('markA');
-  const mB = document.getElementById('markB');
-  const mV = document.getElementById('markV');
-  let fA = 100e6, fB = C / 532e-9;
+/* ======================================================================
+   stage 00 · the beam
+   ====================================================================== */
+let fA = 100e6, fB = C / 532e-9;
+const beamEl = document.getElementById('vpBeam');
+const probeA = document.getElementById('probeA'), probeB = document.getElementById('probeB');
 
-  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-  const toX = f => (Math.log10(f) - F0) / (F1 - F0);
-  const toF = x => Math.pow(10, F0 + clamp(x, 0, 1) * (F1 - F0));
-  const vX = f => (Math.log10(f) - Math.log10(VIS_LO)) / (Math.log10(VIS_HI) - Math.log10(VIS_LO));
-  const vF = x => Math.pow(10, Math.log10(VIS_LO) + clamp(x, 0, 1) * (Math.log10(VIS_HI) - Math.log10(VIS_LO)));
+// the wave lanes. A literal scale is unwatchable at either end of a sixteen
+// decade bar: radio would sit still for whole seconds and gamma would be a
+// blur no display can show. Each wave's speed and spatial frequency are keyed
+// to its probe's log position, so a higher real frequency always reads faster
+// and tighter, just not by the real ratio; past a point the wave stops being
+// drawable and becomes a band you cannot pick cycles out of, which is the
+// honest picture.
+const WAVE_HZ_MIN = 0.2, WAVE_HZ_MAX = 6;
+const visualHz = f => WAVE_HZ_MIN + P.posOf(f) * (WAVE_HZ_MAX - WAVE_HZ_MIN);
+const CYC_LO = 1.2, CYC_HI = 240;
+const cyclesAt = f => CYC_LO * Math.pow(CYC_HI / CYC_LO, P.posOf(f));
 
-  const FU = [[1e18,'EHz'],[1e15,'PHz'],[1e12,'THz'],[1e9,'GHz'],[1e6,'MHz'],[1e3,'kHz'],[1,'Hz']];
-  const WU = [[1e3,'km'],[1,'m'],[1e-2,'cm'],[1e-3,'mm'],[1e-6,'µm'],[1e-9,'nm'],[1e-12,'pm'],[1e-15,'fm']];
-  // h/e, so E = f * this is straight to eV without a separate joule step
-  const EV_PER_HZ = 4.135667696e-15;
-  const EU = [[1e9,'GeV'],[1e6,'MeV'],[1e3,'keV'],[1,'eV'],[1e-3,'meV'],[1e-6,'µeV']];
-  const num = v => v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : String(Math.round(v));
-  function unit(x, table, fallback) {
-    for (const [d, u] of table) if (x >= d) return num(x / d) + ' <span class="u">' + u + '</span>';
-    return x.toExponential(2) + ' <span class="u">' + fallback + '</span>';
-  }
-  const freq = f => unit(f, FU, 'Hz');
-  const wave = f => unit(C / f, WU, 'm');
-  const energy = f => unit(f * EV_PER_HZ, EU, 'eV');
-  function bandOf(f) {
-    for (const b of BANDS) if (f >= b.lo && f < b.hi) return b.name;
-    return f < 1e4 ? 'below radio' : 'gamma';
-  }
-  // The bar runs 1e4 Hz to 1e20 Hz, so dragging A and B to the two ends gives
-  // a ratio of 1e16. Stopping at 'trillion' rendered that as '10000 trillion'.
-  const BIG = [[1e15,'quadrillion'],[1e12,'trillion'],[1e9,'billion'],
-               [1e6,'million'],[1e3,'thousand']];
-  function ratio(r) {
-    if (r < 1000) return r < 10 ? r.toFixed(2) : String(Math.round(r));
-    for (const [d, w] of BIG) if (r >= d) { const v = r / d; return (v < 10 ? v.toFixed(1) : Math.round(v)) + ' ' + w; }
-    return String(Math.round(r));
-  }
-
-  // a marker is a slider to assistive tech: range and position in log10 Hz,
-  // the spoken value in real units
-  function ariaSlider(m, f, lo, hi) {
-    m.setAttribute('aria-valuemin', lo.toFixed(2));
-    m.setAttribute('aria-valuemax', hi.toFixed(2));
-    m.setAttribute('aria-valuenow', Math.log10(f).toFixed(2));
-    m.setAttribute('aria-valuetext', freq(f).replace(/<[^>]+>/g, ''));
-  }
-
-  // both bars share the painters; a bar narrower than the full window passes
-  // its own scale function and the bands are clipped to what it can show
-  function paintBands(barEl, xf, labels) {
-    xf = xf || toX;
-    for (const b of BANDS) {
-      const lo = clamp(xf(b.lo), 0, 1), hi = clamp(xf(b.hi), 0, 1);
-      if (hi - lo <= 0.001) continue;
-      const el = document.createElement('div');
-      el.className = 'specband';
-      el.dataset.band = b.name;
-      el.style.left = (lo * 100) + '%';
-      el.style.width = ((hi - lo) * 100) + '%';
-      el.style.background = b.col;
-      if (labels !== false && hi - lo > 0.07) el.innerHTML = '<span>' + (b.short || b.name) + '</span>';
-      barEl.insertBefore(el, barEl.firstChild);
+const beam = {};
+ship.viewport(beamEl, {
+  fov: 38,
+  setup(vp) {
+    const { scene, camera } = vp;
+    beam.vp = vp;
+    const ribbon = spectrumRibbon({ length: L, width: 1.4, intensity: 1.1, soft: 1.1 });
+    ribbon.rotation.x = -Math.PI / 2; scene.add(ribbon);
+    const halo = spectrumRibbon({ length: L, width: 5, intensity: 0.14, soft: 0.6 });
+    halo.rotation.x = -Math.PI / 2; halo.position.y = -0.02; scene.add(halo);
+    // a floor the beam lies on: a faint grid of decades
+    const grid = new THREE.Group();
+    const gm = new THREE.LineBasicMaterial({ color: 0x8fb8e8, transparent: true, opacity: 0.12 });
+    for (let d = F0; d <= F1; d++) {
+      const x = xOf(Math.pow(10, d));
+      grid.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, -0.03, -2.2), new THREE.Vector3(x, -0.03, 2.2)]), gm));
     }
-  }
-  function paintTicks(ticksEl, d0, d1) {
-    if (d0 == null) d0 = F0;
-    if (d1 == null) d1 = F1;
-    // fewer ticks on a narrow screen: nine decade labels shoulder to
-    // shoulder is what used to force this bar into a horizontal scroll in
-    // the first place, and the whole point now is that it never needs one
-    const step = ticksEl.getBoundingClientRect().width < 480 ? 4 : 2;
-    for (let d = d0; d <= d1; d += step) {
-      const i = document.createElement('i');
-      i.style.left = ((d - d0) / (d1 - d0) * 100) + '%';
-      // every tick label is centred on its position except the two on the
-      // very edge, which would otherwise overhang the bar by half their own
-      // width and force a scrollbar back in for a few stray pixels
-      if (d === d0) i.style.transform = 'translateX(0)';
-      else if (d === d1) i.style.transform = 'translateX(-100%)';
-      i.innerHTML = freq(Math.pow(10, d));
-      ticksEl.appendChild(i);
+    grid.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-L / 2, -0.03, 2.2), new THREE.Vector3(L / 2, -0.03, 2.2)]), gm));
+    grid.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-L / 2, -0.03, -2.2), new THREE.Vector3(L / 2, -0.03, -2.2)]), gm));
+    scene.add(grid);
+    // decade labels below the beam, every other decade
+    for (let d = F0; d <= F1; d += 2) {
+      const l = label(P.fmtFreq(Math.pow(10, d), true).replace('.00', '').replace('.0 ', ' '), { size: 20, color: '#8ea3bd' });
+      l.userData.fit(0.32); l.position.set(xOf(Math.pow(10, d)), 0.02, 1.75); scene.add(l);
     }
-  }
-  paintBands(bar);
-  paintTicks(document.getElementById('specTicks'));
-  // every landmark leaves a dot along the foot of the bar: the things a
-  // marker can settle on, and a hint of how crowded the top decades are
-  for (const l of LANDMARKS) {
-    const d = document.createElement('i');
-    d.className = 'lmdot'; d.title = l.name;
-    d.style.left = (toX(l.hz) * 100) + '%';
-    bar.appendChild(d);
-  }
+    // band names above
+    for (const b of P.BANDS) {
+      if (b.id === 'visible') continue;
+      const l = label(b.short, { size: 22, color: '#dfe9f7', tracking: 5, weight: 500 });
+      l.userData.fit(0.34); l.position.set(xOf(Math.sqrt(b.lo * b.hi)), 0.1, -1.55); scene.add(l);
+    }
+    const vl = label('VISIBLE', { size: 22, color: '#ffffff', tracking: 5, weight: 500 });
+    vl.userData.fit(0.34); vl.position.set(xOf(Math.sqrt(VIS_LO * VIS_HI)), 0.55, -1.55); scene.add(vl);
+    // landmarks as small lights on the beam
+    const lmGeo = new THREE.BufferGeometry();
+    const pts = [], cols = [];
+    for (const lm of LANDMARKS) { pts.push(xOf(lm.hz), 0.03, 0); const c = colorOf(lm.hz); cols.push(c.r, c.g, c.b); }
+    lmGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    lmGeo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    scene.add(new THREE.Points(lmGeo, new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false })));
 
-  // The heading names the bands the two markers are actually sitting in, low
-  // to high, so it rides along as you drag. Amy caught it stuck on "Radio to
-  // gamma" whatever the markers did. Same band twice reads oddly ("visible to
-  // visible"), so that case collapses to the band alone.
-  function headline() {
-    const lo = bandOf(Math.min(fA, fB)), hi = bandOf(Math.max(fA, fB));
-    const cap = (w) => w === 'UV' ? 'UV' : w.charAt(0).toUpperCase() + w.slice(1);
-    return lo === hi ? cap(lo) : cap(lo) + ' to ' + hi;
-  }
-
-  function render() {
-    document.getElementById('specHead').textContent = headline();
-    mA.style.left = (toX(fA) * 100) + '%'; mA.dataset.tag = 'A';
-    mB.style.left = (toX(fB) * 100) + '%'; mB.dataset.tag = 'B';
-    valA.innerHTML = freq(fA); valB.innerHTML = freq(fB);
-    const lA = lmAt(fA), lB = lmAt(fB);
-    metaA.innerHTML = (lA ? '<b>' + lA.name + '</b> · ' : '') + bandOf(fA) + ', ' + wave(fA) + ', ' + energy(fA) + ' per photon';
-    metaB.innerHTML = (lB ? '<b>' + lB.name + '</b> · ' : '') + bandOf(fB) + ', ' + wave(fB) + ', ' + energy(fB) + ' per photon';
-    const r = ratio(Math.max(fA, fB) / Math.min(fA, fB));
-    valR.textContent = r;
-    // the opening line names what the markers actually sit on, so the first
-    // screen is a statement, not an A/B abstraction
-    const PRETTY = { 'Green laser': 'green laser light', 'Sunlight': 'sunlight',
-                     'Red laser': 'red laser light', 'Blue laser': 'blue laser light',
-                     'Human body heat': 'your body heat', 'Campfire': 'a campfire',
-                     'Supernova': 'a supernova', 'Lightning (radio crackle)': 'lightning\u2019s radio crackle' };
-    const nameFor = f => { const l = lmAt(f); return l ? (PRETTY[l.name] || l.name) : null; };
-    const nA = nameFor(fA), nB = nameFor(fB);
-    document.getElementById('subLine').innerHTML = (nA && nB
-      ? '<b>' + nA + '</b> and <b>' + nB + '</b> are the same phenomenon, <b>' + r + '</b>&times; apart in frequency.'
-      : 'A to B: <b>' + r + '</b>&times; apart.') +
-      ' End to end, this bar covers a ten-quadrillion-fold range. Drag a marker.';
-    metaR.textContent = fB >= fA ? 'B over A, in frequency' : 'A over B, in frequency';
-    const inVis = fB >= VIS_LO && fB <= VIS_HI;
-    document.getElementById('visZone').hidden = !inVis;
-    const INVITES = {
-      radio: ['Waves down here are as long as buildings and cities, and this whole floor is just the doorstep.',
-              'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
-      microwave: ['Your Wi-Fi, your dinner, and the afterglow of the Big Bang all live in this band.',
-              'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
-      infrared: ['You are glowing in this band right now, and your skin can feel it coming off a fire.',
-              'SEE WHO SENSES WHAT IN THE OBSERVATORY', 'observatory.html?layer=senses&b='],
-      UV: ['Bees and songbirds see into this band. Flowers paint runway stripes here that you cannot see.',
-              'SEE WHO SENSES WHAT IN THE OBSERVATORY', 'observatory.html?layer=senses&b='],
-      'x-ray': ['Wavelengths here are the size of atoms and DNA, which is exactly why they can photograph your bones.',
-              'COMPARE IT AGAINST ANYTHING IN THE OBSERVATORY', 'observatory.html?b='],
-      gamma: ['This sliver is a trick of the map: gamma is secretly <b>35 octaves</b> tall, wider than every other band combined.',
-              'CLIMB INTO THE GAMMA ATTIC', 'gamma.html'],
+    // the two probes: a pillar of light, an orb, and a wave that runs the beam
+    const mkProbe = hex => {
+      const g = new THREE.Group();
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 2.6, 6), new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0.55 }));
+      pillar.position.y = 1.3; g.add(pillar);
+      const orb = glowSprite(hex, 0.9, 0.95); orb.position.y = 0.05; g.add(orb);
+      const foot = glowSprite(hex, 2.2, 0.35); foot.position.y = 0.0; g.add(foot);
+      scene.add(g);
+      // the wave: a line of N points across the beam at this probe's height
+      const N = 1400, pos = new Float32Array(N * 3);
+      const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const wave = new THREE.Line(wg, new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 0.9 }));
+      scene.add(wave);
+      const band = new THREE.Mesh(new THREE.PlaneGeometry(L, 1), new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      scene.add(band);
+      return { g, orb, pillar, wave, pos, N, band, x: 0, hex };
     };
-    const bandZone = document.getElementById('bandZone');
-    const bName = bandOf(fB);
-    if (!inVis && INVITES[bName]) {
-      const [hook, label, href] = INVITES[bName];
-      bandZone.hidden = false;
-      document.getElementById('bandHook').innerHTML = hook;
-      const a = document.getElementById('bandLink');
-      a.textContent = '→ ' + label;
-      a.href = href.endsWith('=') ? href + fB.toExponential(3) : href;
-    } else bandZone.hidden = true;
-    mV.style.display = inVis ? '' : 'none';
-    if (inVis) { mV.style.left = (vX(fB) * 100) + '%'; mV.dataset.tag = 'B'; }
-    ariaSlider(mA, fA, F0, F1); ariaSlider(mB, fB, F0, F1);
-    if (inVis) ariaSlider(mV, fB, Math.log10(VIS_LO), Math.log10(VIS_HI));
-    const vA = visualHz(fA), vB = visualHz(fB);
-    const visR = (Math.max(vA, vB) / Math.min(vA, vB)).toFixed(vA === vB ? 0 : 1);
-    waveNote.innerHTML = 'On screen: A ' + vA.toFixed(2) + '/s, B ' + vB.toFixed(2) +
-      '/s (' + visR + '&times; apart); really ' + r + '&times; apart.';
-  }
-
-  // The wave lanes. A literal scale is unwatchable at either end of a 16
-  // decade bar: radio would sit still for whole seconds and gamma would be a
-  // blur no display can even show. Instead each lane's speed is keyed to the
-  // same log position its marker sits at on the bar below, WAVE_HZ_MIN at
-  // the left edge running up to WAVE_HZ_MAX at the right, so a higher real
-  // frequency always animates visibly faster, just not by the real ratio.
-  const TAU = Math.PI * 2;
-  const WAVE_HZ_MIN = 0.2, WAVE_HZ_MAX = 6;
-  const visualHz = f => WAVE_HZ_MIN + toX(f) * (WAVE_HZ_MAX - WAVE_HZ_MIN);
-
-  const waveCanvas = document.getElementById('specWave');
-  const waveCtx = waveCanvas.getContext('2d');
-  let waveW = 0, waveH = 0, waveDpr = 1;
-  function sizeWave() {
-    const r = waveCanvas.getBoundingClientRect();
-    waveDpr = Math.min(2, window.devicePixelRatio || 1);
-    waveCanvas.width = Math.round(r.width * waveDpr);
-    waveCanvas.height = Math.round(r.height * waveDpr);
-    waveW = r.width; waveH = r.height;
-  }
-
-  // The spatial period used to be fixed at 3.2 cycles, which meant a marker
-  // dragged to gamma drew exactly the same wave as one sitting on radio, only
-  // scrolling faster. Amy's note was that gamma should be too fast to see, and
-  // the fixed period is precisely what stopped that from ever happening.
-  //
-  // It follows the marker now, and past a point the wave stops being drawable
-  // at all and becomes a band you cannot pick cycles out of. That is the
-  // honest picture and it is also the safe one: what climbs is the *spatial*
-  // frequency, so nothing flashes. A strobe is what you get when something is
-  // slow enough to resolve; too fast to see is a smear.
-  //
-  // Temporal speed still runs on the bounded visualHz ramp above, untouched.
-  const CYC_LO = 1.2, CYC_HI = 240;
-  const RES_LO = 3.2, RES_HI = 7;   // pixels per cycle: gone, and untouched
-  const cyclesAt = f => CYC_LO * Math.pow(CYC_HI / CYC_LO, toX(f));
-
-  // A sinusoid dwells at its turning points and crosses the middle fast, so a
-  // smeared one is two bright rails with a dim centre, not a flat bar. That is
-  // the arcsine density, approximated with gradient stops.
-  const SMEAR_STOPS = [0, .08, .2, .35, .5, .65, .8, .92, 1];
-  function smear(mid, amp, color, alpha) {
-    const g = waveCtx.createLinearGradient(0, mid - amp, 0, mid + amp);
-    for (const p of SMEAR_STOPS) {
-      const y = (p - 0.5) * 2;
-      const d = 1 / Math.sqrt(Math.max(0.02, 1 - y * y));
-      g.addColorStop(p, color + Math.min(1, alpha * d * 0.42).toFixed(3) + ')');
+    beam.A = mkProbe(0x7ee0ff); beam.B = mkProbe(0xffc45a);
+    beam.A.y = 1.05; beam.B.y = 1.95;
+    beam.A.wave.position.y = beam.A.y; beam.A.band.position.y = beam.A.y;
+    beam.B.wave.position.y = beam.B.y; beam.B.band.position.y = beam.B.y;
+    beam.A.x = xOf(fA); beam.B.x = xOf(fB);
+    // the ratio: a thread of light between the two orbs
+    beam.thread = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.06), new THREE.MeshBasicMaterial({ color: 0xbfe0ff, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    beam.thread.rotation.x = -Math.PI / 2; beam.thread.position.y = 0.06; scene.add(beam.thread);
+    camera.position.set(0, 7, 11);
+    beam.plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    beam.hit = new THREE.Vector3();
+  },
+  resize(vp) {
+    // fit the sixteen decades to the box. On a wide box the beam runs left to
+    // right under a raking camera; on a tall box (a phone) the camera looks
+    // straight down and the beam runs top to bottom, radio at the top
+    const fov = vp.camera.fov * Math.PI / 180, half = L / 2 + 1.6;
+    beam.vertical = vp.camera.aspect < 1.05;
+    if (beam.vertical) {
+      const d = Math.max(8, half / Math.tan(fov / 2));
+      vp.camera.up.set(-1, 0, 0);
+      vp.camera.position.set(0, d, 0.001); vp.camera.lookAt(0, 0, 0);
+    } else {
+      const d = Math.max(9.5, half / (Math.tan(fov / 2) * vp.camera.aspect));
+      vp.camera.up.set(0, 1, 0);
+      vp.camera.position.set(0, d * 0.62, d * 0.85); vp.camera.lookAt(0, 0.6, 0);
     }
-    waveCtx.fillStyle = g;
-    waveCtx.fillRect(0, mid - amp, waveW, amp * 2);
-  }
-
-  function drawLane(y0, laneH, rgb, hz, t, cycles) {
-    const amp = laneH * 0.34, mid = y0 + laneH / 2;
-    const res = Math.max(0, Math.min(1, (waveW / cycles - RES_LO) / (RES_HI - RES_LO)));
-    const head = 'rgba(' + rgb + ',';
-
-    if (res < 0.999) smear(mid, amp, head, 1 - res * 0.75);
-    if (res <= 0.01) return;
-
-    const step = Math.max(0.3, Math.min(2, waveW / (cycles * 26)));
-    waveCtx.beginPath();
-    for (let px = 0; px <= waveW; px += step) {
-      const yy = mid - Math.sin((px / waveW) * cycles * TAU - t * hz * TAU) * amp;
-      if (px === 0) waveCtx.moveTo(px, yy); else waveCtx.lineTo(px, yy);
+  },
+  frame(vp) {
+    const { t, dt, camera } = vp;
+    const k = 1 - Math.exp(-dt * 14);
+    for (const [pr, f] of [[beam.A, fA], [beam.B, fB]]) {
+      pr.x += (xOf(f) - pr.x) * k;
+      pr.g.position.x = pr.x;
+      pr.orb.material.opacity = 0.8 + 0.15 * Math.sin(t * 3);
+      // the wave along the beam
+      const cyc = cyclesAt(f), hz = visualHz(f);
+      const pxPerCycle = (vp.size.w / L * 0.9) / cyc * L / L;           // rough on-screen pixels per cycle
+      const res = clamp((vp.size.w / cyc / 16 - 3.2) / (7 - 3.2), 0, 1);  // drawn, smeared, or gone
+      const amp = 0.28;
+      for (let i = 0; i < pr.N; i++) {
+        const u = i / (pr.N - 1), x = (u - 0.5) * L;
+        pr.pos[i * 3] = x; pr.pos[i * 3 + 1] = Math.sin(u * cyc * TAU - (ship.motion ? t : 0) * hz * TAU) * amp * res; pr.pos[i * 3 + 2] = 0;
+      }
+      pr.wave.geometry.attributes.position.needsUpdate = true;
+      pr.wave.material.opacity = 0.25 + 0.65 * res;
+      pr.band.material.opacity = (1 - res) * 0.07;   // the smear of a wave too tight to draw: faint, by design
+      pr.band.scale.y = amp * 2;
+      // the probe's colour is its own light
+      const c = colorOf(f); pr.orb.material.color.copy(c).lerp(new THREE.Color(pr.hex), 0.35);
     }
-    waveCtx.strokeStyle = head + res.toFixed(3) + ')';
-    waveCtx.lineWidth = 2;
-    waveCtx.stroke();
-  }
-
-  const waveStart = performance.now();
-  function waveFrame(now) {
-    if (waveW) {
-      const t = (now - waveStart) / 1000;
-      waveCtx.setTransform(waveDpr, 0, 0, waveDpr, 0, 0);
-      waveCtx.clearRect(0, 0, waveW, waveH);
-      drawLane(0, waveH / 2, '126,224,255', visualHz(fA), t, cyclesAt(fA));
-      drawLane(waveH / 2, waveH / 2, '232,169,58', visualHz(fB), t, cyclesAt(fB));
+    const xa = beam.A.x, xb = beam.B.x;
+    beam.thread.position.x = (xa + xb) / 2; beam.thread.scale.x = Math.max(0.01, Math.abs(xb - xa));
+    // DOM probes follow the orbs
+    const r = beamEl.getBoundingClientRect();
+    beamEl.classList.toggle('is-vertical', !!beam.vertical);
+    for (const [pr, el] of [[beam.A, probeA], [beam.B, probeB]]) {
+      const v = new THREE.Vector3(pr.x, 0, 0).project(camera);
+      if (beam.vertical) { el.style.top = ((1 - v.y) / 2 * 100) + '%'; el.style.left = '50%'; }
+      else { el.style.left = ((v.x + 1) / 2 * 100) + '%'; el.style.top = ''; }
     }
-    requestAnimationFrame(waveFrame);
-  }
-  // sizeWave() runs while the canvas already has real layout on this page
-  // (there is no display:none gate to fight, unlike the title-screen teaser),
-  // but a ResizeObserver still covers ordinary window resizes for free.
-  new ResizeObserver(sizeWave).observe(waveCanvas);
-  sizeWave();
-  requestAnimationFrame(waveFrame);
-
-  function grab(el, host, set, get, paint) {
-    paint = paint || render;
-    const move = (e) => {
-      const r = host.getBoundingClientRect();
-      set((e.clientX - r.left) / r.width, null);
-      paint();
-    };
-    el.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); e.stopPropagation();
-      el.setPointerCapture(e.pointerId);
-      el.addEventListener('pointermove', move);
-      const up = () => el.removeEventListener('pointermove', move);
-      el.addEventListener('pointerup', up, { once: true });
-      el.addEventListener('pointercancel', up, { once: true });
-    });
-    el.addEventListener('keydown', (e) => {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      e.preventDefault(); e.stopPropagation();
-      const step = (e.shiftKey ? 0.5 : 0.1) * (e.key === 'ArrowRight' ? 1 : -1);
-      set(null, Math.pow(10, Math.log10(get()) + step));
-      paint();
-    });
-  }
-  const visFun = document.getElementById('visFun');
-
-  // any rainbow doorway opens the visible spectrum for real: marker B jumps
-  // into the band (green center), so the magnified strip lights up in color,
-  // and the play zone unfolds beneath it
-  function openVisible() {
-    fB = Math.sqrt(VIS_LO * VIS_HI);
-    visFun.hidden = false;
-    render();
-    document.getElementById('visZone').scrollIntoView({
-      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
-  }
-
-  // the rainbow flag pinned over the visible band on the full bar
-  const rainbowFlag = document.getElementById('rainbowFlag');
-  rainbowFlag.style.left = (toX(Math.sqrt(VIS_LO * VIS_HI)) * 100) + '%';
-  rainbowFlag.addEventListener('click', openVisible);
-
-  // the rainbow sliver on the main bar is a doorway too: clicking it opens
-  // the visible spectrum instead of moving a marker
-  const visBand = Array.from(bar.querySelectorAll('.specband')).find(e => e.dataset.band === 'visible');
-  if (visBand) {
-    visBand.style.pointerEvents = 'auto';
-    visBand.style.cursor = 'pointer';
-    visBand.title = 'Open the visible spectrum';
-    visBand.addEventListener('pointerdown', e => e.stopPropagation());
-    visBand.addEventListener('click', e => { e.stopPropagation(); openVisible(); });
-  }
-
-  grab(mA, bar, (x, f) => { fA = clamp(f != null ? f : snapF(toF(x), bar), 1e4, 1e20); }, () => fA);
-  grab(mB, bar, (x, f) => { fB = clamp(f != null ? f : snapF(toF(x), bar), 1e4, 1e20); }, () => fB);
-  grab(mV, vis, (x, f) => { fB = clamp(f != null ? f : vF(x), VIS_LO, VIS_HI); }, () => fB);
-
-  const nearer = (f) => Math.abs(Math.log10(f / fA)) < Math.abs(Math.log10(f / fB));
-  bar.addEventListener('pointerdown', (e) => {
-    const r = bar.getBoundingClientRect();
-    const f = snapF(toF((e.clientX - r.left) / r.width), bar);
+  },
+  pointer(ev, vp) {
+    if (ev.type !== 'pointerdown') return;
+    if (ev.target.closest('.probe')) return;
+    // a click on the beam moves the nearer probe there
+    if (!vp.ray.ray.intersectPlane(beam.plane, beam.hit)) return;
+    const f = snap(clamp(fOfX(beam.hit.x), 1e4, 1e20));
     if (nearer(f)) fA = f; else fB = f;
     render();
+  },
+});
+const nearer = f => Math.abs(Math.log10(f / fA)) < Math.abs(Math.log10(f / fB));
+// a probe released within a few pixels of a landmark settles onto it
+function snap(f) {
+  const w = beamEl.getBoundingClientRect().width || 700;
+  const lm = P.nearestLandmark(f, 7 / w * (F1 - F0));
+  return lm ? lm.hz : f;
+}
+function dragProbe(el, set) {
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); el.setPointerCapture(e.pointerId); beamEl.classList.add('is-grabbing');
+    const move = ev => {
+      beam.vp.pick(ev);
+      if (!beam.vp.ray.ray.intersectPlane(beam.plane, beam.hit)) return;
+      set(clamp(fOfX(beam.hit.x), 1e4, 1e20), false); render();
+    };
+    const up = ev => { el.removeEventListener('pointermove', move); beamEl.classList.remove('is-grabbing');
+      beam.vp.pick(ev); if (beam.vp.ray.ray.intersectPlane(beam.plane, beam.hit)) { set(clamp(fOfX(beam.hit.x), 1e4, 1e20), true); render(); } };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up, { once: true }); el.addEventListener('pointercancel', up, { once: true });
   });
-  vis.addEventListener('pointerdown', (e) => {
-    const r = vis.getBoundingClientRect();
-    fB = vF((e.clientX - r.left) / r.width);
-    render();
-  });
+}
+dragProbe(probeA, (f, done) => { fA = done ? snap(f) : f; });
+dragProbe(probeB, (f, done) => { fB = done ? snap(f) : f; });
+keys(probeA, () => fA, f => { fA = clamp(f, 1e4, 1e20); render(); });
+keys(probeB, () => fB, f => { fB = clamp(f, 1e4, 1e20); render(); });
 
-  for (const [n, f] of PRESETS) {
-    const b = document.createElement('button');
-    b.type = 'button'; b.textContent = n;
-    b.addEventListener('click', () => { if (nearer(f)) fA = f; else fB = f; render(); });
-    specPresets.appendChild(b);
+const INVITES = {
+  radio: ['Waves down here are as long as buildings and cities, and this whole floor is just the doorstep.', 'Deck 02 · Observatory', 'Compare it against anything', 'observatory.html?b='],
+  microwave: ['Your Wi-Fi, your dinner, and the afterglow of the Big Bang all live in this band.', 'Deck 02 · Observatory', 'Compare it against anything', 'observatory.html?b='],
+  infrared: ['You are glowing in this band right now, and your skin can feel it coming off a fire.', 'Deck 05 · Spectral Zoo', 'See who senses what', 'senses.html'],
+  uv: ['Bees and songbirds see into this band. Flowers paint runway stripes here that you cannot see.', 'Deck 05 · Spectral Zoo', 'See who senses what', 'senses.html'],
+  xray: ['Wavelengths here are the size of atoms and DNA, which is exactly why they can photograph your bones.', 'Deck 02 · Observatory', 'Compare it against anything', 'observatory.html?b='],
+  gamma: ['This sliver is a trick of the map: gamma is secretly <b>35 octaves</b> tall, wider than every other band combined.', 'Deck 04 · Gamma Attic', 'Climb into the attic', 'gamma.html'],
+};
+
+function render() {
+  const lmA = P.landmarkAt(fA), lmB = P.landmarkAt(fB);
+  const bandA = P.bandOf(fA), bandB = P.bandOf(fB);
+  const r = P.ratioWord(Math.max(fA, fB) / Math.min(fA, fB));
+  document.getElementById('valA').innerHTML = P.fmtFreq(fA);
+  document.getElementById('valB').innerHTML = P.fmtFreq(fB);
+  document.getElementById('metaA').innerHTML = (lmA ? '<b>' + lmA.name + '</b> · ' : '') + bandA.name + ', ' + P.fmtWave(fA) + ', ' + P.fmtEnergy(fA) + ' per photon';
+  document.getElementById('metaB').innerHTML = (lmB ? '<b>' + lmB.name + '</b> · ' : '') + bandB.name + ', ' + P.fmtWave(fB) + ', ' + P.fmtEnergy(fB) + ' per photon';
+  document.getElementById('valR').textContent = r;
+  document.getElementById('metaR').textContent = (fB >= fA ? 'B over A' : 'A over B') + ', in frequency: ' + Math.abs(P.octaves(fA, fB)).toFixed(1) + ' octaves';
+  document.getElementById('capA').textContent = lmA ? lmA.name : P.fmtFreq(fA, true);
+  document.getElementById('capB').textContent = lmB ? lmB.name : P.fmtFreq(fB, true);
+  document.getElementById('subLine').innerHTML = (lmA && lmB
+    ? '<b>' + lmA.name + '</b> and <b>' + lmB.name + '</b> are the same phenomenon, <b>' + r + '</b>&times; apart in frequency.'
+    : 'A and B are the same phenomenon, <b>' + r + '</b>&times; apart in frequency.') +
+    ' The beam below runs from 10 kHz to 100 EHz, a ten-quadrillion-fold range, end to end. Grab a probe.';
+  aria(probeA, fA, F0, F1); aria(probeB, fB, F0, F1);
+  const vA = visualHz(fA), vB = visualHz(fB);
+  document.getElementById('waveNote').textContent = 'Waves on screen: A ' + vA.toFixed(2) + '/s, B ' + vB.toFixed(2) + '/s, ' + (Math.max(vA, vB) / Math.min(vA, vB)).toFixed(1) + 'x apart. Really ' + r + 'x apart.';
+  for (const b of document.querySelectorAll('#presets .chip')) b.setAttribute('aria-pressed', String(+b.dataset.hz === fA || +b.dataset.hz === fB));
+  // where B sits decides which doorway opens
+  const inVis = fB >= VIS_LO && fB <= VIS_HI;
+  const invite = document.getElementById('invite');
+  if (!inVis && INVITES[bandB.id]) {
+    const [hook, k, t, href] = INVITES[bandB.id];
+    invite.hidden = false;
+    document.getElementById('inviteHook').innerHTML = hook;
+    document.getElementById('inviteK').textContent = k; document.getElementById('inviteT').textContent = t;
+    document.getElementById('inviteLink').href = href.endsWith('=') ? href + fB.toExponential(3) : href;
+  } else invite.hidden = true;
+  renderVis();
+  if (beam.vp) beam.vp.invalidate();
+}
+// landmark chips: every landmark the observatory knows, in frequency order
+const presets = document.getElementById('presets');
+for (const lm of [...LANDMARKS].sort((a, b) => a.hz - b.hz)) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.hz = lm.hz;
+  b.innerHTML = '<span class="b">' + P.bandOf(lm.hz).short + '</span>' + lm.name;
+  b.addEventListener('click', () => { if (nearer(lm.hz)) fA = lm.hz; else fB = lm.hz; render(); });
+  presets.appendChild(b);
+}
+
+/* ======================================================================
+   stage 01 · visible, opened out
+   ====================================================================== */
+const visCanvas = document.getElementById('visCanvas');
+paintStrip(visCanvas, VIS_LO, VIS_HI);
+const probeV = document.getElementById('probeV');
+const visTicks = document.getElementById('visTicks');
+for (const nm of [400, 450, 500, 550, 600, 650, 700, 750]) {
+  const s = document.createElement('span'); s.textContent = nm + ' nm';
+  s.style.left = (P.visPos(C / (nm * 1e-9)) * 100) + '%'; visTicks.appendChild(s);
+}
+function renderVis() {
+  const inVis = fB >= VIS_LO && fB <= VIS_HI;
+  probeV.hidden = !inVis;
+  if (inVis) { probeV.style.left = (P.visPos(fB) * 100) + '%'; aria(probeV, fB, Math.log10(VIS_LO), Math.log10(VIS_HI)); }
+  const nm = C / fB * 1e9;
+  document.getElementById('visNote').innerHTML = inVis
+    ? 'Probe B is at <b>' + P.fmtWave(fB) + '</b>, ' + P.fmtFreq(fB) + ', ' + P.fmtEnergy(fB) + ' per photon: ' + colourName(nm) + '. The whole strip is one octave, 380 to 750 nm, a 1.97x span in frequency.'
+    : 'Probe B is outside the visible band. Click the strip to bring it into the light.';
+  if (prism.vp) { prism.target = inVis ? nm : null; prism.vp.invalidate(); }
+}
+const colourName = nm => nm < 450 ? 'violet' : nm < 485 ? 'blue' : nm < 500 ? 'cyan' : nm < 565 ? 'green' : nm < 590 ? 'yellow' : nm < 625 ? 'orange' : 'red';
+dragStrip(document.getElementById('visStrip'), probeV, x => { fB = P.visFreq(x); render(); });
+keys(probeV, () => fB, f => { fB = clamp(f, VIS_LO, VIS_HI); render(); });
+
+// the prism: a real glass (BK7, Cauchy n = A + B/λ²) and Snell at both faces
+const prism = { target: null };
+const nBK7 = nm => 1.5046 + 4200 / (nm * nm);          // Cauchy fit for BK7, nm in nanometres
+function prismExit(nm, apex = 60 * Math.PI / 180, incidence = 50 * Math.PI / 180) {
+  const n = nBK7(nm);
+  const r1 = Math.asin(Math.sin(incidence) / n);
+  const r2 = apex - r1;
+  const s = n * Math.sin(r2);
+  return s >= 1 ? null : Math.asin(s);                    // exit angle from the second face normal
+}
+ship.viewport(document.getElementById('vpPrism'), {
+  fov: 30,
+  setup(vp) {
+    prism.vp = vp;
+    const { scene, camera } = vp;
+    camera.position.set(0, 1.2, 9); camera.lookAt(0, 0.2, 0);
+    // the glass: a triangular prism
+    const shape = new THREE.Shape(); shape.moveTo(-0.9, -0.8); shape.lineTo(0.9, -0.8); shape.lineTo(0, 0.76); shape.closePath();
+    const glass = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 1.2, bevelEnabled: false }),
+      new THREE.MeshPhysicalMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false }));
+    glass.position.set(0, 0, -0.6); scene.add(glass);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(glass.geometry), new THREE.LineBasicMaterial({ color: 0xcfe6ff, transparent: true, opacity: 0.6 }));
+    edges.position.copy(glass.position); scene.add(edges);
+    scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x101828, 1.2));
+    const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(3, 4, 5); scene.add(key);
+    // white beam in
+    const inBeam = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    inBeam.position.set(-2.7, -0.55 + 0.75, 0); inBeam.rotation.z = -0.22; scene.add(inBeam);
+    const inGlow = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    inGlow.position.copy(inBeam.position); inGlow.rotation.copy(inBeam.rotation); scene.add(inGlow);
+    // the fan out: forty rays, each its true colour, each bent by its own index
+    prism.rays = [];
+    const NR = 44, exag = 3;
+    const base = prismExit(560);
+    for (let i = 0; i < NR; i++) {
+      const nm = 380 + (750 - 380) * i / (NR - 1);
+      const ex = prismExit(nm);
+      const ang = -0.1 - (ex - base) * exag;          // exaggerated so the eye can see the spread
+      const c = colorOfRGB(P.lambdaRGB(nm));
+      const ray = new THREE.Mesh(new THREE.PlaneGeometry(5, 0.11), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      ray.position.set(0.55 + 2.5 * Math.cos(ang), 0.1 + 2.5 * Math.sin(ang), 0); ray.rotation.z = ang;
+      ray.userData = { nm, ang, base: 0.55 };
+      scene.add(ray); prism.rays.push(ray);
+    }
+    prism.mark = glowSprite(0xffffff, 0.6, 0); scene.add(prism.mark);
+    prism.lbl = label('', { size: 20 }); prism.lbl.visible = false; scene.add(prism.lbl);
+  },
+  frame(vp) {
+    const { t, dt } = vp;
+    const k = 1 - Math.exp(-dt * 10);
+    for (const ray of prism.rays) {
+      const near = prism.target != null && Math.abs(ray.userData.nm - prism.target) < 12;
+      const want = near ? 1.0 : 0.5;
+      ray.material.opacity += (want - ray.material.opacity) * k;
+    }
+    if (prism.target != null) {
+      const ex = prismExit(prism.target), base = prismExit(560);
+      const ang = -0.1 - (ex - base) * 3;
+      prism.mark.position.set(0.55 + 4.6 * Math.cos(ang), 0.1 + 4.6 * Math.sin(ang), 0.05);
+      prism.mark.material.opacity += (0.9 - prism.mark.material.opacity) * k;
+      prism.mark.material.color.copy(colorOfRGB(P.lambdaRGB(prism.target)));
+    } else prism.mark.material.opacity += (0 - prism.mark.material.opacity) * k;
+  },
+});
+
+/* ======================================================================
+   stage 02 · the apple
+   ====================================================================== */
+const AF0 = 8;                                   // the dial runs 100 MHz to 100 EHz
+const aPos = f => (Math.log10(f) - AF0) / (F1 - AF0);
+const aFreq = x => Math.pow(10, AF0 + clamp(x, 0, 1) * (F1 - AF0));
+let fApple = 2.4e9, applePow = 1;
+const APPLE_MASS = 0.1, C_WATER = 4184;          // ~100 g, mostly water
+const E_BOIL = APPLE_MASS * C_WATER * 80;        // 20 C to 100 C, ~33 kJ absorbed
+const E_VAPOR = E_BOIL + APPLE_MASS * 2.26e6;    // plus the heat of vaporization, ~0.26 MJ
+const EXPOSE_S = 60;
+const ABSORB = {                                  // rough per-band absorbed fraction, said to be rough in the readout
+  radio: [0.02, 'mostly passes straight through'], microwave: [0.50, 'couples hard into the water'],
+  infrared: [0.85, 'is soaked up right at the surface'], visible: [0.60, 'is partly reflected'],
+  uv: [0.80, 'is absorbed in the peel'], xray: [0.70, 'deposits most of its energy through the flesh'],
+  gamma: [0.10, 'mostly passes through, some deposits'],
+};
+const dTs = dT => dT >= 100 ? 'about ' + Math.round(dT) : dT >= 1 ? 'about ' + dT.toFixed(1) : dT >= 0.01 ? 'about ' + dT.toFixed(2) : 'less than 0.01';
+// thermal stage from absorbed joules alone; every threshold is a budget, not
+// a band, so a megawatt of radio really can vaporize the apple
+function thermalFor(Eabs) {
+  const dT = Eabs / (APPLE_MASS * C_WATER);
+  if (Eabs >= E_VAPOR) return { draw: 'gone', v: 'Vaporized', dT, tail: 'That blows past the full steam budget for 100 g of water, about ' + P.fmtJoules(E_VAPOR) + ' absorbed. Nothing solid is left.' };
+  if (Eabs >= E_BOIL * 3) return { draw: 'char', v: 'Charred', dT, tail: 'That is several times the energy needed to boil it. The water flashes to steam and the flesh blackens.' };
+  if (Eabs >= E_BOIL) return { draw: 'cook', v: 'Boiling and steaming', dT, tail: 'That is enough to take 100 g of water past 100 °C. It steams.' };
+  if (dT >= 40) return { draw: 'cook', v: 'Cooking', dT, tail: 'Past about 60 °C the flesh cooks.' };
+  if (dT >= 15) return { draw: 'warm2', v: 'Hot to the touch', dT, tail: '' };
+  if (dT >= 1) return { draw: 'warm', v: 'Noticeably warm', dT, tail: '' };
+  return { draw: 'plain', v: 'No real heating', dT, tail: '' };
+}
+// molecular verdict: gate on eV per photon, then scale with absorbed dose
+function molecularFor(eV, Eabs, phots) {
+  const energy = P.fmtEnergy(fApple), joules = P.fmtJoules;
+  if (eV < 1.6) return { v: 'No chemistry possible', badge: 'BELOW EVERY BOND', tint: null, sev: 0,
+    n: 'Each photon carries ' + energy + ', only enough to nudge rotation and vibration. Multiply by ' + P.sci(phots) + ' photons per second and it is still zero broken bonds. Heat is all this beam can ever do.' };
+  if (eV < 3.1) return { v: 'Electronic excitation', badge: 'PHOTOCHEMISTRY ONLY', tint: null, sev: 0,
+    n: 'At ' + energy + ' a photon can excite electrons and pigments. Photosynthesis and fading run on this. Bonds stay intact.' };
+  if (eV < 10) {
+    if (Eabs < 1) return { v: 'Bonds could break, dose too low', badge: 'DOSE TOO LOW', tint: null, sev: 0,
+      n: 'Each photon carries ' + energy + ', enough to disrupt a bond in the peel. Only ' + joules(Eabs) + ' is absorbed in 60 s, too little to mark it' + (Eabs > 0.01 ? ', though microbes on the skin are already having a bad day.' : '.') };
+    const heavy = Eabs >= 100;
+    const sev = clamp((Math.log10(Eabs) + 0.5) / 3.5, 0.15, 1);
+    return { v: heavy ? 'Peel destroyed by photochemistry' : 'Surface sunburn', tint: 'uv', sev, badge: heavy ? 'HEAVY UV DOSE' : 'SURFACE BROWNING',
+      n: 'UV photons at ' + energy + ' break bonds where they land, and ' + joules(Eabs) + ' absorbed is ' + (heavy ? 'far past' : 'about') + ' an afternoon of hard sun on the peel. It stays a surface story: UV does not penetrate.' };
   }
+  const kGy = Eabs / APPLE_MASS / 1000;
+  const doseStr = kGy >= 1 ? P.num(kGy) + ' <span class="u">kGy</span>' : kGy >= 1e-3 ? P.num(kGy * 1e3) + ' <span class="u">Gy</span>' : P.sci(kGy * 1e3) + ' <span class="u">Gy</span>';
+  const pen = eV >= 1000 ? 'punches through the whole apple' : 'strips electrons near the surface';
+  const sev = clamp((Math.log10(Math.max(kGy, 1e-8)) + 3) / 5, 0.1, 1);
+  if (kGy < 1e-3) return { v: 'Ionizing, but a trickle', badge: 'NEGLIGIBLE DOSE', tint: 'ion', sev,
+    n: 'Every photon here ionizes: at ' + energy + ' each one ' + pen + '. But only ' + P.sci(phots) + ' arrive per second, an absorbed dose of ' + doseStr + '. A handful of molecules lose electrons and the apple never notices.' };
+  if (kGy < 10) return { v: 'Sterilized through', badge: 'FOOD IRRADIATION DOSE', tint: 'ion', sev,
+    n: 'Each photon ' + pen + ', and the absorbed dose of ' + doseStr + ' is the range Co-60 plants use to kill microbes in food. The apple would look and taste fine.' };
+  return { v: 'Radiolysis throughout', badge: 'MASSIVE DOSE', tint: 'ion', sev,
+    n: 'At ' + doseStr + ' absorbed, ionization is rewriting chemistry through the whole volume, not just the skin. Water splits into radicals everywhere at once.' };
+}
 
-  render();
-  addEventListener('resize', render);
+const appleBar = document.getElementById('appleBar'), probeApple = document.getElementById('probeApple');
+paintStrip(document.getElementById('appleBarCanvas'), Math.pow(10, AF0), 1e20);
+const appleTicks = document.getElementById('appleTicks');
+for (let d = AF0; d <= F1; d += 2) {
+  const s = document.createElement('span'); s.textContent = P.fmtFreq(Math.pow(10, d), true).replace('.00', '').replace('.0 ', ' ');
+  s.style.left = (aPos(Math.pow(10, d)) * 100) + '%'; appleTicks.appendChild(s);
+}
+dragStrip(appleBar, probeApple, x => { fApple = aFreq(x); renderApple(); });
+keys(probeApple, () => fApple, f => { fApple = clamp(f, Math.pow(10, AF0), 1e20); renderApple(); });
+const applePowEl = document.getElementById('applePower');
+applePowEl.addEventListener('input', () => { applePow = Math.pow(10, -6 + (applePowEl.value / 1000) * 12); renderApple(); });
+const applePowSet = p => { applePow = p; applePowEl.value = Math.round((Math.log10(p) + 6) / 12 * 1000); };
 
-  // ---- for scale: an apple sitting in the beam for a minute --------------
-  // Two dials, two verdicts. Frequency fixes the energy per photon, so it
-  // decides what any single photon CAN do (nudge, excite, break, ionize).
-  // Power x 60 s fixes the total energy, so it decides how much arrives.
-  // The thermal panel runs on absorbed joules (apple as ~100 g of water);
-  // the molecular panel gates on eV per photon, then scales with dose.
-  //
-  // Everything eventful happens in the top decades, so this bar is zoomed to
-  // 100 MHz-100 EHz; the mini strip above it shows where that window sits on
-  // the full spectrum.
-  const AF0 = 8;
-  const aX = f => (Math.log10(f) - AF0) / (F1 - AF0);
-  const aF = x => Math.pow(10, AF0 + clamp(x, 0, 1) * (F1 - AF0));
-  const appleBar = document.getElementById('appleBar');
-  const markApple = document.getElementById('markApple');
-  paintBands(appleBar, aX);
-  paintTicks(document.getElementById('appleTicks'), AF0, F1);
-  const mini = document.getElementById('appleMini');
-  paintBands(mini, toX, false);
-  const miniWin = document.getElementById('appleMiniWin');
-  miniWin.style.left = (toX(Math.pow(10, AF0)) * 100) + '%';
-  miniWin.style.width = ((1 - toX(Math.pow(10, AF0))) * 100) + '%';
-  let fApple = 2.4e9;
-
-  const H = 6.62607015e-34;                          // J s, so photons/s = P / (h f)
-  const APPLE_MASS = 0.1, C_WATER = 4184;            // ~100 g, mostly water
-  const E_BOIL = APPLE_MASS * C_WATER * 80;          // 20 C -> 100 C, ~33 kJ absorbed
-  const E_VAPOR = E_BOIL + APPLE_MASS * 2.26e6;      // + heat of vaporization, ~0.26 MJ
-  const EXPOSE_S = 60;
-
-  // rough per-band absorbed fraction, stated as approximate in the readout
-  const ABSORB = {
-    radio:      [0.02, 'mostly passes straight through'],
-    microwave:  [0.50, 'couples hard into the water'],
-    infrared:   [0.85, 'is soaked up right at the surface'],
-    visible:    [0.60, 'is partly reflected'],
-    UV:         [0.80, 'is absorbed in the peel'],
-    'x-ray':    [0.70, 'deposits most of its energy through the flesh'],
-    gamma:      [0.10, 'mostly passes through, some deposits'],
-  };
-
-  const PU = [[1e6,'MW'],[1e3,'kW'],[1,'W'],[1e-3,'mW'],[1e-6,'µW']];
-  const JU = [[1e6,'MJ'],[1e3,'kJ'],[1,'J'],[1e-3,'mJ'],[1e-6,'µJ']];
-  const power = p => unit(p, PU, 'W');
-  const joules = e => unit(e, JU, 'J');
-  const sci = v => {
-    const e = Math.floor(Math.log10(v));
-    return num(v / Math.pow(10, e)) + '&times;10<sup>' + e + '</sup>';
-  };
-  const dTs = dT => dT >= 100 ? 'about ' + Math.round(dT)
-    : dT >= 1 ? 'about ' + dT.toFixed(1) : dT >= 0.01 ? 'about ' + dT.toFixed(2) : 'less than 0.01';
-
-  const applePowEl = document.getElementById('applePower');
-  // log slider, 1 uW at the left to 1 MW at the right, 1 W in the middle;
-  // applePow is the truth, so a preset is not quantized to a slider step
-  let applePow = 1;
-  applePowEl.addEventListener('input', () => {
-    applePow = Math.pow(10, -6 + (applePowEl.value / 1000) * 12);
-  });
-  const applePowSet = p => { applePow = p; applePowEl.value = Math.round((Math.log10(p) + 6) / 12 * 1000); };
-
-  // thermal stage from absorbed joules alone; every threshold is a budget,
-  // not a band, so a megawatt of radio really can vaporize the apple
-  function thermalFor(Eabs) {
-    const dT = Eabs / (APPLE_MASS * C_WATER);
-    if (Eabs >= E_VAPOR) return { draw: 'gone', v: 'Vaporized', dT,
-      tail: 'That blows past the full steam budget for 100 g of water, about ' + joules(E_VAPOR) + ' absorbed. Nothing solid is left.' };
-    if (Eabs >= E_BOIL * 3) return { draw: 'char', v: 'Charred', dT,
-      tail: 'That is several times the energy needed to boil it. The water flashes to steam and the flesh blackens.' };
-    if (Eabs >= E_BOIL) return { draw: 'cook', v: 'Boiling and steaming', dT,
-      tail: 'That is enough to take 100 g of water past 100 °C. It steams.' };
-    if (dT >= 40) return { draw: 'cook', v: 'Cooking', dT,
-      tail: 'Past about 60 °C the flesh cooks.' };
-    if (dT >= 15) return { draw: 'warm2', v: 'Hot to the touch', dT, tail: '' };
-    if (dT >= 1) return { draw: 'warm', v: 'Noticeably warm', dT, tail: '' };
-    return { draw: 'plain', v: 'No real heating', dT, tail: '' };
-  }
-
-  // molecular verdict: gate on eV per photon, then scale with absorbed dose
-  function molecularFor(eV, Eabs, phots) {
-    if (eV < 1.6) return { v: 'No chemistry possible', badge: 'BELOW EVERY BOND', tint: null, sev: 0,
-      n: 'Each photon carries ' + energy(fApple) + ', only enough to nudge rotation and vibration. Multiply by ' +
-         sci(phots) + ' photons per second and it is still zero broken bonds. Heat is all this beam can ever do.' };
-    if (eV < 3.1) return { v: 'Electronic excitation', badge: 'PHOTOCHEMISTRY ONLY', tint: null, sev: 0,
-      n: 'At ' + energy(fApple) + ' a photon can excite electrons and pigments. Photosynthesis and fading run on this. Bonds stay intact.' };
-    if (eV < 10) {
-      if (Eabs < 1) return { v: 'Bonds could break, dose too low', badge: 'DOSE TOO LOW', tint: null, sev: 0,
-        n: 'Each photon carries ' + energy(fApple) + ', enough to disrupt a bond in the peel. Only ' + joules(Eabs) +
-           ' is absorbed in 60 s, too little to mark it' +
-           (Eabs > 0.01 ? ', though microbes on the skin are already having a bad day.' : '.') };
-      const heavy = Eabs >= 100;
-      const sev = clamp((Math.log10(Eabs) + 0.5) / 3.5, 0.15, 1);
-      return { v: heavy ? 'Peel destroyed by photochemistry' : 'Surface sunburn', tint: 'rgba(138,96,230,', sev,
-        badge: heavy ? 'HEAVY UV DOSE' : 'SURFACE BROWNING',
-        n: 'UV photons at ' + energy(fApple) + ' break bonds where they land, and ' + joules(Eabs) +
-           ' absorbed is ' + (heavy ? 'far past' : 'about') + ' an afternoon of hard sun on the peel. It stays a surface story: UV does not penetrate.' };
+const apple = { stage: 'plain', tint: null, sev: 0, glow: 0 };
+ship.viewport(document.getElementById('vpApple'), {
+  fov: 32,
+  setup(vp) {
+    apple.vp = vp;
+    const { scene, camera } = vp;
+    camera.position.set(0.4, 1.6, 6.2); camera.lookAt(0, 0.7, 0);
+    scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x1a0e08, 0.9));
+    const key = new THREE.DirectionalLight(0xfff2dd, 1.3); key.position.set(3, 5, 4); scene.add(key);
+    apple.light = new THREE.PointLight(0xffffff, 0, 8, 1.6); apple.light.position.set(0, 2.6, 0.3); scene.add(apple.light);
+    // the apple: a lathe of a real-ish profile, a stem, a leaf
+    const prof = [];
+    for (let i = 0; i <= 24; i++) {
+      const a = i / 24 * Math.PI;                      // 0 at the top, pi at the bottom
+      const r = Math.sin(a) * (0.72 + 0.08 * Math.sin(a * 2)) * (1 - 0.06 * Math.cos(a * 3));
+      const y = Math.cos(a) * 0.66 - 0.12 * Math.cos(a) * Math.cos(a);
+      prof.push(new THREE.Vector2(Math.max(0.001, r), y));
     }
-    const kGy = Eabs / APPLE_MASS / 1000;
-    const doseStr = kGy >= 1 ? num(kGy) + ' <span class="u">kGy</span>'
-      : kGy >= 1e-3 ? num(kGy * 1e3) + ' <span class="u">Gy</span>'
-      : sci(kGy * 1e3) + ' <span class="u">Gy</span>';
-    const pen = eV >= 1000 ? 'punches through the whole apple' : 'strips electrons near the surface';
-    const sev = clamp((Math.log10(Math.max(kGy, 1e-8)) + 3) / 5, 0.1, 1);
-    if (kGy < 1e-3) return { v: 'Ionizing, but a trickle', badge: 'NEGLIGIBLE DOSE', tint: 'rgba(126,224,255,', sev,
-      n: 'Every photon here ionizes: at ' + energy(fApple) + ' each one ' + pen + '. But only ' + sci(phots) +
-         ' arrive per second, an absorbed dose of ' + doseStr + '. A handful of molecules lose electrons and the apple never notices.' };
-    if (kGy < 10) return { v: 'Sterilized through', badge: 'FOOD IRRADIATION DOSE', tint: 'rgba(126,224,255,', sev,
-      n: 'Each photon ' + pen + ', and the absorbed dose of ' + doseStr +
-         ' is the range Co-60 plants use to kill microbes in food. The apple would look and taste fine.' };
-    return { v: 'Radiolysis throughout', badge: 'MASSIVE DOSE', tint: 'rgba(126,224,255,', sev,
-      n: 'At ' + doseStr + ' absorbed, ionization is rewriting chemistry through the whole volume, not just the skin. Water splits into radicals everywhere at once.' };
-  }
+    prof.reverse();                                    // bottom to top, so the lathe winds outward
+    apple.mat = new THREE.MeshStandardMaterial({ color: 0xd33b3b, roughness: 0.42, metalness: 0.02, emissive: 0x000000 });
+    apple.mesh = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), apple.mat);
+    apple.mesh.position.y = 0.72; scene.add(apple.mesh);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.42, 8), new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.9 }));
+    stem.position.set(0.03, 1.5, 0); stem.rotation.z = -0.12; apple.mesh.add(stem); stem.position.y = 0.78;
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.7 }));
+    leaf.scale.set(1, 0.25, 0.5); leaf.position.set(0.2, 0.86, 0.05); leaf.rotation.z = -0.5; apple.mesh.add(leaf);
+    apple.leaf = leaf; apple.stem = stem;
+    // the plate it sits on
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.05, 48), new THREE.MeshStandardMaterial({ color: 0x0c1220, roughness: 0.35, metalness: 0.4 }));
+    plate.position.y = -0.03; scene.add(plate);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.012, 8, 64), new THREE.MeshBasicMaterial({ color: 0x7ee0ff, transparent: true, opacity: 0.5 }));
+    ring.rotation.x = Math.PI / 2; ring.position.y = 0; scene.add(ring);
+    // the emitter and its beam, a cone of light down onto the apple
+    const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.18, 24), new THREE.MeshStandardMaterial({ color: 0x1a2436, roughness: 0.3, metalness: 0.7 }));
+    emitter.position.y = 3.4; scene.add(emitter);
+    apple.cone = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.95, 2.6, 32, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    apple.cone.position.y = 2.0; scene.add(apple.cone);
+    apple.coneGlow = glowSprite(0xffffff, 1.2, 0.6); apple.coneGlow.position.y = 3.3; scene.add(apple.coneGlow);
+    // photons: a shower of points inside the cone
+    const NP = 900, pp = new Float32Array(NP * 3), ps = new Float32Array(NP);
+    for (let i = 0; i < NP; i++) { pp[i * 3] = (Math.random() - 0.5); pp[i * 3 + 1] = Math.random(); pp[i * 3 + 2] = (Math.random() - 0.5); ps[i] = Math.random(); }
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3)); pg.setAttribute('seed', new THREE.BufferAttribute(ps, 1));
+    apple.photons = new THREE.Points(pg, new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uT: { value: 0 }, uC: { value: new THREE.Color(1, 1, 1) }, uN: { value: 0.2 }, uSpeed: { value: 1 }, uPR: { value: ship.pixelRatio } },
+      vertexShader: `attribute float seed; uniform float uT, uN, uSpeed, uPR; varying float vA;
+        void main(){ float life = fract(seed * 7.0 + uT * uSpeed * (0.35 + 0.3 * seed));
+          float y = 3.3 - life * 2.75; float rad = mix(0.12, 0.7, life);
+          float ang = seed * 6.2831 + uT * 0.2; vec3 p = vec3(cos(ang) * rad * position.x * 2.0, y, sin(ang) * rad * position.z * 2.0);
+          vA = step(seed, uN) * (1.0 - life * 0.6);
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = (1.1 + 1.3 * seed) * uPR * 40.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform vec3 uC; varying float vA; void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; float a = smoothstep(1.0, 0.2, r) * vA; gl_FragColor = vec4(uC * a, a); }`,
+    }));
+    scene.add(apple.photons);
+    // steam and smoke, reused as vapour when the apple is gone
+    const NS = 260, sp = new Float32Array(NS * 3), ss = new Float32Array(NS);
+    for (let i = 0; i < NS; i++) { sp[i * 3] = (Math.random() - 0.5); sp[i * 3 + 1] = 0; sp[i * 3 + 2] = (Math.random() - 0.5); ss[i] = Math.random(); }
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.setAttribute('seed', new THREE.BufferAttribute(ss, 1));
+    apple.smoke = new THREE.Points(sg, new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false,
+      uniforms: { uT: { value: 0 }, uC: { value: new THREE.Color(0.7, 0.72, 0.75) }, uA: { value: 0 }, uPR: { value: ship.pixelRatio }, uSpread: { value: 0.4 } },
+      vertexShader: `attribute float seed; uniform float uT, uA, uPR, uSpread; varying float vA;
+        void main(){ float life = fract(seed * 3.0 + uT * 0.25 * (0.6 + seed));
+          vec3 p = vec3(position.x * (uSpread + life * 1.2) + sin(uT + seed * 9.0) * 0.1 * life, 1.3 + life * 2.4, position.z * (uSpread + life * 1.2));
+          vA = uA * (1.0 - life) * life * 4.0 * 0.5;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = (12.0 + 18.0 * life) * uPR * 40.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform vec3 uC; varying float vA; void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; float a = smoothstep(1.0, 0.0, r) * vA; gl_FragColor = vec4(uC * a, a); }`,
+    }));
+    scene.add(apple.smoke);
+    apple.ring = ring;
+  },
+  frame(vp) {
+    const { t, dt } = vp;
+    const k = 1 - Math.exp(-dt * 6);
+    const c = colorOf(fApple);
+    apple.cone.material.color.lerp(c, k); apple.coneGlow.material.color.lerp(c, k); apple.light.color.lerp(c, k);
+    const pw = clamp((Math.log10(applePow) + 6) / 12, 0, 1);
+    apple.cone.material.opacity += ((0.05 + 0.3 * pw) - apple.cone.material.opacity) * k;
+    apple.light.intensity += ((0.4 + 6 * pw) - apple.light.intensity) * k;
+    apple.photons.material.uniforms.uT.value = t; apple.photons.material.uniforms.uC.value.copy(c);
+    // how many photons to show: the real count spans 1e9 to 1e30 a second; the shower shows a few, for a few
+    const phots = P.photonsPerSecond(applePow, fApple);
+    apple.photons.material.uniforms.uN.value += (clamp((Math.log10(phots) - 8) / 22, 0.03, 1) - apple.photons.material.uniforms.uN.value) * k;
+    apple.photons.material.uniforms.uSpeed.value = 0.6 + 1.6 * P.posOf(fApple);
+    // the apple itself chases its stage
+    const S = apple.stage;
+    const want = { plain: [0xd33b3b, 0x000000, 1, 0.42], warm: [0xd84a3a, 0x3a1206, 1, 0.42], warm2: [0xdd5a36, 0x6a2208, 1, 0.42],
+      cook: [0xa5502e, 0x3a1a08, 1, 0.6], char: [0x15100c, 0x1a0802, 1, 0.95], ion: [0x8fd8ff, 0x1c3a55, 0.28, 0.1], gone: [0xd33b3b, 0x000000, 0, 0.42] }[S];
+    const col = new THREE.Color(want[0]), em = new THREE.Color(want[1]);
+    apple.mat.color.lerp(col, k); apple.mat.emissive.lerp(em, k);
+    apple.mat.roughness += (want[3] - apple.mat.roughness) * k;
+    apple.mat.transparent = true; apple.mat.opacity += (want[2] - apple.mat.opacity) * k;
+    if (apple.tint === 'uv') apple.mat.emissive.lerp(new THREE.Color(0x3a2060), 0.5 * apple.sev * k * 4);
+    const sc = apple.mat.opacity < 0.02 ? 0.001 : 1; apple.mesh.scale.setScalar(apple.mesh.scale.x + (sc - apple.mesh.scale.x) * k);
+    apple.leaf.visible = apple.stem.visible = S !== 'char';
+    apple.smoke.material.uniforms.uT.value = t;
+    const smokeWant = S === 'cook' ? 0.5 : S === 'char' ? 0.9 : S === 'gone' ? 1.2 : 0;
+    apple.smoke.material.uniforms.uA.value += (smokeWant - apple.smoke.material.uniforms.uA.value) * k;
+    apple.smoke.material.uniforms.uC.value.lerp(new THREE.Color(S === 'char' ? 0x2a2420 : S === 'gone' ? 0xffc9a0 : 0xd8dde2), k);
+    apple.smoke.material.uniforms.uSpread.value += ((S === 'gone' ? 1.6 : 0.4) - apple.smoke.material.uniforms.uSpread.value) * k;
+    apple.ring.material.color.lerp(c, k);
+    apple.mesh.rotation.y += ship.motion ? dt * 0.15 : 0;
+  },
+});
+const capish = w => w === 'UV' ? 'UV' : w.charAt(0).toUpperCase() + w.slice(1);
+function renderApple() {
+  probeApple.style.left = (aPos(fApple) * 100) + '%';
+  aria(probeApple, fApple, AF0, F1);
+  const Pw = applePow, E = Pw * EXPOSE_S, band = P.bandOf(fApple);
+  const [absF, absNote] = ABSORB[band.id] || [0.05, 'barely couples'];
+  const Eabs = E * absF, eV = P.energyEV(fApple), phots = P.photonsPerSecond(Pw, fApple);
+  document.getElementById('appleFLine').innerHTML = P.fmtFreq(fApple) + ' · ' + band.name + ' · ' + P.fmtWave(fApple);
+  document.getElementById('applePLine').innerHTML = P.fmtPower(Pw);
+  document.getElementById('applePhot').innerHTML = P.sci(phots) + ' <span class="u">/s</span>';
+  document.getElementById('applePhotMeta').innerHTML = 'at ' + P.fmtPower(Pw) + ', each photon carrying ' + P.fmtEnergy(fApple);
+  document.getElementById('appleEnergy').innerHTML = P.fmtJoules(E);
+  document.getElementById('appleEnergyMeta').innerHTML = P.fmtPower(Pw) + ' &times; 60 s. ' + capish(band.name) + ' ' + absNote + ': roughly ' + Math.round(absF * 100) + '% is absorbed.';
+  const therm = thermalFor(Eabs);
+  document.getElementById('appleThermV').textContent = therm.v;
+  document.getElementById('appleThermN').innerHTML = P.fmtJoules(Eabs) + ' absorbed would warm 100 g of watery flesh by ' + dTs(therm.dT) + ' <span class="u">°C</span>. ' + therm.tail;
+  const mol = molecularFor(eV, Eabs, phots);
+  document.getElementById('appleMolV').textContent = mol.v;
+  document.getElementById('appleMolN').innerHTML = mol.n;
+  const badge = document.getElementById('appleMolB'); badge.textContent = mol.badge;
+  badge.style.color = mol.tint === 'ion' ? 'rgb(126 224 255)' : mol.tint === 'uv' ? 'rgb(170 130 255)' : '';
+  badge.style.borderColor = mol.tint === 'ion' ? 'rgb(126 224 255 / .45)' : mol.tint === 'uv' ? 'rgb(170 130 255 / .45)' : '';
+  // an apple that looks untouched but holds a sterilizing dose gets the see-through rendering
+  apple.stage = (mol.tint === 'ion' && mol.sev >= 0.45 && (therm.draw === 'plain' || therm.draw === 'warm')) ? 'ion' : therm.draw;
+  apple.tint = mol.sev > 0 ? mol.tint : null; apple.sev = mol.sev;
+  for (const b of document.querySelectorAll('#applePresets .chip')) b.setAttribute('aria-pressed', String(+b.dataset.f === fApple && +b.dataset.p === applePow));
+  if (apple.vp) apple.vp.invalidate();
+}
+const APPLE_PRESETS = [
+  ['Sunlight on a picnic table', 4.3e14, 2.5], ['Microwave oven', 2.45e9, 800], ['UVC wand', C / 254e-9, 0.01],
+  ['Sterilization gamma', 1e20, 100], ['1 W green laser', C / 532e-9, 1], ['A megawatt of radio', 1e8, 1e6],
+];
+const applePresets = document.getElementById('applePresets');
+for (const [n, f, p] of APPLE_PRESETS) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = n; b.dataset.f = f; b.dataset.p = p;
+  b.addEventListener('click', () => { fApple = f; applePowSet(p); renderApple(); });
+  applePresets.appendChild(b);
+}
 
-  const appleCanvas = document.getElementById('appleCanvas');
-  const appleCtx = appleCanvas.getContext('2d');
-  const AW = appleCanvas.width, AH = appleCanvas.height;
-
-  // one photo per exposure stage; the procedural drawing below stays as the
-  // fallback for any stage whose photo has not loaded yet
-  const appleImg = new Image();
-  appleImg.src = 'apple.webp';
-  // 'cook' wears the browned photo, 'ion' the see-through one (a sterilizing
-  // dose leaves the outside looking fine, which is exactly its point);
-  // 'gone' is procedural only: there is no photo of an apple that is not there
-  const STAGE_IMGS = { plain: appleImg };
-  for (const [k, src] of [['warm', 'apple-warm.webp'], ['cook', 'apple-burn.webp'],
-                          ['ion', 'apple-xray.webp'], ['char', 'apple-char.webp']]) {
-    const im = new Image(); im.src = src; STAGE_IMGS[k] = im;
-  }
-  STAGE_IMGS.warm2 = STAGE_IMGS.warm;
-
-  function appleBody(ctx) {
-    const cx = AW / 2, cy = AH * 0.56, r = AW * 0.34;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - r * 0.9);
-    ctx.bezierCurveTo(cx + r * 1.15, cy - r * 1.35, cx + r * 1.3, cy + r * 0.6, cx, cy + r * 1.15);
-    ctx.bezierCurveTo(cx - r * 1.3, cy + r * 0.6, cx - r * 1.15, cy - r * 1.35, cx, cy - r * 0.9);
-    ctx.closePath();
-    return { cx, cy, r };
-  }
-
-  function drawApple(stage, t) {
-    appleCtx.clearRect(0, 0, AW, AH);
-    const { cx, cy, r } = appleBody(appleCtx);
-
-    if (stage.draw === 'gone') {
-      appleCtx.save();
-      appleCtx.setLineDash([5, 6]);
-      appleCtx.strokeStyle = 'rgba(196,228,255,.4)';
-      appleCtx.lineWidth = 1.4;
-      appleBody(appleCtx); appleCtx.stroke();
-      appleCtx.restore();
-      appleCtx.fillStyle = 'rgba(180,200,215,.3)';
-      for (let i = 0; i < 6; i++) {
-        const yy = cy + r - ((t * 26 + i * 22) % (r * 2.4));
-        appleCtx.beginPath();
-        appleCtx.ellipse(cx + Math.sin(t * 1.7 + i * 2.1) * r * 0.5, yy, 3.5, 7, 0, 0, TAU);
-        appleCtx.fill();
-      }
-      return;
+/* ======================================================================
+   stage 03 · the glow
+   ====================================================================== */
+const T_LO = 1e-3, T_HI = 1e10, T_DEC = Math.log10(T_HI / T_LO);
+let T = 5772, presetName = null, presetWhy = null;
+const GLOW_PRESETS = [
+  ['Dilution fridge', 0.01, 'the coldest floor of a quantum computer, ten millikelvin: even that glows, peaking at 1 GHz in the radio.'],
+  ['Boomerang Nebula', 1, 'the coldest natural place known, a gas cloud 5,000 light-years away, one degree above absolute zero.'],
+  ['Cosmic microwave background', 2.725, 'the afterglow of the Big Bang: the whole sky glows at this temperature, peaking in the microwave.'],
+  ['Liquid helium', 4.2, 'the coolant around every superconducting magnet, in MRI scanners and the LHC alike.'],
+  ['Pluto', 44, 'Pluto’s surface on an ordinary day, glowing in the far infrared.'],
+  ['Liquid nitrogen', 77, 'cold enough to shatter a rose, and still radiating.'],
+  ['Dry ice', 195, 'solid carbon dioxide; the fog is water freezing out of the air around it.'],
+  ['Ice water', 273, 'zero on the Celsius scale, and 273 degrees of glow above absolute zero.'],
+  ['You', 310, 'skin temperature: you glow in the infrared, peaking near 9 µm, at about 500 watts from every square metre of skin.'],
+  ['Boiling water', 373, 'a kettle at the boil, radiating a little over a kilowatt per square metre.'],
+  ['Pizza oven', 750, 'a wood-fired dome: just short of the Draper point, where a hot thing first glows visibly in the dark.'],
+  ['Lava', 1400, 'basalt fresh from a vent: the orange you see is the visible tail of a glow that is mostly infrared.'],
+  ['Candle flame', 1800, 'glowing soot particles; the yellow is thermal, the blue base is chemistry.'],
+  ['Filament bulb', 2700, 'a tungsten filament: warm white to the eye, and about 95% of its output is infrared.'],
+  ['Betelgeuse', 3500, 'a red supergiant, cool as stars go, peaking just below the visible band.'],
+  ['The Sun', 5772, 'the surface: the peak sits in the middle of the visible band, and eyes evolved to use it.'],
+  ['Sirius', 9940, 'the brightest star in the night sky, blue-white, peaking in the near ultraviolet.'],
+  ['Rigel', 12100, 'a blue supergiant; most of its light is ultraviolet you will never see.'],
+  ['Lightning channel', 30000, 'the air inside a lightning bolt for a few microseconds: five times the Sun’s surface.'],
+  ['Hottest stars', 45000, 'O-type stars: the visible light is the tail, the glow itself is ultraviolet.'],
+  ['Neutron star surface', 1e6, 'a young neutron star, glowing in soft X-rays.'],
+  ['Solar corona', 2e6, 'the Sun’s outer atmosphere, hundreds of times hotter than the surface below it, which is why the corona is photographed in X-rays.'],
+  ['Solar core', 1.57e7, 'where the fusion happens; a photon born here takes many thousands of years to reach the surface.'],
+  ['Galaxy cluster gas', 5e7, 'the thin gas between the galaxies of a cluster, seen by X-ray telescopes as a glowing halo.'],
+  ['Universe at one second', 1e10, 'the entire cosmos, one second after the Big Bang, glowing in gamma rays.'],
+];
+const sliderT = v => Math.pow(10, Math.log10(T_LO) + (v / 1000) * T_DEC);
+const sliderV = t => Math.round((Math.log10(t) - Math.log10(T_LO)) / T_DEC * 1000);
+const glowSlider = document.getElementById('glowT'), probeGlow = document.getElementById('probeGlow'), glowEl = document.getElementById('vpGlow');
+function seeNote(t, band) {
+  if (t < 700) return 'Invisible: all of this glow is ' + band + (t > 250 ? ', and skin can feel it as warmth.' : ', far too faint and too long for a body to feel.');
+  if (t < 1000) return 'A faint deep red in a dark room. The Draper point, where a hot thing first shows a glow, is 798 K.';
+  if (t < 2000) return 'Red to orange, like a stove coil: the eye sees only the short tail of a glow that is mostly infrared.';
+  if (t < 4000) return 'Yellow-white, the colour of a filament or a cool star.';
+  if (t < 7500) return 'White. This is sunlight, and the visible band sits right at the peak.';
+  if (t < 30000) return 'Blue-white. Hotter than the Sun, and most of the glow has already moved into the ultraviolet.';
+  return 'Blue-white to the eye, but the eye is catching the far tail: the glow itself peaks in ' + band + '.';
+}
+const glow = { x: 0 };
+ship.viewport(glowEl, {
+  fov: 36,
+  setup(vp) {
+    glow.vp = vp;
+    const { scene } = vp;
+    const ribbon = spectrumRibbon({ length: L, width: 1.0, intensity: 0.9, soft: 1.2 });
+    ribbon.rotation.x = -Math.PI / 2; scene.add(ribbon);
+    for (let d = F0; d <= F1; d += 2) {
+      const l = label(P.fmtFreq(Math.pow(10, d), true).replace('.00', '').replace('.0 ', ' '), { size: 20, color: '#8ea3bd' });
+      l.userData.fit(0.3); l.position.set(xOf(Math.pow(10, d)), 0.02, 1.3); scene.add(l);
     }
-
-    const photo = STAGE_IMGS[stage.draw];
-    if (photo && photo.complete && photo.naturalWidth) {
-      const s = (AW * 0.92) / Math.max(photo.naturalWidth, photo.naturalHeight);
-      const w = photo.naturalWidth * s, h = photo.naturalHeight * s;
-      appleCtx.drawImage(photo, (AW - w) / 2, (AH - h) / 2, w, h);
-      return;
+    for (const b of P.BANDS) {
+      if (b.id === 'visible') continue;
+      const l = label(b.short, { size: 20, color: '#dfe9f7', tracking: 5, weight: 500 });
+      l.userData.fit(0.28); l.position.set(xOf(Math.sqrt(b.lo * b.hi)), 0.05, -1.1); scene.add(l);
     }
-
-    if (stage.draw === 'ion') {
-      appleCtx.save();
-      appleCtx.globalAlpha = 0.22;
-      appleCtx.fillStyle = '#7ee0ff';
-      appleBody(appleCtx); appleCtx.fill();
-      appleCtx.restore();
-      appleCtx.strokeStyle = 'rgba(126,224,255,.8)';
-      appleCtx.lineWidth = 1.6;
-      appleBody(appleCtx); appleCtx.stroke();
-      appleCtx.fillStyle = 'rgba(226,240,255,.85)';
-      for (const [dx, dy] of [[-6,-4],[4,-8],[0,4],[8,2],[-8,6]]) {
-        appleCtx.beginPath(); appleCtx.ellipse(cx + dx * 1.6, cy + dy * 1.6, 3.4, 5.2, 0.3, 0, TAU); appleCtx.fill();
-      }
-      appleCtx.strokeStyle = 'rgba(126,224,255,.55)';
-      appleCtx.lineWidth = 1;
-      appleCtx.beginPath(); appleCtx.moveTo(cx, cy - r * 0.9); appleCtx.lineTo(cx, cy + r * 0.5); appleCtx.stroke();
-    } else if (stage.draw === 'char') {
-      appleCtx.fillStyle = '#0c0908';
-      appleBody(appleCtx); appleCtx.fill();
-      appleCtx.strokeStyle = 'rgba(255,90,60,' + (0.35 + 0.25 * Math.sin(t * 6)) + ')';
-      appleCtx.lineWidth = 1.2;
-      for (const [x0,y0,x1,y1] of [[cx-r*0.5,cy-r*0.6,cx-r*0.1,cy+r*0.3],
-                                    [cx+r*0.2,cy-r*0.8,cx+r*0.5,cy],
-                                    [cx-r*0.2,cy+r*0.2,cx+r*0.3,cy+r*0.9]]) {
-        appleCtx.beginPath(); appleCtx.moveTo(x0, y0); appleCtx.lineTo(x1, y1); appleCtx.stroke();
-      }
-      appleCtx.fillStyle = 'rgba(140,150,155,.25)';
-      for (let i = 0; i < 5; i++) {
-        const yy = cy - r * 1.2 - i * 8 - (t * 20 % 24);
-        appleCtx.beginPath(); appleCtx.ellipse(cx + Math.sin(t * 2 + i) * 8, yy, 3, 6, 0, 0, TAU); appleCtx.fill();
-      }
-    } else if (appleImg.complete && appleImg.naturalWidth) {
-      const s = (AW * 0.92) / Math.max(appleImg.naturalWidth, appleImg.naturalHeight);
-      const w = appleImg.naturalWidth * s, h = appleImg.naturalHeight * s;
-      appleCtx.drawImage(appleImg, (AW - w) / 2, (AH - h) / 2, w, h);
-
-      // tint only where the photo's pixels are, so effects hug the apple
-      appleCtx.save();
-      appleCtx.globalCompositeOperation = 'source-atop';
-      if (stage.draw === 'warm' || stage.draw === 'warm2') {
-        const g = appleCtx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 1.3);
-        const a = stage.draw === 'warm2' ? 0.34 : 0.16;
-        g.addColorStop(0, 'rgba(255,150,60,' + (a + Math.sin(t * 3) * 0.04) + ')');
-        g.addColorStop(1, 'rgba(255,150,60,0)');
-        appleCtx.fillStyle = g;
-        appleCtx.fillRect(0, 0, AW, AH);
-      }
-      if (stage.draw === 'cook') {
-        appleCtx.fillStyle = 'rgba(70,30,15,.3)';
-        appleCtx.fillRect(0, 0, AW, AH);
-        appleCtx.fillStyle = 'rgba(70,30,15,.55)';
-        for (const [dx, dy, rr] of [[-10,-6,9],[9,-10,7],[3,10,8],[-8,9,6]]) {
-          appleCtx.beginPath(); appleCtx.ellipse(cx + dx * 2, cy + dy * 2, rr * 2, rr * 1.4, 0.4, 0, TAU); appleCtx.fill();
-        }
-      }
-      appleCtx.restore();
-      return;
-    } else {
-      const base = stage.draw === 'cook' ? '#a5502e' : '#d33b3b';
-      appleCtx.fillStyle = base;
-      appleBody(appleCtx); appleCtx.fill();
-
-      if (stage.draw === 'warm' || stage.draw === 'warm2') {
-        const g = appleCtx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 1.3);
-        const a = stage.draw === 'warm2' ? 0.34 : 0.16;
-        g.addColorStop(0, 'rgba(255,150,60,' + (a + Math.sin(t * 3) * 0.04) + ')');
-        g.addColorStop(1, 'rgba(255,150,60,0)');
-        appleCtx.fillStyle = g;
-        appleBody(appleCtx); appleCtx.fill();
-      }
-      if (stage.draw === 'cook') {
-        appleCtx.fillStyle = 'rgba(70,30,15,.55)';
-        for (const [dx, dy, rr] of [[-10,-6,9],[9,-10,7],[3,10,8],[-8,9,6]]) {
-          appleCtx.beginPath(); appleCtx.ellipse(cx + dx, cy + dy, rr, rr * 0.7, 0.4, 0, TAU); appleCtx.fill();
-        }
-      }
-      // a small highlight so it still reads as an apple, not a ball
-      appleCtx.fillStyle = 'rgba(255,255,255,.28)';
-      appleCtx.beginPath(); appleCtx.ellipse(cx - r * 0.4, cy - r * 0.5, r * 0.18, r * 0.28, -0.5, 0, TAU); appleCtx.fill();
+    // the Planck curve as a luminous surface over the beam: a strip whose top
+    // edge follows planckRel, filled down to the ribbon
+    const N = 320;
+    const geo = new THREE.PlaneGeometry(L, 1, N - 1, 1);
+    glow.curveGeo = geo;
+    glow.curve = new THREE.Mesh(geo, new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      uniforms: { uC: { value: new THREE.Color(0xe8a93a) }, uI: { value: 1.0 } },
+      vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: `uniform vec3 uC; uniform float uI; varying vec2 vUv; void main(){ float a = (0.12 + 0.6 * pow(vUv.y, 1.6)) * uI; gl_FragColor = vec4(uC * a, a); }`,
+    }));
+    scene.add(glow.curve);
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+    glow.line = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xe8a93a, transparent: true, opacity: 0.95 }));
+    scene.add(glow.line); glow.N = N;
+    // the body: a sphere that is its own light
+    // the body: lit from within, darker toward the limb like a real photosphere
+    glow.body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 48, 32), new THREE.ShaderMaterial({
+      uniforms: { uC: { value: new THREE.Color(0x000000) } },
+      vertexShader: `varying vec3 vN; varying vec3 vV; void main(){ vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position,1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform vec3 uC; varying vec3 vN; varying vec3 vV; void main(){ float mu = max(0.0, dot(vN, vV)); float limb = 0.35 + 0.65 * pow(mu, 0.6); vec3 c = uC * limb + vec3(0.25) * pow(mu, 6.0) * length(uC); gl_FragColor = vec4(c, 1.0); }`,
+    }));
+    glow.body.position.y = 2.1; scene.add(glow.body);
+    glow.rim = new THREE.Mesh(new THREE.SphereGeometry(0.43, 48, 32), new THREE.MeshBasicMaterial({ color: 0x9fc4ff, wireframe: true, transparent: true, opacity: 0.08 }));
+    glow.rim.position.y = 2.1; scene.add(glow.rim);
+    glow.halo = glowSprite(0xffffff, 2.4, 0); glow.halo.position.y = 2.1; scene.add(glow.halo);
+    glow.halo2 = glowSprite(0xffffff, 5, 0); glow.halo2.position.y = 2.1; scene.add(glow.halo2);
+    glow.pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 2.1, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }));
+    glow.pillar.position.y = 1.05; scene.add(glow.pillar);
+    glow.plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); glow.hit = new THREE.Vector3();
+  },
+  resize(vp) {
+    const half = L / 2 + 1.6, fov = vp.camera.fov * Math.PI / 180;
+    const d = Math.max(9.5, half / (Math.tan(fov / 2) * vp.camera.aspect));
+    vp.camera.position.set(0, d * 0.5, d * 0.9); vp.camera.lookAt(0, 0.9, 0);
+  },
+  frame(vp) {
+    const { dt, camera } = vp;
+    const k = 1 - Math.exp(-dt * 8);
+    const fp = P.wienPeakFreq(T);
+    glow.x += (clamp(xOf(fp), -L / 2 - 0.5, L / 2 + 0.5) - glow.x) * k;
+    glow.body.position.x = glow.rim.position.x = glow.halo.position.x = glow.halo2.position.x = glow.pillar.position.x = glow.x;
+    const rgb = P.bbRGB(T), lit = rgb[0] + rgb[1] + rgb[2] > 30;
+    const col = lit ? colorOfRGB(rgb) : new THREE.Color(0x000000);
+    glow.body.material.uniforms.uC.value.lerp(col, k);
+    const ember = colorOfRGB([232, 169, 58]);
+    glow.halo.material.color.lerp(lit ? col : ember, k); glow.halo2.material.color.lerp(lit ? col : ember, k);
+    const bright = lit ? 0.9 : 0;
+    glow.halo.material.opacity += (bright - glow.halo.material.opacity) * k;
+    glow.halo2.material.opacity += (bright * 0.35 - glow.halo2.material.opacity) * k;
+    glow.rim.material.opacity += ((lit ? 0 : 0.18) - glow.rim.material.opacity) * k;
+    // the curve
+    const pos = glow.curveGeo.attributes.position, lp = glow.line.geometry.attributes.position, N = glow.N;
+    const hMax = 1.6;
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1), f = P.freqAt(u), rel = P.planckRel(f, T), y = 0.02 + hMax * rel;
+      pos.setY(i, y); pos.setY(i + N, 0.02);
+      lp.setXYZ(i, (u - 0.5) * L, y, 0);
     }
+    pos.needsUpdate = true; lp.needsUpdate = true;
+    const cc = lit ? col : ember;
+    glow.curve.material.uniforms.uC.value.lerp(cc, k); glow.line.material.color.lerp(cc, k);
+    // the DOM probe follows the peak
+    const v = new THREE.Vector3(glow.x, 0, 0).project(camera);
+    probeGlow.style.left = ((v.x + 1) / 2 * 100) + '%';
+    probeGlow.style.display = (fp >= 1e4 && fp <= 1e20) ? '' : 'none';
+  },
+  pointer(ev, vp) {
+    if (ev.type !== 'pointerdown' || ev.target.closest('.probe')) return;
+    if (!vp.ray.ray.intersectPlane(glow.plane, glow.hit)) return;
+    setT(P.tempOfPeakFreq(clamp(fOfX(glow.hit.x), 1e4, 1e20)));
+  },
+});
+probeGlow.addEventListener('pointerdown', e => {
+  e.preventDefault(); e.stopPropagation(); probeGlow.setPointerCapture(e.pointerId);
+  const move = ev => { glow.vp.pick(ev); if (glow.vp.ray.ray.intersectPlane(glow.plane, glow.hit)) setT(P.tempOfPeakFreq(clamp(fOfX(glow.hit.x), 1e4, 1e20))); };
+  const up = () => probeGlow.removeEventListener('pointermove', move);
+  probeGlow.addEventListener('pointermove', move);
+  probeGlow.addEventListener('pointerup', up, { once: true }); probeGlow.addEventListener('pointercancel', up, { once: true });
+});
+keys(probeGlow, () => P.wienPeakFreq(T), f => setT(P.tempOfPeakFreq(clamp(f, 1e4, 1e20))));
+function glowRender() {
+  const f = P.wienPeakFreq(T), onBar = f >= 1e4 && f <= 1e20, band = P.bandOf(f);
+  if (onBar) aria(probeGlow, f, F0, F1);
+  glowSlider.value = sliderV(T);
+  document.getElementById('glowLine').innerHTML = P.fmtTemp(T) + (presetName ? ' · ' + presetName : '') + (onBar ? '' : ' · the peak has left the end of the beam');
+  document.getElementById('glowPeak').innerHTML = P.fmtWave(f);
+  document.getElementById('glowPeakMeta').innerHTML = P.fmtFreq(f) + ' · ' + band.name;
+  const Pw = P.stefanBoltzmann(T);
+  document.getElementById('glowPow').innerHTML = (Pw >= 1e15 || Pw < 1e-12) ? P.sci(Pw) + ' <span class="u">W</span>/m²' : P.fmtPower(Pw) + '/m²';
+  const sunRatio = Pw / P.stefanBoltzmann(5772);
+  const rword = v => v >= 1e18 ? P.sci(v) : P.ratioWord(v);
+  document.getElementById('glowPowMeta').innerHTML = sunRatio >= 0.5 ? rword(sunRatio) + '× the Sun’s surface' : '1/' + rword(1 / sunRatio) + ' of the Sun’s surface';
+  document.getElementById('glowNote').innerHTML = seeNote(T, band.name) + (presetWhy ? ' <span class="caveat">' + presetName + ': ' + presetWhy + '</span>' : '');
+  for (const b of document.querySelectorAll('#glowPresets .chip')) b.setAttribute('aria-pressed', String(b.textContent === presetName));
+  if (glow.vp) glow.vp.invalidate();
+}
+function setT(t, name, why) { T = clamp(t, T_LO, T_HI); presetName = name || null; presetWhy = why || null; glowRender(); }
+glowSlider.addEventListener('input', () => setT(sliderT(+glowSlider.value)));
+const glowPresets = document.getElementById('glowPresets');
+for (const [n, t, why] of GLOW_PRESETS) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = n;
+  b.addEventListener('click', () => setT(t, n, why)); glowPresets.appendChild(b);
+}
 
-    // stem and leaf, on every stage but the charred one
-    if (stage.draw !== 'char') {
-      appleCtx.strokeStyle = '#6b4a2c';
-      appleCtx.lineWidth = 3;
-      appleCtx.beginPath(); appleCtx.moveTo(cx, cy - r * 0.9); appleCtx.lineTo(cx + 3, cy - r * 1.25); appleCtx.stroke();
-      appleCtx.fillStyle = stage.draw === 'cook' ? '#5e6b3a' : '#4caf50';
-      appleCtx.beginPath();
-      appleCtx.ellipse(cx + 12, cy - r * 1.18, 9, 5, -0.6, 0, TAU);
-      appleCtx.fill();
-    }
-  }
-
-  // what the animation loop draws, refreshed by renderApple()
-  let appleDrawKey = 'plain', molTint = null, molAlpha = 0;
-  const capish = w => w === 'UV' ? 'UV' : w.charAt(0).toUpperCase() + w.slice(1);
-
-  function renderApple() {
-    markApple.style.left = (aX(fApple) * 100) + '%';
-    ariaSlider(markApple, fApple, AF0, F1);
-
-    const P = applePow;
-    const E = P * EXPOSE_S;
-    const band = bandOf(fApple);
-    const [absF, absNote] = ABSORB[band] || [0.05, 'barely couples'];
-    const Eabs = E * absF;
-    const eV = fApple * EV_PER_HZ;
-    const phots = P / (H * fApple);
-
-    document.getElementById('applePowLine').innerHTML =
-      'Beam power <b>' + power(P) + '</b>, held on the apple for <b>60 s</b>.';
-    document.getElementById('applePhot').innerHTML = sci(phots) + ' <span class="u">/s</span>';
-    document.getElementById('applePhotMeta').innerHTML =
-      'at ' + power(P) + ', each photon carrying ' + energy(fApple);
-    document.getElementById('appleEnergy').innerHTML = joules(E);
-    document.getElementById('appleEnergyMeta').innerHTML = power(P) + ' &times; 60 s. ' +
-      capish(band) + ' ' + absNote + ': roughly ' + Math.round(absF * 100) + '% is absorbed.';
-
-    const therm = thermalFor(Eabs);
-    document.getElementById('appleThermV').textContent = therm.v;
-    document.getElementById('appleThermN').innerHTML =
-      joules(Eabs) + ' absorbed would warm 100 g of watery flesh by ' +
-      dTs(therm.dT) + ' <span class="u">°C</span>. ' + therm.tail;
-
-    const mol = molecularFor(eV, Eabs, phots);
-    document.getElementById('appleMolV').textContent = mol.v;
-    document.getElementById('appleMolN').innerHTML = mol.n;
-    const badge = document.getElementById('appleMolB');
-    badge.textContent = mol.badge;
-    badge.style.color = mol.tint ? mol.tint + '.9)' : '';
-    badge.style.borderColor = mol.tint ? mol.tint + '.45)' : '';
-
-    // the photos track the thermal story; an apple that looks untouched but
-    // holds a sterilizing dose gets the see-through rendering instead
-    appleDrawKey = (mol.tint === 'rgba(126,224,255,' && mol.sev >= 0.45 &&
-                    (therm.draw === 'plain' || therm.draw === 'warm'))
-      ? 'ion' : therm.draw;
-    molTint = mol.sev > 0 ? mol.tint : null;
-    molAlpha = 0.1 + 0.3 * mol.sev;
-  }
-
-  const appleStart = performance.now();
-  function appleFrame(now) {
-    const t = (now - appleStart) / 1000;
-    drawApple({ draw: appleDrawKey }, t);
-    if (molTint && appleDrawKey !== 'gone') {
-      // tint only the pixels already drawn, so the glow hugs the apple
-      appleCtx.save();
-      appleCtx.globalCompositeOperation = 'source-atop';
-      appleCtx.fillStyle = molTint + (molAlpha + 0.04 * Math.sin(t * 3)).toFixed(3) + ')';
-      appleCtx.fillRect(0, 0, AW, AH);
-      appleCtx.restore();
-    }
-    requestAnimationFrame(appleFrame);
-  }
-  grab(markApple, appleBar,
-       (x, f) => { fApple = clamp(f != null ? f : aF(x), Math.pow(10, AF0), 1e20); }, () => fApple,
-       renderApple);
-  appleBar.addEventListener('pointerdown', (e) => {
-    const r = appleBar.getBoundingClientRect();
-    fApple = aF((e.clientX - r.left) / r.width);
-    renderApple();
-  });
-  applePowEl.addEventListener('input', renderApple);
-
-  // presets set both dials at once: same button furniture as the marker row
-  const APPLE_PRESETS = [
-    ['Sunlight on a picnic table', 4.3e14, 2.5],
-    ['Microwave oven', 2.45e9, 800],
-    ['UVC wand', C / 254e-9, 0.01],
-    ['Sterilization gamma', 1e20, 100],
-    ['1 W green laser', C / 532e-9, 1],
-  ];
-  const applePresets = document.getElementById('applePresets');
-  for (const [n, f, p] of APPLE_PRESETS) {
-    const b = document.createElement('button');
-    b.type = 'button'; b.textContent = n;
-    b.addEventListener('click', () => { fApple = f; applePowSet(p); renderApple(); });
-    applePresets.appendChild(b);
-  }
-
-  renderApple();
-  requestAnimationFrame(appleFrame);
-
-  // ---- the sunset lab ----------------------------------------------------
-  // One slider: how many atmospheres of air the light crosses (1 at noon,
-  // ~38 at the horizon). Rayleigh scattering removes light in proportion to
-  // 1/lambda^4; everything drawn below follows from that one law.
-  (() => {
-    const range = document.getElementById('sunsetRange');
-    if (!range) return;
-    const scene = document.getElementById('sunsetScene');
-    const sun = document.getElementById('sunsetSun');
-    const note = document.getElementById('sunsetNote');
-    const LAM = [620, 545, 460];                    // r, g, b sample wavelengths, nm
-    const K = 0.20;                                  // scattering depth for blue at 1 air mass
-    const tau = (lam, m) => K * Math.pow(460 / lam, 4) * m;
-    const T = (lam, m) => Math.exp(-tau(lam, m));
-    const rgb = a => 'rgb(' + a.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255)).join(',') + ')';
-    function upd() {
-      const t = range.value / 1000;
-      const m = 1 * Math.pow(38, t);                 // air masses, log ramp noon -> horizon
-      const trans = LAM.map(l => T(l, m));           // what survives the trip: the sun's color
-      sun.style.background = rgb(trans.map(v => 0.15 + 0.85 * v));
-      sun.style.boxShadow = '0 0 24px 6px ' + rgb(trans.map(v => v * 0.8));
-      sun.style.top = (8 + t * 72) + 'px';
-      // the sky near you: what got scattered out of sunlight that already
-      // crossed some air, so it reddens near the horizon too
-      const sky = LAM.map(l => (1 - T(l, m * 0.45)) * T(l, m * 0.35) * 3.2);
-      const zen = LAM.map(l => (1 - T(l, 1)) * 2.6); // overhead stays bluer
-      scene.style.background = 'linear-gradient(180deg, ' + rgb(zen.map(v => v * (1 - t * 0.75))) + ', ' + rgb(sky) + ')';
-      note.textContent = 'Light is crossing ' + (m < 10 ? m.toFixed(1) : Math.round(m)) +
-        ' atmosphere' + (m < 1.05 ? '' : 's') + ' of air. Blue at 460 nm scatters ' +
-        (Math.pow(620 / 460, 4)).toFixed(1) + 'x more than red at 620 nm, so ' +
-        (t < 0.3 ? 'the sky fills with scattered blue while the sun barely notices.'
-         : t < 0.7 ? 'the long slant is stripping blue from the direct beam.'
-         : 'almost all the blue is gone before the light arrives: only the red survives the trip.');
-    }
-    range.addEventListener('input', upd);
-    upd();
-  })();
-
-  // ---- dial three: everything warm glows -----------------------------------
-  // One temperature; Planck's law draws the glow across the bar, Wien's law
-  // places the peak, Stefan-Boltzmann counts the power. The orb shows what
-  // the eye would see, which below the Draper point (798 K) is nothing.
-  (() => {
-    const K_B = 1.380649e-23, WIEN = 2.897771955e-3, SIGMA = 5.670374419e-8;
-    const T_LO = 1e-3, T_HI = 1e10;                   // slider range, kelvin
-    const T_DEC = Math.log10(T_HI / T_LO);
-    const bar = document.getElementById('glowBar');
-    const mark = document.getElementById('markGlow');
-    const slider = document.getElementById('glowT');
-    const curve = document.getElementById('glowCurve');
-    const cctx = curve.getContext('2d');
-    paintBands(bar, toX, false);
-    paintTicks(document.getElementById('glowTicks'));
-    let T = 5772, presetName = null, presetWhy = null;
-
-    const GLOW_PRESETS = [
-      ['Dilution fridge', 0.01, 'the coldest floor of a quantum computer, ten millikelvin: even that glows, peaking at 1 GHz in the radio.'],
-      ['Boomerang Nebula', 1, 'the coldest natural place known, a gas cloud 5,000 light-years away, one degree above absolute zero.'],
-      ['Cosmic microwave background', 2.725, 'the afterglow of the Big Bang: the whole sky glows at this temperature, peaking in the microwave.'],
-      ['Liquid helium', 4.2, 'the coolant around every superconducting magnet, in MRI scanners and the LHC alike.'],
-      ['Pluto', 44, 'Pluto\u2019s surface on an ordinary day, glowing in the far infrared.'],
-      ['Liquid nitrogen', 77, 'cold enough to shatter a rose, and still radiating.'],
-      ['Dry ice', 195, 'solid carbon dioxide; the fog is water freezing out of the air around it.'],
-      ['Ice water', 273, 'zero on the Celsius scale, and 273 degrees of glow above absolute zero.'],
-      ['You', 310, 'skin temperature: you glow in the infrared, peaking near 9 µm, at about 500 watts from every square metre of skin.'],
-      ['Boiling water', 373, 'a kettle at the boil, radiating a little over a kilowatt per square metre.'],
-      ['Pizza oven', 750, 'a wood-fired dome: just short of the Draper point, where a hot thing first glows visibly in the dark.'],
-      ['Lava', 1400, 'basalt fresh from a vent: the orange you see is the visible tail of a glow that is mostly infrared.'],
-      ['Candle flame', 1800, 'glowing soot particles; the yellow is thermal, the blue base is chemistry.'],
-      ['Filament bulb', 2700, 'a tungsten filament: warm white to the eye, and about 95% of its output is infrared.'],
-      ['Betelgeuse', 3500, 'a red supergiant, cool as stars go, peaking just below the visible band.'],
-      ['The Sun', 5772, 'the surface: the peak sits in the middle of the visible band, and eyes evolved to use it.'],
-      ['Sirius', 9940, 'the brightest star in the night sky, blue-white, peaking in the near ultraviolet.'],
-      ['Rigel', 12100, 'a blue supergiant; most of its light is ultraviolet you will never see.'],
-      ['Lightning channel', 30000, 'the air inside a lightning bolt for a few microseconds: five times the Sun\u2019s surface.'],
-      ['Hottest stars', 45000, 'O-type stars: the visible light is the tail, the glow itself is ultraviolet.'],
-      ['Neutron star surface', 1e6, 'a young neutron star, glowing in soft X-rays.'],
-      ['Solar corona', 2e6, 'the Sun\u2019s outer atmosphere, hundreds of times hotter than the surface below it, which is why the corona is photographed in X-rays.'],
-      ['Solar core', 1.57e7, 'where the fusion happens; a photon born here takes many thousands of years to reach the surface.'],
-      ['Galaxy cluster gas', 5e7, 'the thin gas between the galaxies of a cluster, seen by X-ray telescopes as a glowing halo.'],
-      ['Universe at one second', 1e10, 'the entire cosmos, one second after the Big Bang, glowing in gamma rays.'],
-    ];
-
-    const fPeak = t => C * t / WIEN;                  // Wien: lambda_max = b / T
-    const tOf = f => WIEN * f / C;
-    const sliderT = v => Math.pow(10, Math.log10(T_LO) + (v / 1000) * T_DEC);
-    const sliderV = t => Math.round((Math.log10(t) - Math.log10(T_LO)) / T_DEC * 1000);
-    const fmtT = t => t < 0.1 ? num(t * 1000) + ' <span class="u">mK</span>'
-      : t < 10 ? parseFloat(t.toPrecision(4)) + ' <span class="u">K</span>'
-      : t < 1e4 ? Math.round(t).toLocaleString('en-US') + ' <span class="u">K</span>'
-      : t < 1e6 ? Math.round(t).toLocaleString('en-US') + ' <span class="u">K</span>'
-      : t < 1e9 ? num(t / 1e6) + ' million <span class="u">K</span>'
-      : num(t / 1e9) + ' billion <span class="u">K</span>';
-    const PU2 = [[1e12,'TW'],[1e9,'GW'],[1e6,'MW'],[1e3,'kW'],[1,'W'],[1e-3,'mW'],[1e-6,'µW'],[1e-9,'nW'],[1e-12,'pW']];
-
-    // the colour a glowing body shows the eye (Tanner Helland's fit, good from
-    // 1000 K to 40 000 K); below the Draper point it is simply dark
-    function bbRGB(t) {
-      if (t < 700) return [0, 0, 0];
-      const tt = clamp(t, 1000, 40000) / 100;
-      let r, g, b;
-      if (tt <= 66) {
-        r = 255; g = 99.4708025861 * Math.log(tt) - 161.1195681661;
-        b = tt <= 19 ? 0 : 138.5177312231 * Math.log(tt - 10) - 305.0447927307;
-      } else {
-        r = 329.698727446 * Math.pow(tt - 60, -0.1332047592);
-        g = 288.1221695283 * Math.pow(tt - 60, -0.0755148492); b = 255;
-      }
-      const k = t < 1000 ? 0.12 + 0.88 * (t - 700) / 300 : 1;   // the first dull red
-      return [r, g, b].map(v => clamp(v, 0, 255) * k);
-    }
-
-    // Planck's B_lambda, in log space so nothing overflows, scaled to its peak
-    function planckRel(f, t) {
-      const lam = C / f, lamMax = WIEN / t;
-      const u = 6.62607015e-34 * C / (lam * K_B * t), um = 6.62607015e-34 * C / (lamMax * K_B * t);
-      const lnE = x => x > 50 ? x : Math.log(Math.expm1(x));
-      return Math.exp(-5 * Math.log(lam / lamMax) - lnE(u) + lnE(um));
-    }
-    function drawCurve() {
-      const r = curve.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      curve.width = Math.round(r.width * dpr); curve.height = Math.round(r.height * dpr);
-      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const W = r.width, Hh = r.height;
-      cctx.clearRect(0, 0, W, Hh);
-      const rgb = bbRGB(T);
-      const lit = rgb[0] + rgb[1] + rgb[2] > 30;
-      const col = lit ? rgb.map(Math.round).join(',') : '232,169,58';   // ember tint for the invisible glow
-      const g = cctx.createLinearGradient(0, 0, 0, Hh);
-      g.addColorStop(0, 'rgba(' + col + ',' + (lit ? .75 : .45) + ')');
-      g.addColorStop(1, 'rgba(' + col + ',.05)');
-      cctx.beginPath(); cctx.moveTo(0, Hh);
-      for (let x = 0; x <= W; x += 1) {
-        const rel = planckRel(toF(x / W), T);
-        cctx.lineTo(x, Hh - 3 - (Hh - 6) * rel);
-      }
-      cctx.lineTo(W, Hh); cctx.closePath();
-      cctx.fillStyle = g; cctx.fill();
-      cctx.strokeStyle = 'rgba(' + col + ',' + (lit ? .95 : .7) + ')'; cctx.lineWidth = 1.5;
-      cctx.beginPath();
-      for (let x = 0; x <= W; x += 1) {
-        const y = Hh - 3 - (Hh - 6) * planckRel(toF(x / W), T);
-        if (x === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
-      }
-      cctx.stroke();
-    }
-
-    function seeNote(t, band) {
-      if (t < 700) return 'Invisible: all of this glow is ' + band + (t > 250
-        ? ', and skin can feel it as warmth.' : ', far too faint and too long for a body to feel.');
-      if (t < 1000) return 'A faint deep red in a dark room. The Draper point, where a hot thing first shows a glow, is 798 K.';
-      if (t < 2000) return 'Red to orange, like a stove coil: the eye sees only the short tail of a glow that is mostly infrared.';
-      if (t < 4000) return 'Yellow-white, the colour of a filament or a cool star.';
-      if (t < 7500) return 'White. This is sunlight, and the visible band sits right at the peak.';
-      if (t < 30000) return 'Blue-white. Hotter than the Sun, and most of the glow has already moved into the ultraviolet.';
-      return 'Blue-white to the eye, but the eye is catching the far tail: the glow itself peaks in ' + band + '.';
-    }
-
-    function glowRender() {
-      const f = fPeak(T), onBar = f >= 1e4 && f <= 1e20;
-      mark.style.display = onBar ? '' : 'none';
-      if (onBar) {
-        mark.style.left = (toX(f) * 100) + '%'; mark.dataset.tag = 'peak';
-        ariaSlider(mark, f, F0, F1);
-      }
-      slider.value = sliderV(T);
-      drawCurve();
-      const band = bandOf(f);
-      const rgb = bbRGB(T), orb = document.getElementById('glowOrb');
-      if (rgb[0] + rgb[1] + rgb[2] > 30) {
-        const c = rgb.map(Math.round).join(',');
-        orb.style.background = 'radial-gradient(circle at 36% 32%, rgba(255,255,255,.55), rgba(' + c + ',1) 45%, rgba(' + c + ',.75) 100%)';
-        orb.style.boxShadow = '0 0 28px 8px rgba(' + c + ',.55), 0 0 60px 20px rgba(' + c + ',.18)';
-        orb.style.borderColor = 'rgba(' + c + ',.6)';
-      } else {
-        orb.style.background = '#0a0c10';
-        orb.style.boxShadow = 'none';
-        orb.style.borderColor = 'rgba(196,228,255,.18)';
-      }
-      document.getElementById('glowLine').innerHTML = '<b>' + fmtT(T) + '</b>' + (presetName ? ' · ' + presetName : '') +
-        (onBar ? '' : ' · the peak has left the right edge of this bar');
-      document.getElementById('glowPeak').innerHTML = wave(f);
-      document.getElementById('glowPeakMeta').innerHTML = freq(f) + ' · ' + band;
-      const P = SIGMA * Math.pow(T, 4);
-      // past the unit ladders (a ten-billion-kelvin fireball radiates 5.7e32 W/m²) fall back to powers of ten
-      document.getElementById('glowPow').innerHTML = (P >= 1e15 || P < 1e-12) ? sci(P) + ' <span class="u">W</span>/m²' : unit(P, PU2, 'W') + '/m²';
-      const sunRatio = P / (SIGMA * Math.pow(5772, 4));
-      const rword = v => v >= 1e18 ? sci(v) : ratio(v);
-      document.getElementById('glowPowMeta').innerHTML = sunRatio >= 0.5
-        ? rword(sunRatio) + '× the Sun\u2019s surface'
-        : '1/' + rword(1 / sunRatio) + ' of the Sun\u2019s surface';
-      document.getElementById('glowNote').innerHTML = seeNote(T, band) + (presetWhy ? ' <span class="applecaveat" style="display:inline">' + presetName + ': ' + presetWhy + '</span>' : '');
-    }
-    function setT(t, name, why) {
-      T = clamp(t, T_LO, T_HI); presetName = name || null; presetWhy = why || null;
-      glowRender();
-    }
-    slider.addEventListener('input', () => setT(sliderT(+slider.value)));
-    grab(mark, bar, (x, f) => { setT(tOf(f != null ? f : toF(x))); }, () => fPeak(T), glowRender);
-    bar.addEventListener('pointerdown', (e) => {
-      const r = bar.getBoundingClientRect();
-      setT(tOf(toF((e.clientX - r.left) / r.width)));
-    });
-    const presets = document.getElementById('glowPresets');
-    for (const [n, t, why] of GLOW_PRESETS) {
-      const b = document.createElement('button');
-      b.type = 'button'; b.textContent = n;
-      b.addEventListener('click', () => setT(t, n, why));
-      presets.appendChild(b);
-    }
-    new ResizeObserver(drawCurve).observe(curve);
-    setT(5772, 'The Sun', GLOW_PRESETS.find(p => p[0] === 'The Sun')[2]);
-  })();
-})();
+/* ---- go ---- */
+render();
+renderApple();
+setT(5772, 'The Sun', GLOW_PRESETS.find(p => p[0] === 'The Sun')[2]);
+ship.watchEntrances();
+window.__bridge = { beam, apple, glow, prism };
 </script>
-<script src="share.js"></script>
+<script src="vendor/scifi-ui/hologram-tap.js"></script>
 </body>
 </html>
