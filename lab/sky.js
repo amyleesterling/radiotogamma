@@ -81,7 +81,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
   const mat = new THREE.ShaderMaterial({ uniforms: { uSun: { value: new THREE.Vector3(0, 1, 0) }, uTh: { value: 1 }, uMie: { value: 1 }, uEl: { value: 0.9 } }, vertexShader: VERT, fragmentShader: FRAG, side: THREE.BackSide, depthWrite: false });
   const dome = new THREE.Mesh(new THREE.SphereGeometry(60, 48, 24), mat); dome.renderOrder = -1;
   const ground = new THREE.Mesh(new THREE.CircleGeometry(70, 48), new THREE.MeshBasicMaterial({ color: 0x0a0e12 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02;
-  let camera; const look = { yaw: 0.4, pitch: 14 * DEG }, dl = { yaw: 0.4, pitch: 14 * DEG };
+  let camera; const look = { yaw: 0.4, pitch: 24 * DEG }, dl = { yaw: 0.4, pitch: 24 * DEG };
   const sunV = new THREE.Vector3();
   function pose() {
     const e = T.el * DEG; sunV.set(Math.cos(e) * Math.sin(T.az), Math.sin(e), Math.cos(e) * Math.cos(T.az));
@@ -113,7 +113,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
   }
 
   /* ---- controls ---- */
-  const presets = chips(ctrl, PRESETS.map(p => ({ id: p.id, name: p.name, on: p.id === 'white' })), { onPick: it => { T.el = it.el; T.th = it.th; T.mie = it.mie; dE.set(T.el); dT.set(T.th); dM.set(T.mie); pose(); report(); } });
+  const presets = chips(ctrl, PRESETS.map(p => ({ id: p.id, name: p.name, on: p.id === 'white' })), { onPick: c => { const it = PRESETS.find(p => p.id === c.id); T.el = it.el; T.th = it.th; T.mie = it.mie; dE.set(T.el); dT.set(T.th); dM.set(T.mie); pose(); report(); } });
   const dials = document.createElement('div'); dials.className = 'dials'; ctrl.appendChild(dials);
   const touched = () => presets.mark('');
   const dE = dial(dials, { label: 'sun elevation (or drag the sky)', min: 0, max: 90, step: 0.5, value: T.el, fmt: v => v.toFixed(1) + '°', onInput: v => { T.el = v; touched(); pose(); report(); } });

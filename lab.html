@@ -40,7 +40,8 @@
   body[data-deck="lab"] .viewport { resize: vertical; min-height: 240px; max-height: 900px; cursor: grab; }
   body[data-deck="lab"] .viewport::-webkit-resizer { background: linear-gradient(135deg, transparent 55%, rgb(var(--deck) / .6) 55%, rgb(var(--deck) / .6) 65%, transparent 65%, transparent 80%, rgb(var(--deck) / .6) 80%, rgb(var(--deck) / .6) 90%, transparent 90%); }
   body[data-deck="lab"] .octave { position: absolute; left: 14px; right: 14px; bottom: 0; height: 6px; width: auto; display: block; opacity: .9; }
-  body[data-deck="lab"] .vp-note { bottom: 14px; max-width: 60%; line-height: 1.5; }
+  body[data-deck="lab"] .vp-note { bottom: 14px; max-width: 60%; line-height: 1.5; background: rgb(var(--void) / .55); padding: 4px 6px; border-radius: 4px; left: 10px; }
+  body[data-deck="lab"] .vp-note.right { left: auto; right: 10px; }
   body[data-deck="lab"] .vp-note.right { max-width: 36%; }
   body[data-deck="lab"] .ctrl { margin-top: 12px; }
   body[data-deck="lab"] .dials { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 4px 22px; }

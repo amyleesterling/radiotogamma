@@ -14,7 +14,7 @@
  * care, and says what it sees.
  */
 import { ship } from '../ship/ship.js';
-import { THREE, P, TAU, DEG, clamp, sm, colorOfNm, rgb01, cauchy, MATERIALS, beamSet, octave, dial, chips, readouts, voice, fmtDeg, chase, benchFloor, tag, glowSprite } from './bench.js';
+import { fitFov, THREE, P, TAU, DEG, clamp, sm, colorOfNm, rgb01, cauchy, MATERIALS, beamSet, octave, dial, chips, readouts, voice, fmtDeg, chase, benchFloor, tag, glowSprite } from './bench.js';
 
 const SRC = new THREE.Vector3(-3.7, 0, 0);     // the lamp
 const SCREEN_X = 3.4;                           // where the fan lands
@@ -30,7 +30,7 @@ export const question = {
 
 export function mount({ el, hud, ctrl, out, solved }) {
   /* ---- truth ---- */
-  const T = { mat: 'bk7', nd: 1.5168, V: 64.2, apex: 60, tilt: 0, gain: 10 };
+  const T = { mat: 'bk7', nd: 1.5168, V: 64.2, apex: 60, tilt: 20, gain: 10 };   // 20°: minimum deviation for a 60° BK7 prism
   let glass = cauchy(T.nd, T.V);
   const strip = octave(hud);
   const say = voice(out);
@@ -207,12 +207,13 @@ export function mount({ el, hud, ctrl, out, solved }) {
   const dN = dial(dials, { label: 'index n<sub>d</sub>', min: 0.5, max: 3, step: 0.005, value: T.nd, fmt: v => v.toFixed(3), onInput: v => { T.nd = v; invent(); } });
   const dV = dial(dials, { label: 'Abbe number (lower is more dispersive)', min: 5, max: 150, step: 0.5, value: T.V, fmt: v => v.toFixed(1), onInput: v => { T.V = v; invent(); } });
   const dA = dial(dials, { label: 'apex angle', min: 0, max: 90, step: 1, value: T.apex, fmt: v => v + '°', onInput: v => { T.apex = v; buildGlass(); run(); } });
-  const dT = dial(dials, { label: 'turn the block (or drag the stage)', min: -60, max: 60, step: 1, value: 0, fmt: v => v + '°', onInput: v => { T.tilt = v; buildGlass(); run(); } });
+  const dT = dial(dials, { label: 'turn the block (or drag the stage)', min: -60, max: 60, step: 1, value: 20, fmt: v => v + '°', onInput: v => { T.tilt = v; buildGlass(); run(); } });
   chips(ctrl, [{ id: '1', name: '×1 true' }, { id: '10', name: '×10', on: true }, { id: '30', name: '×30' }].map(c => Object.assign(c, { b: 'fan' })), { onPick: it => { T.gain = +it.id; run(); }, cls: 'gain' });
 
   /* ---- the viewport ---- */
   ship.viewport(el, {
     fov: 34,
+    resize(vp) { fitFov(vp, 34); },
     setup(vp) {
       cam = vp.camera; cam.position.set(0.3, 6.2, 5.6); cam.lookAt(0.2, 0, 0.1);
       vp.scene.add(benchFloor(10, 20));

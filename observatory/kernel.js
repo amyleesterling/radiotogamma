@@ -157,7 +157,7 @@ export const SHIFT_STOPS = [                           // [z, name, note]
 export const zOfSlider = v => Math.expm1(Math.log1p(Z_MAX) * v / 1000);
 export const sliderOfZ = z => Math.round(Math.log1p(z) / Math.log1p(Z_MAX) * 1000);
 export const fmtZ = z => z < 0.01 ? z.toFixed(4) : z < 1 ? z.toFixed(3) : z < 100 ? z.toFixed(2) : String(Math.round(z));
-export const gyr = t => t < 0.001 ? Math.round(t * 1e6).toLocaleString('en-US') + ' years'
+export const gyr = t => t < 0.001 ? Math.round(t * 1e9).toLocaleString('en-US') + ' years'
   : t < 1 ? Math.round(t * 1000) + ' million years' : t.toFixed(t < 10 ? 2 : 1) + ' billion years';
 
 /* ---- the octave ladder: one step, doubled once per octave ------------------

@@ -21,7 +21,7 @@
  * the image move off the object.
  */
 import { ship } from '../ship/ship.js';
-import { THREE, P, TAU, DEG, clamp, sm, GLSL_WL, colorOfNm, rgb01, beamSet, octave, dial, chips, readouts, voice, fmtDeg, fmtUm, benchFloor, tag, glowSprite } from './bench.js';
+import { fitFov, THREE, P, TAU, DEG, clamp, sm, GLSL_WL, colorOfNm, rgb01, beamSet, octave, dial, chips, readouts, voice, fmtDeg, fmtUm, benchFloor, tag, glowSprite } from './bench.js';
 
 export const question = {
   id: 'holo', title: 'Bench 06 · Hologram',
@@ -42,10 +42,10 @@ uniform float uLam, uTheta, uZo, uUo, uReplay, uExpo, uA0, uA1; uniform vec3 uDu
 float hash(float n){ return fract(sin(n) * 43758.5453); }
 void main(){
   vec3 N = normalize(vN);
-  if (abs(N.z) < 0.5) { gl_FragColor = vec4(0.06, 0.08, 0.11, 1.0); return; }
+  if (abs(N.z) < 0.5) { gl_FragColor = vec4(0.06, 0.08, 0.11, 0.9); return; }
   float u = vW.x * 10.0;
   float jag0 = uA0 > -39.0 ? 1.1 * (hash(floor(vW.y * 9.0)) - 0.5) : 0.0, jag1 = uA1 < 39.0 ? 1.1 * (hash(floor(vW.y * 9.0) + 3.0) - 0.5) : 0.0;
-  if (u < uA0 + jag0 || u > uA1 + jag1) { gl_FragColor = vec4(0.045, 0.06, 0.085, 1.0); return; }
+  if (u < uA0 + jag0 || u > uA1 + jag1) { gl_FragColor = vec4(0.045, 0.06, 0.085, 0.75); return; }
   float k = 6.2831853 / uLam, sT = sin(uTheta);
   float I = 1.0, tot = 0.0; float a[3]; float r[3];
   for (int j = 0; j < 3; j++) {
@@ -59,7 +59,7 @@ void main(){
   float b = pow(clamp(I / Imax, 0.0, 1.0), 0.7) * uExpo;
   vec3 rec = uCol * (0.10 + 0.9 * b);
   vec3 dev = vec3(14.0 + 236.0 * b, 16.0 + 233.0 * b, 20.0 + 225.0 * b) / 255.0;
-  gl_FragColor = vec4(mix(rec, dev, uReplay), 1.0); }`;
+  gl_FragColor = vec4(mix(rec, dev, uReplay), 0.82); }`;
 const VERT = 'varying vec3 vW, vN; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }';
 
 export function mount({ el, hud, ctrl, out, solved }) {
@@ -87,15 +87,15 @@ export function mount({ el, hud, ctrl, out, solved }) {
   }
 
   /* ---- the scene ---- */
-  const mat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: { uLam: { value: 0.633 }, uTheta: { value: T.theta }, uZo: { value: 80 }, uUo: { value: 0 }, uReplay: { value: 0 }, uExpo: { value: 1 }, uA0: { value: -40 }, uA1: { value: 40 }, uDu: { value: new THREE.Vector3(...OBJ.map(o => o.du)) }, uDz: { value: new THREE.Vector3(...OBJ.map(o => o.dz)) }, uAmp: { value: new THREE.Vector3(...OBJ.map(o => o.amp)) }, uCol: { value: colorOfNm(633) } } });
+  const mat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, transparent: true, uniforms: { uLam: { value: 0.633 }, uTheta: { value: T.theta }, uZo: { value: 80 }, uUo: { value: 0 }, uReplay: { value: 0 }, uExpo: { value: 1 }, uA0: { value: -40 }, uA1: { value: 40 }, uDu: { value: new THREE.Vector3(...OBJ.map(o => o.du)) }, uDz: { value: new THREE.Vector3(...OBJ.map(o => o.dz)) }, uAmp: { value: new THREE.Vector3(...OBJ.map(o => o.amp)) }, uCol: { value: colorOfNm(633) } } });
   const plate = new THREE.Mesh(new THREE.BoxGeometry(2 * U_HALF * S, 5, 0.12), mat);
-  const holder = new THREE.Mesh(new THREE.BoxGeometry(2 * U_DRAW * S, 5.6, 0.06), new THREE.MeshBasicMaterial({ color: 0x0c1118 })); holder.position.z = -0.1;
+  const holder = new THREE.Mesh(new THREE.BoxGeometry(2 * U_DRAW * S, 5.6, 0.06), new THREE.MeshBasicMaterial({ color: 0x0c1118, transparent: true, opacity: 0.6 })); holder.position.z = -0.1;
   const beams = beamSet(96);
-  const objGlow = OBJ.map(() => glowSprite(0xffffff, 0.5)), imgGlow = OBJ.map(() => glowSprite(0xffffff, 0.5)), twinGlow = glowSprite(0xffffff, 0.4, 0.4);
-  const eye = glowSprite(0x7ee0ff, 0.5), mark = glowSprite(0xc4e4ff, 0.22, 0.9);
+  const objGlow = OBJ.map(() => glowSprite(0xffffff, 1.0)), imgGlow = OBJ.map(() => glowSprite(0xffffff, 1.0)), twinGlow = glowSprite(0xffffff, 0.8, 0.4);
+  const eye = glowSprite(0x7ee0ff, 1.0), mark = glowSprite(0xc4e4ff, 0.4, 0.9);
   mark.position.set(U_MARK * S, 0, 0.08);
-  const lblObj = tag('OBJECT', 0.22, '#eff4fb'), lblImg = tag('VIRTUAL IMAGE', 0.22, '#eff4fb'), lblEye = tag('EYE (DRAG IT)', 0.2, '#7ee0ff'), lblRef = tag('REFERENCE BEAM', 0.2, '#9aa2b1'), lblMark = tag('MARK ON THE HOLDER', 0.18, '#9aa2b1'), lblPlate = tag('PLATE', 0.2, '#7ee0ff'), lblTwin = tag('TWIN IMAGE', 0.18, '#9aa2b1');
-  lblMark.position.set(U_MARK * S, -0.4, 0.1); lblPlate.position.set(U_HALF * S - 0.6, 2.85, 0.1);
+  const lblObj = tag('OBJECT', 0.42, '#eff4fb'), lblImg = tag('VIRTUAL IMAGE', 0.42, '#eff4fb'), lblEye = tag('EYE (DRAG IT)', 0.42, '#7ee0ff'), lblRef = tag('REFERENCE BEAM', 0.42, '#9aa2b1'), lblMark = tag('MARK ON THE HOLDER', 0.42, '#9aa2b1'), lblPlate = tag('PLATE', 0.42, '#7ee0ff'), lblTwin = tag('TWIN IMAGE', 0.42, '#9aa2b1');
+  lblMark.position.set(U_MARK * S, -0.6, 0.1); lblPlate.position.set(U_HALF * S - 0.8, 2.95, 0.1);
   const A = new THREE.Vector3(), B = new THREE.Vector3();
   const viewfinder = document.createElement('div'); viewfinder.className = 'finder'; viewfinder.innerHTML = '<span class="k">what the eye sees</span><div class="bar"><i class="m"></i><b></b><b></b><b></b></div>'; viewfinder.hidden = true; hud.appendChild(viewfinder);
   const fMark = viewfinder.querySelector('.m'), fDots = viewfinder.querySelectorAll('b');
@@ -105,28 +105,28 @@ export function mount({ el, hud, ctrl, out, solved }) {
     mat.uniforms.uLam.value = T.lam; mat.uniforms.uTheta.value = T.theta; mat.uniforms.uZo.value = T.zo; mat.uniforms.uUo.value = T.uo;
     mat.uniforms.uReplay.value = T.replay ? 1 : 0; mat.uniforms.uExpo.value = T.expo; mat.uniforms.uA0.value = aper()[0]; mat.uniforms.uA1.value = aper()[1]; mat.uniforms.uCol.value = c;
     let i = 0; const tT = Math.tan(T.theta), Lz = 110 + 14, a = aper();
-    for (let k = -4; k <= 4; k++) { const ue = k * (U_DRAW / 4); beams.userData.set(i++, A.set((ue - tT * Lz) * S, 0, -Lz * S), B.set(ue * S, 0, 0), 0.02, col, T.replay ? 0.22 : 0.32); }
+    for (let k = -4; k <= 4; k++) { const ue = k * (U_DRAW / 4); beams.userData.set(i++, A.set((ue - tT * Lz) * S, 0, -Lz * S), B.set(ue * S, 0, 0), 0.05, col, T.replay ? 0.35 : 0.5); }
     lblRef.position.set((-U_DRAW * 0.55 - tT * Lz * 0.45) * S, 0.5, -Lz * 0.45 * S);
     objGlow.forEach((g, j) => { const p = pointAt(j); g.position.set(p.u * S, 0, -p.z * S); g.material.color = c; g.visible = !T.replay; });
-    const mid = pointAt(1); lblObj.position.set(mid.u * S, 0.55, -mid.z * S); lblObj.visible = !T.replay;
+    const mid = pointAt(1); lblObj.position.set(mid.u * S, 0.9, -mid.z * S); lblObj.visible = !T.replay;
     if (!T.replay) {
-      for (let j = 0; j < 3; j++) { const p = pointAt(j); for (let k = -2; k <= 2; k++) beams.userData.set(i++, A.set(p.u * S, 0, -p.z * S), B.set(k * (U_HALF / 2) * S, 0, 0), 0.012, c, 0.14); }
+      for (let j = 0; j < 3; j++) { const p = pointAt(j); for (let k = -2; k <= 2; k++) beams.userData.set(i++, A.set(p.u * S, 0, -p.z * S), B.set(k * (U_HALF / 2) * S, 0, 0), 0.03, c, 0.22); }
       imgGlow.forEach(g => g.visible = false); twinGlow.visible = false; eye.visible = false; lblEye.visible = false; lblImg.visible = false; lblTwin.visible = false; viewfinder.hidden = true;
     } else {
-      for (let k = 0; k <= 4; k++) { const ue = a[0] + (a[1] - a[0]) * k / 4; beams.userData.set(i++, A.set(ue * S, 0, 0), B.set((ue + tT * ZE) * S, 0, ZE * S), 0.012, c2, 0.08); }
-      for (let k = 0; k <= 4; k++) { const ut = a[0] + (a[1] - a[0]) * k / 4, so = sinOut(ut, 1, -1), t = ZE / Math.sqrt(1 - so * so); beams.userData.set(i++, A.set(ut * S, 0, 0), B.set((ut + so * t) * S, 0, ZE * S), 0.012, c2, 0.08); }
+      for (let k = 0; k <= 4; k++) { const ue = a[0] + (a[1] - a[0]) * k / 4; beams.userData.set(i++, A.set(ue * S, 0, 0), B.set((ue + tT * ZE) * S, 0, ZE * S), 0.03, c2, 0.12); }
+      for (let k = 0; k <= 4; k++) { const ut = a[0] + (a[1] - a[0]) * k / 4, so = sinOut(ut, 1, -1), t = ZE / Math.sqrt(1 - so * so); beams.userData.set(i++, A.set(ut * S, 0, 0), B.set((ut + so * t) * S, 0, ZE * S), 0.03, c2, 0.12); }
       const twinU = mid.u + 2 * Math.sin(T.theta) * mid.z; twinGlow.position.set(twinU * S, 0, mid.z * S); twinGlow.material.color = c2; twinGlow.visible = mid.z < ZE + 14; lblTwin.position.copy(twinGlow.position).add(A.set(0, 0.4, 0)); lblTwin.visible = twinGlow.visible && Math.abs(twinU - T.eyeU) > 12;
       const frac = aperW() / (2 * U_HALF);
       for (let j = 0; j < 3; j++) {
         const im = imageOf(j), seen = sees(j);
-        for (let k = 0; k < 7; k++) { const u = a[0] + (a[1] - a[0]) * k / 6, so = sinOut(u, j, 1), tf = (ZE + 14) / Math.sqrt(1 - so * so); beams.userData.set(i++, A.set(u * S, 0, 0), B.set((u + so * tf) * S, 0, (ZE + 14) * S), 0.011, c2, seen ? 0.2 : 0.09); }
-        if (!im.far) { beams.userData.set(i++, A.set(a[0] * S, 0, 0), B.set(im.u * S, 0, im.z * S), 0.008, c2, 0.1); beams.userData.set(i++, A.set(a[1] * S, 0, 0), B.set(im.u * S, 0, im.z * S), 0.008, c2, 0.1); }
+        for (let k = 0; k < 7; k++) { const u = a[0] + (a[1] - a[0]) * k / 6, so = sinOut(u, j, 1), tf = (ZE + 14) / Math.sqrt(1 - so * so); beams.userData.set(i++, A.set(u * S, 0, 0), B.set((u + so * tf) * S, 0, (ZE + 14) * S), 0.03, c2, seen ? 0.3 : 0.12); }
+        if (!im.far) { beams.userData.set(i++, A.set(a[0] * S, 0, 0), B.set(im.u * S, 0, im.z * S), 0.02, c2, 0.16); beams.userData.set(i++, A.set(a[1] * S, 0, 0), B.set(im.u * S, 0, im.z * S), 0.02, c2, 0.16); }
         const g = imgGlow[j]; g.visible = !im.far; g.position.set(im.u * S, 0, im.z * S); g.material.color = c2;
-        const rad = Math.max(0.26, blurUm(Math.abs(im.z)) * S * 1.2); g.scale.set(rad * 2, rad * 2, 1); g.material.opacity = (0.18 + 0.75 * frac) * (seen ? 1 : 0.16);
-        if (seen) beams.userData.set(i++, A.set(im.u * S, 0, im.z * S), B.set(T.eyeU * S, 0, ZE * S), 0.014, c2, 0.5);
+        const rad = Math.max(0.5, blurUm(Math.abs(im.z)) * S * 1.2); g.scale.set(rad * 2, rad * 2, 1); g.material.opacity = (0.18 + 0.75 * frac) * (seen ? 1 : 0.16);
+        if (seen) beams.userData.set(i++, A.set(im.u * S, 0, im.z * S), B.set(T.eyeU * S, 0, ZE * S), 0.035, c2, 0.7);
       }
-      const im1 = imageOf(1); lblImg.position.set(im1.u * S, 0.6, im1.z * S); lblImg.visible = !im1.far;
-      eye.position.set(T.eyeU * S, 0, ZE * S); eye.visible = true; lblEye.position.copy(eye.position).add(A.set(0, -0.45, 0)); lblEye.visible = true;
+      const im1 = imageOf(1); lblImg.position.set(im1.u * S, 0.9, im1.z * S); lblImg.visible = !im1.far;
+      eye.position.set(T.eyeU * S, 0, ZE * S); eye.visible = true; lblEye.position.copy(eye.position).add(A.set(0, -0.7, 0)); lblEye.visible = true;
       viewfinder.hidden = false;
       const span = 44, at = deg => (50 + clamp(deg, -span, span) / span * 46) + '%';
       fMark.style.left = at(Math.atan((U_MARK - T.eyeU) / ZE) / DEG);
@@ -166,7 +166,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
   const dZ = dial(dials, { label: 'object depth behind the plate', min: 20, max: 110, step: 1, value: 80, fmt: v => v + ' µm', onInput: v => { T.zo = v; expose(); pose(); report(); } });
   dial(dials, { label: 'reference angle', min: 0, max: 25, step: 0.5, value: 12, fmt: v => v.toFixed(1) + '°' + (v < 0.6 ? ' in line' : ''), onInput: v => { T.theta = v * DEG; expose(); pose(); report(); } });
   dial(dials, { label: 'laser, recording', min: 400, max: 700, step: 1, value: 633, fmt: v => v + ' nm ' + laserName(v), onInput: v => { T.lam = v / 1000; expose(); pose(); report(); } });
-  dial(dials, { label: 'laser, replaying (break it: a different colour)', min: 400, max: 700, step: 1, value: 633, fmt: v => v + ' nm ' + laserName(v), onInput: v => { T.lam2 = v / 1000; pose(); report(); } });
+  dial(dials, { label: 'laser, replaying', min: 400, max: 700, step: 1, value: 633, fmt: v => v + ' nm ' + laserName(v), onInput: v => { T.lam2 = v / 1000; pose(); report(); } });
   const expose = () => { T.expo = ship.motion ? 0 : 1; };
   function breakUI() { const b = brk.get('break'), f = brk.get('fix'); f.hidden = T.lvl === 0; b.textContent = T.lvl === 0 ? 'break the plate' : T.lvl < SHARDS.length - 1 ? 'break it again' : 'broken as it goes'; b.disabled = T.lvl === SHARDS.length - 1; }
   function setMode(r) { T.replay = r; modeChips.mark(r ? 'rep' : 'rec'); if (!r) { T.lvl = 0; breakUI(); expose(); } pose(); report(); }
@@ -180,8 +180,9 @@ export function mount({ el, hud, ctrl, out, solved }) {
   let drag = null; const tmp = new THREE.Vector3(), planeEye = new THREE.Plane(new THREE.Vector3(0, 0, 1), -ZE * S), planeObj = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   ship.viewport(el, {
     fov: 38,
+    resize(vp) { fitFov(vp, 38); },
     setup(vp) {
-      vp.camera.position.set(6.5, 7.5, 13); vp.camera.lookAt(0.5, -0.5, 0);
+      vp.camera.position.set(7, 9, 17); vp.camera.lookAt(0.3, -1.2, 1);
       vp.scene.add(benchFloor(30, 30).translateY(-2.9), plate, holder, beams, mark, eye, twinGlow, lblObj, lblImg, lblEye, lblRef, lblMark, lblPlate, lblTwin, ...objGlow, ...imgGlow);
       pose(); report();
     },

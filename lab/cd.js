@@ -11,7 +11,7 @@
  */
 import { ship } from '../ship/ship.js';
 import { HDRLoader } from '../vendor/three/HDRLoader.js';
-import { THREE, P, TAU, DEG, clamp, sm, rgb01, GLSL_WL, octave, dial, chips, readouts, voice, chase, fmtUm } from './bench.js';
+import { fitFov, THREE, P, TAU, DEG, clamp, sm, rgb01, GLSL_WL, octave, dial, chips, readouts, voice, chase, fmtUm } from './bench.js';
 
 export const question = {
   id: 'cd', title: 'Bench 02 · The CD',
@@ -369,7 +369,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
       } catch (e) { /* plain label stays */ }
       report(); setWhy(); update(0); updateStrip();
     },
-    resize(vp) { vpSize = vp.size; H = vp.size.h; },
+    resize(vp) { vpSize = vp.size; H = vp.size.h; fitFov(vp, 34); },
     frame(vp) {
       if (!dragging && ship.motion && (Math.abs(vx) + Math.abs(vy)) > 0.02) {
         group.rotation.y += vx * vp.dt; group.rotation.x = clamp(group.rotation.x + vy * vp.dt, -2.62, 2.62);

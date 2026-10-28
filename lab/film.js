@@ -15,7 +15,7 @@
  * Fresnel amplitude (n - 1)^2 / (n + 1)^2 relative to water.
  */
 import { ship } from '../ship/ship.js';
-import { THREE, P, TAU, DEG, clamp, sm, GLSL_WL, rgb01, octave, dial, chips, readouts, voice, benchFloor, tag } from './bench.js';
+import { fitFov, THREE, P, TAU, DEG, clamp, sm, GLSL_WL, rgb01, octave, dial, chips, readouts, voice, benchFloor, tag } from './bench.js';
 
 export const question = {
   id: 'film', title: 'Bench 05 · Soap film',
@@ -63,7 +63,7 @@ void main(){
     acc += s * s * wl2rgb(nm); }
   acc /= uWsum;
   float mean = (acc.r + acc.g + acc.b) / 3.0;
-  acc = clamp(mean + (acc - mean) * 1.45, 0.0, 1.0);
+  acc = clamp(mean + (acc - mean) * 1.6, 0.0, 1.0);
   float r = (uN - 1.0) / (uN + 1.0), rw = 0.33 / 2.33;
   float fres = clamp((r * r) / (rw * rw), 0.0, 3.0);
   float win = 0.5 + 0.5 * sm1((u + 1.0) / 0.55) * (1.0 - sm1((u + 0.05) / 0.5)) * sm1((v + 1.0) / 0.5) * (1.0 - sm1((v + 0.1) / 0.5)) + 0.2 * exp(-((u - 0.45) * (u - 0.45) * 4.0 + (v - 0.5) * (v - 0.5) * 6.0));
@@ -128,11 +128,11 @@ export function mount({ el, hud, ctrl, out, solved }) {
   let drag = null; const tmp = new THREE.Vector3();
   ship.viewport(el, {
     fov: 36,
+    resize(vp) { fitFov(vp, 36); },
     setup(vp) {
       camera = vp.camera; camera.position.set(0, 0.6, 5.2); camera.lookAt(0, 0, 0);
       const key = new THREE.DirectionalLight(0xfff2dc, 1.6); key.position.set(-3, 4, 3);
       vp.scene.add(wand, benchFloor(12, 12).translateY(-1.8), new THREE.AmbientLight(0x6f84a0, 0.9), key);
-      const l = tag('WAND (DRAG TO TILT)', 0.2, '#9aa2b1'); l.position.set(0, -R0 - 0.3, 0); vp.scene.add(l);
       reportState();
     },
     frame(vp) {

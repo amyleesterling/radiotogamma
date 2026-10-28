@@ -287,7 +287,7 @@ body[data-deck="observatory"] .testout.fail { color: #ffb3a7; border-color: rgb(
         </div>
       </div>
 
-      <div class="viewport" id="vpMain" style="height: clamp(340px, 58vh, 600px)">
+      <div class="viewport" id="vpMain" style="height: clamp(300px, min(58vh, 100vw), 600px)">
         <div class="vhud" id="hudMain">
           <span class="crumbs" id="crumbs"></span>
                     <div class="probe a" id="probeA" role="slider" tabindex="0" aria-label="Probe A" aria-valuemin="4" aria-valuemax="20" aria-valuenow="8" data-m="a"><span class="cap">A<small></small></span></div>
@@ -639,7 +639,7 @@ const fPx = f => ((ovU(f) - 0.5) * RIB_L / OV_L + 0.5) * (O.vp ? O.vp.size.w : 1
 const O = {};
 /* ---- the main instrument ---------------------------------------------------- */
 const M = {                                 // scene registry and display state
-  k: 1, cam: { x: 0, y: 3.4, z: 5.4, lx: 0, ly: 0.9, lz: 0 }, disp: null, hudDirty: true,
+  k: 1, ky: 1, cam: { x: 0, y: 3.4, z: 5.4, lx: 0, ly: 0.9, lz: 0 }, disp: null, hudDirty: true,
   phase: { a: 0, b: 0, t: 0 }, pulse: 0, camMoved: true,
 };
 const x12 = f => ((log(f) - S.focLo) / span() - 0.5) * RIB_L;        // ribbon position of a frequency
@@ -726,6 +726,7 @@ const vpMain = ship.viewport($('vpMain'), {
     M.shelfEls = K.REGIMES.map(r => { const e = document.createElement('span'); e.className = 'llab'; e.textContent = r.name; hud.appendChild(e); return e; });
     M.skyEls = K.SKY_LABELS.map(l => { const e = document.createElement('span'); e.className = 'llab ' + l[2]; e.textContent = l[1]; hud.appendChild(e); return e; })
       .concat(K.SKY_TELESCOPES.map(l => { const e = document.createElement('span'); e.className = 'llab scope'; e.textContent = l[1]; hud.appendChild(e); return e; }));
+    M.laneEls = ['a', 'b'].map(c => { const e = document.createElement('span'); e.className = 'llab'; e.style.color = 'rgb(' + COL[c].join(' ') + ')'; hud.appendChild(e); return e; });
     M.shiftEls = ['em', 'sh'].map(c => { const e = document.createElement('span'); e.className = 'llab ' + c; hud.appendChild(e); return e; });
     M.senseEls = [0, 1].map(() => { const e = document.createElement('span'); e.className = 'llab'; e.style.color = 'rgb(255 212 121)'; hud.appendChild(e); return e; });
     M.disp = Object.assign({}, M.cam);
@@ -737,9 +738,14 @@ const vpMain = ship.viewport($('vpMain'), {
   resize(vp) {
     // the ribbon fills nine tenths of the box whatever its aspect: scale the whole instrument
     const cam = vp.camera, d = Math.hypot(M.cam.z, M.cam.y);
+    // a tall box (a phone) gets a wider lens so the ribbon still fills it
+    cam.fov = cam.aspect < 1.3 ? 62 : cam.aspect < 1.8 ? 48 : 38; cam.updateProjectionMatrix();
     const halfW = d * Math.tan(cam.fov / 2 * Math.PI / 180) * cam.aspect;
     M.k = halfW / (RIB_L / 2 * 1.2);
-    if (M.G) { M.G.scale.setScalar(M.k); M.hudDirty = true; }
+    // and on a tall box the heights and the ribbon's width grow faster than its
+    // length, so the waves and probes stay legible: a fatter, shorter ribbon
+    M.ky = M.k * clamp(Math.pow(1.5 / cam.aspect, 1.0), 1, 2.4);
+    if (M.G) { M.G.scale.set(M.k, M.ky, M.ky); M.hudDirty = true; }
   },
   frame(vp) {
     const { dt, t, camera } = vp;
@@ -748,9 +754,9 @@ const vpMain = ship.viewport($('vpMain'), {
     const c = M.cam, d = M.disp;
     if (S.lockOn) {
       const tx = x12(travHz()) * M.k;
-      c.x = tx; c.y = 1.6 * M.k + 0.5; c.z = 3.2 * M.k + 0.6; c.lx = tx; c.ly = 0.5 * M.k; c.lz = 0;
+      c.x = tx; c.y = 1.6 * M.ky + 0.5; c.z = 3.2 * M.ky + 0.6; c.lx = tx; c.ly = 0.5 * M.ky; c.lz = 0;
     } else {
-      c.x = motion ? ship.pointer.x * 0.12 : 0; c.y = 3.4; c.z = 5.4; c.lx = 0; c.ly = 0.9 * M.k; c.lz = 0;
+      c.x = motion ? ship.pointer.x * 0.12 : 0; c.y = 3.4; c.z = 5.4; c.lx = 0; c.ly = 0.9 * M.ky; c.lz = 0;
     }
     const kk = 1 - Math.exp(-dt * 5);
     let moved = 0;
@@ -779,6 +785,10 @@ const vpMain = ship.viewport($('vpMain'), {
       return;
     }
     if (ev.type === 'pointermove' && M.drag) {
+      // while dragging, read the pointer's x at the ribbon's own height, so a
+      // hand that wanders up the box does not race off along the perspective
+      const r = el.getBoundingClientRect();
+      vp.pick({ clientX: ev.clientX, clientY: r.top + px(0, 0, 0, vp).y });
       const f = hitRibbon(vp, true); if (f) { setMarker(M.drag, snapPx(f, vp)); render(); }
       return;
     }
@@ -788,13 +798,13 @@ const vpMain = ship.viewport($('vpMain'), {
 const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
 function hitRibbon(vp, loose) {
   if (!vp.ray.ray.intersectPlane(plane, hit)) return null;
-  const x = hit.x / M.k, z = hit.z / M.k;
+  const x = hit.x / M.k, z = hit.z / M.ky;
   if (!loose && Math.abs(z) > RIB_W * 1.4) return null;
   return fOfX12(x);
 }
 /* snap to a landmark within a few pixels, as the old lens did */
 const pv = new THREE.Vector3();
-function px(x, y, z, vp) { pv.set(x * M.k, y * M.k, z * M.k).project(vp.camera); return { x: (pv.x + 1) / 2 * vp.size.w, y: (1 - pv.y) / 2 * vp.size.h, behind: pv.z > 1 }; }
+function px(x, y, z, vp) { pv.set(x * M.k, y * M.ky, z * M.ky).project(vp.camera); return { x: (pv.x + 1) / 2 * vp.size.w, y: (1 - pv.y) / 2 * vp.size.h, behind: pv.z > 1 }; }
 function snapPx(f, vp) {
   const fx = px(x12(f), 0, 0, vp).x;
   let best = null, bd = 7;
@@ -845,7 +855,7 @@ function relayout() {
     pr.pillarHalo.userData.set(u => [x - 0.07, pr.h * u, 0, x + 0.07, pr.h * u, 0]);
   }
   // the ratio beam: an arc from the lower probe to the higher one
-  const xa = x12(hzOf('a')), xb = x12(hzOf('b')), beamOn = S.layer !== 'sky' && S.layer !== 'shift' && S.layer !== 'wave' && S.layer !== 'matter' && inLens(S.aHz) && inLens(S.bHz);
+  const beamOn = (!S.layer || S.layer === 'stories') && inLens(S.aHz) && inLens(S.bHz);
   M.beam.visible = M.beamHalo.visible = M.pulseG.visible = beamOn;
   if (beamOn) {
     const x0 = x12(hzOf(loM())), x1 = x12(hzOf(hiM())), apex = 1.35 + Math.min(0.5, Math.abs(x1 - x0) * 0.06);
@@ -878,7 +888,7 @@ function relayout() {
     M.senseFloor.userData.set(u => { const x = x0 + (x1 - x0) * u; return [x, 0.02, -RIB_W * 0.5, x, 0.02, RIB_W * 0.5]; });
     M.senseWall.userData.set(u => { const x = x0 + (x1 - x0) * u; return [x, 0, -RIB_W * 0.5, x, 0.6, -RIB_W * 0.5]; });
     M.senseLid.userData.set(u => { const x = x0 + (x1 - x0) * u; return [x, 0.6, -RIB_W * 0.5 - 0.01, x, 0.6, -RIB_W * 0.5 + 0.01]; });
-    M.senseIcon.position.set((x0 + x1) / 2, 1.05, 0);
+    M.senseIcon.position.set((x0 + x1) / 2, 1.3, 0);
     M.senseIcon.visible = !!z.icon;
     if (z.icon) {
       if (!M.senseTex[z.id]) { const tex = new THREE.TextureLoader().load(z.icon); tex.colorSpace = THREE.SRGBColorSpace; M.senseTex[z.id] = tex; }
@@ -1010,7 +1020,7 @@ function layoutHud() {
     el.textContent = tk[1]; el.style.left = p.x + 'px'; el.style.top = (p.y + 8) + 'px'; lastX = p.x;
   });
   // the ratio, at the apex of the beam
-  if (M.beam.visible && M.beamPath) {
+  if (M.beam.visible && M.beamPath && !S.lockOn) {
     const [x, y] = M.beamPath(0.5), p = px(x, y, 0, vp);
     const r = Math.max(S.aHz, S.bHz) / Math.min(S.aHz, S.bHz);
     M.ratioEl.hidden = p.behind; M.ratioEl.innerHTML = '×' + K.ratioExact(r) + '<small>' + P.octaves(Math.min(S.aHz, S.bHz), Math.max(S.aHz, S.bHz)).toFixed(1) + ' octaves</small>';
@@ -1019,6 +1029,13 @@ function layoutHud() {
   // the traveller
   if (M.trav.glow.visible) { const f = travHz(), p = px(x12(f), 1.3, 0, vp); M.travEl.hidden = false; M.travEl.textContent = P.fmtFreq(f, true); M.travEl.style.left = p.x + 'px'; M.travEl.style.top = p.y + 'px'; }
   else M.travEl.hidden = true;
+  // the wave view's lane tags
+  ['a', 'b'].forEach((m, i) => {
+    const el = M.laneEls[i], on = S.layer === 'wave';
+    el.hidden = !on; if (!on) return;
+    const p = px(-RIB_L / 2, (m === 'a' ? 0.75 : 1.4) + 0.42, 0, vp);
+    el.textContent = m.toUpperCase() + ' · ' + nameOf(m); el.style.left = (p.x + el.offsetWidth / 2 + 4) + 'px'; el.style.top = p.y + 'px';
+  });
   // layer labels
   const minPri = W < 560 ? 3 : W < 800 ? 2 : 1;
   M.shelfEls.forEach((el, i) => {
@@ -1034,7 +1051,7 @@ function layoutHud() {
   } else M.skyEls.forEach(el => { el.hidden = true; });
   if (M.shift.visible) {
     const src = K.SHIFT_SOURCES[S.shiftSrc], fr = src.hz, fo = fr / (1 + S.shiftZ);
-    const pe = px(x12(fr), 0.56, 0, vp), pa = px(x12(Math.max(fo, FMIN)), 1.35 + 0.56, 0, vp);
+    const pe = px(x12(fr), 1.08, 0, vp), pa = px(x12(Math.max(fo, FMIN)), 1.35 + 1.08, 0, vp);
     M.shiftEls[0].hidden = !inLens(fr) || pe.behind; M.shiftEls[0].textContent = 'as it left · ' + P.fmtWave(fr, true); M.shiftEls[0].style.left = pe.x + 'px'; M.shiftEls[0].style.top = (pe.y - 10) + 'px';
     const arr = S.shiftZ > 0.002 && inLens(Math.max(fo, FMIN)) && !pa.behind;
     M.shiftEls[1].hidden = !arr; M.shiftEls[1].textContent = 'arrives · ' + P.fmtWave(fo, true) + ' · ×' + K.ratioExact(1 + S.shiftZ) + ' longer'; M.shiftEls[1].style.left = pa.x + 'px'; M.shiftEls[1].style.top = (pa.y - 10) + 'px';
@@ -1456,6 +1473,7 @@ tourBtn.addEventListener('click', () => { ti = 0; tOverlay.hidden = false; tourS
 /* ---- boot --------------------------------------------------------------------------- */
 const wantTest = new URLSearchParams(location.search).has('test');
 decodeState();
+if (S.layer === 'senses' && !new URLSearchParams(location.search).get('focus')) setFocus(log(SZ_LO), log(SZ_HI));
 initShift();
 applyLayer();
 render();
@@ -1478,7 +1496,7 @@ if (wantTest) {
   console.log(out.join('\n'));
   window.__selfTest = out;
 }
-window.__obs = { S, render, setMarker, setFocus };
+window.__obs = { S, render, setMarker, setFocus, M, hitRibbon, vpMain };
 </script>
 <script src="vendor/scifi-ui/hologram-tap.js"></script>
 </body>

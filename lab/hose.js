@@ -14,7 +14,7 @@
  * n > 2, has no one-bounce bow at all.
  */
 import { ship } from '../ship/ship.js';
-import { THREE, P, TAU, DEG, clamp, sm, rgb01, cauchy, beamSet, octave, dial, chips, readouts, voice, fmtDeg, chase, benchFloor, tag, glowSprite } from './bench.js';
+import { fitFov, THREE, P, TAU, DEG, clamp, sm, rgb01, cauchy, beamSet, octave, dial, chips, readouts, voice, fmtDeg, chase, benchFloor, tag, glowSprite } from './bench.js';
 
 export const question = {
   id: 'hose', title: 'Bench 03 · Garden hose',
@@ -37,7 +37,7 @@ const N_DROPS = 2400, EYE = new THREE.Vector3(0, 1.6, 0);
 const DROPS = [{ id: 'water', name: 'Water', nd: 1.3330, V: 55.7 }, { id: 'glass', name: 'Glass bead', nd: 1.5168, V: 64.2 }, { id: 'diamond', name: 'Diamond', nd: 2.4175, V: 55.3 }];
 
 export function mount({ el, hud, ctrl, out, solved }) {
-  const T = { nd: 1.3330, V: 55.7, mat: 'water', el: 24, az: -2.35, cloud: new THREE.Vector3(1.9, 1.05, 1.9), light: false, eye: false };
+  const T = { nd: 1.3330, V: 55.7, mat: 'water', el: 24, az: -2.35, cloud: new THREE.Vector3(2.7, 1.05, 2.2), light: false, eye: false };
   let glass = cauchy(T.nd, T.V);
   const strip = octave(hud), say = voice(out);
   let done = false;
@@ -90,9 +90,9 @@ export function mount({ el, hud, ctrl, out, solved }) {
         vec3 p = uC + position + uJit * 0.03 * vec3(sin(uT * 2.3 + phase), cos(uT * 1.9 + phase * 1.7), sin(uT * 2.1 + phase * 0.6));
         vec3 d = normalize(p - uEye); float a = acos(clamp(dot(d, uAxis), -1.0, 1.0)) / 3.14159265;
         vec3 bow = texture2D(uLut, vec2(a, 0.5)).rgb;
-        vC = vec3(0.10, 0.13, 0.17) + bow * uSun * 1.1;
+        vC = vec3(0.13, 0.17, 0.22) + bow * uSun * 1.3;
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
-        gl_PointSize = uPR * 26.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
+        gl_PointSize = uPR * 30.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `varying vec3 vC; void main(){ vec2 q = gl_PointCoord - 0.5; float r = length(q) * 2.0; float a = smoothstep(1.0, 0.15, r); gl_FragColor = vec4(vC * a, a); }`,
   });
   const drops = new THREE.Points(dgeo, dmat); drops.frustumCulled = false;
@@ -113,7 +113,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
   const cone1 = new THREE.Mesh(coneGeo, coneMat(0xff6b6b)), cone2 = new THREE.Mesh(coneGeo, coneMat(0xa07cff));
   const axisBeams = beamSet(2);
   const Y = new THREE.Vector3(0, 1, 0), S = new THREE.Vector3(), A = new THREE.Vector3(), tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
-  let camera, labelBow, labelAnti;
+  let camera, labelBow, labelAnti, labelSpray;
 
   function sunDir() { const e = T.el * DEG; return S.set(Math.cos(e) * Math.sin(T.az), Math.sin(e), Math.cos(e) * Math.cos(T.az)); }
   function pose() {
@@ -132,6 +132,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
     axisBeams.userData.set(1, EYE, tmp.copy(EYE).addScaledVector(A, isNaN(tg) ? 9 : Math.min(9, tg)), 0.012, new THREE.Color(0xa07cff), 0.7);
     axisBeams.userData.use(2);
     if (labelBow) { labelBow.visible = T.light && !isNaN(ang.r1); labelBow.position.copy(EYE).addScaledVector(A, 2.2).addScaledVector(tmp2.set(A.z, 0, -A.x).normalize(), Math.tan((isNaN(ang.r1) ? 42 : ang.r1) * DEG) * 2.2 + 0.25); }
+    if (labelSpray) labelSpray.position.copy(T.cloud).add(tmp.set(0, 1.25, 0));
     if (labelAnti) { labelAnti.visible = shadow.visible; labelAnti.position.copy(shadow.position).add(tmp.set(0, 0.25, 0)); }
   }
   // how many drops sit on the primary bow right now: JS-side, on change only
@@ -173,7 +174,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
   }
 
   /* ---- controls ---- */
-  const dropChips = chips(ctrl, DROPS.map(d => ({ id: d.id, name: d.name, b: 'n ' + d.nd.toFixed(3), on: d.id === 'water' })), { onPick: it => { T.mat = it.id; T.nd = it.nd; T.V = it.V; dN.set(it.nd); glass = cauchy(T.nd, T.V); buildLUT(); pose(); report(); } });
+  const dropChips = chips(ctrl, DROPS.map(d => ({ id: d.id, name: d.name, b: 'n ' + d.nd.toFixed(3), on: d.id === 'water' })), { onPick: c => { const it = DROPS.find(d => d.id === c.id); T.mat = it.id; T.nd = it.nd; T.V = it.V; dN.set(it.nd); glass = cauchy(T.nd, T.V); buildLUT(); pose(); report(); } });
   const dials = document.createElement('div'); dials.className = 'dials'; ctrl.appendChild(dials);
   const dN = dial(dials, { label: 'droplet index n<sub>d</sub>', min: 1, max: 2.6, step: 0.005, value: T.nd, fmt: v => v.toFixed(3), onInput: v => { T.nd = v; T.V = 55; T.mat = 'custom'; dropChips.mark(''); glass = cauchy(T.nd, T.V); buildLUT(); pose(); report(); } });
   const dE = dial(dials, { label: 'sun elevation (or drag the sky)', min: 0, max: 70, step: 0.5, value: T.el, fmt: v => v.toFixed(1) + '°', onInput: v => { T.el = v; pose(); report(); } });
@@ -181,24 +182,26 @@ export function mount({ el, hud, ctrl, out, solved }) {
   chips(ctrl, [{ id: 'light', name: 'show the light' }], { radio: false, onPick: (it, b) => { T.light = !T.light; b.setAttribute('aria-pressed', String(T.light)); pose(); } });
 
   /* ---- the viewport ---- */
-  const camPos = new THREE.Vector3(4.6, 3.4, 7.2), camTgt = new THREE.Vector3(1.4, 1.1, 1.4), wantPos = new THREE.Vector3(), wantTgt = new THREE.Vector3();
+  const camPos = new THREE.Vector3(1.2, 3.4, 8.8), camTgt = new THREE.Vector3(1.4, 0.9, 0.8), wantPos = new THREE.Vector3(), wantTgt = new THREE.Vector3(), curTgt = camTgt.clone();
   const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.05);
   let drag = null;
   ship.viewport(el, {
     fov: 44,
+    resize(vp) { fitFov(vp, 44); },
     setup(vp) {
       camera = vp.camera; camera.position.copy(camPos); camera.lookAt(camTgt);
       vp.scene.add(benchFloor(16, 16, 0x1d3a2a), body, head, eyeGlow, sun, sunCore, shadow, nozzle, drops, cone1, cone2, axisBeams);
       labelBow = tag('THE 42° CONE', 0.22, '#ff9c8a'); labelAnti = tag('ANTISOLAR POINT', 0.2, '#a07cff');
-      const lb = tag('SPRAY (DRAG IT)', 0.2, '#9aa2b1'); lb.position.set(0, 1.35, 0); drops.add(lb);
+      labelSpray = tag('SPRAY (DRAG IT)', 0.2, '#9aa2b1'); vp.scene.add(labelSpray);
       vp.scene.add(labelBow, labelAnti);
       buildLUT(); pose(); report();
     },
     frame(vp) {
       dmat.uniforms.uT.value = vp.t; dmat.uniforms.uJit.value = ship.motion ? 1 : 0;
-      if (T.eye) { wantPos.copy(EYE); wantTgt.copy(EYE).add(A); camera.fov = 78; } else { wantPos.copy(camPos); wantTgt.copy(camTgt); camera.fov = 44; }
+      if (T.eye) { wantPos.copy(EYE); wantTgt.copy(EYE).add(A); } else { wantPos.copy(camPos); wantTgt.copy(camTgt); }
+      fitFov(vp, T.eye ? 78 : 44);
       const k = 1 - Math.exp(-vp.dt * 5);
-      camera.position.lerp(wantPos, k); camTgt.lerp(wantTgt, k); camera.lookAt(camTgt); camera.updateProjectionMatrix();
+      camera.position.lerp(wantPos, k); curTgt.lerp(wantTgt, k); camera.lookAt(curTgt);
       if (ship.motion) sun.material.opacity = 0.8 + 0.12 * Math.sin(vp.t * 0.9);
     },
     pointer(ev, vp) {

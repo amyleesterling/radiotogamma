@@ -179,6 +179,14 @@ export const fmtDeg = (v, d = 1) => v.toFixed(d) + '<span class="u">°</span>';
 export const fmtNm = v => Math.round(v) + '<span class="u">nm</span>';
 export const fmtUm = (v, d = 2) => v.toFixed(d) + '<span class="u">µm</span>';
 
+/* a bench framed for a wide box keeps its horizontal field on a phone:
+   below a 1.5 aspect the vertical fov opens so the same width stays in view */
+export function fitFov(vp, base) {
+  const a = vp.size.w / vp.size.h, ref = 1.5;
+  vp.camera.fov = a >= ref ? base : 2 * Math.atan(Math.tan(base * DEG / 2) * ref / a) / DEG;
+  vp.camera.updateProjectionMatrix();
+}
+
 /* display chases truth: disp += (truth - disp) * (1 - exp(-dt * k)) */
 export const chase = (disp, truth, dt, k = 8) => disp + (truth - disp) * (1 - Math.exp(-dt * k));
 
