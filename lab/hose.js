@@ -52,7 +52,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
     ang.r2 = bowAngle(glass.nNm(700), 2); ang.v2 = bowAngle(glass.nNm(400), 2);
     const dep = (deg, c, w) => {
       if (isNaN(deg)) return;
-      const x0 = deg / 180 * (LW - 1), sig = 0.24 / 180 * (LW - 1);
+      const x0 = deg / 180 * (LW - 1), sig = 0.3 / 180 * (LW - 1);
       for (let x = Math.max(0, Math.floor(x0 - 3 * sig)); x <= Math.min(LW - 1, Math.ceil(x0 + 3 * sig)); x++) {
         const g = Math.exp(-(x - x0) * (x - x0) / (2 * sig * sig)) * w;
         acc[x * 3] += c[0] * g; acc[x * 3 + 1] += c[1] * g; acc[x * 3 + 2] += c[2] * g;
@@ -90,9 +90,9 @@ export function mount({ el, hud, ctrl, out, solved }) {
         vec3 p = uC + position + uJit * 0.03 * vec3(sin(uT * 2.3 + phase), cos(uT * 1.9 + phase * 1.7), sin(uT * 2.1 + phase * 0.6));
         vec3 d = normalize(p - uEye); float a = acos(clamp(dot(d, uAxis), -1.0, 1.0)) / 3.14159265;
         vec3 bow = texture2D(uLut, vec2(a, 0.5)).rgb;
-        vC = vec3(0.13, 0.17, 0.22) + bow * uSun * 1.3;
+        vC = vec3(0.09, 0.12, 0.16) + bow * uSun * 1.2;
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
-        gl_PointSize = uPR * 30.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
+        gl_PointSize = uPR * min(9.0, 42.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `varying vec3 vC; void main(){ vec2 q = gl_PointCoord - 0.5; float r = length(q) * 2.0; float a = smoothstep(1.0, 0.15, r); gl_FragColor = vec4(vC * a, a); }`,
   });
   const drops = new THREE.Points(dgeo, dmat); drops.frustumCulled = false;
@@ -108,7 +108,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
   const coneMat = c => new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     uniforms: { uC: { value: new THREE.Color(c) }, uA: { value: 0 } },
     vertexShader: `varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = -mv.xyz; gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform vec3 uC; uniform float uA; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 1.5); float along = smoothstep(0.0, 0.08, vUv.y) * (1.0 - smoothstep(0.5, 1.0, vUv.y)); gl_FragColor = vec4(uC * uA * (0.06 + 0.5 * f) * along, 1.0); }` });
+    fragmentShader: `uniform vec3 uC; uniform float uA; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 1.5); float along = smoothstep(0.0, 0.08, vUv.y) * (1.0 - smoothstep(0.5, 1.0, vUv.y)); gl_FragColor = vec4(uC * uA * (0.015 + 0.16 * f) * along, 1.0); }` });
   const coneGeo = new THREE.CylinderGeometry(1, 0, 1, 56, 1, true).translate(0, 0.5, 0);
   const cone1 = new THREE.Mesh(coneGeo, coneMat(0xff6b6b)), cone2 = new THREE.Mesh(coneGeo, coneMat(0xa07cff));
   const axisBeams = beamSet(2);
@@ -198,8 +198,9 @@ export function mount({ el, hud, ctrl, out, solved }) {
     },
     frame(vp) {
       dmat.uniforms.uT.value = vp.t; dmat.uniforms.uJit.value = ship.motion ? 1 : 0;
-      if (T.eye) { wantPos.copy(EYE); wantTgt.copy(EYE).add(A); } else { wantPos.copy(camPos); wantTgt.copy(camTgt); }
+      if (T.eye) { wantPos.copy(EYE); tmp2.copy(T.cloud).sub(EYE).normalize().add(A).normalize(); wantTgt.copy(EYE).add(tmp2); } else { wantPos.copy(camPos); wantTgt.copy(camTgt); }
       fitFov(vp, T.eye ? 78 : 44);
+      body.visible = head.visible = eyeGlow.visible = !T.eye;
       const k = 1 - Math.exp(-vp.dt * 5);
       camera.position.lerp(wantPos, k); curTgt.lerp(wantTgt, k); camera.lookAt(curTgt);
       if (ship.motion) sun.material.opacity = 0.8 + 0.12 * Math.sin(vp.t * 0.9);

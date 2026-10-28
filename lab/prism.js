@@ -144,6 +144,9 @@ export function mount({ el, hud, ctrl, out, solved }) {
     let tirAny = false, trapped = 0, outCount = 0, reach = 0;
     const traces = WLS.map(nm => { const r = trace(poly, glass.nNm(nm)); if (r.tir) tirAny = true; if (r.trapped) trapped++; if (r.out) { outCount++; outs.push(Math.atan2(r.dz, r.dx)); } return r; });
     const mean = outs.length ? Math.atan2(outs.reduce((a, t) => a + Math.sin(t), 0), outs.reduce((a, t) => a + Math.cos(t), 0)) : 0;
+    // the widening is for one coherent fan; when wavelengths leave by different faces the true angles are drawn
+    const rawSpread = outs.length ? Math.max(...outs.map(t => Math.abs(Math.atan2(Math.sin(t - mean), Math.cos(t - mean))))) / DEG : 0;
+    const gain = rawSpread > 8 ? 1 : T.gain;
     const lp = landing.geometry.attributes.position, lc = landing.geometry.attributes.color; let ln = 0;
     const hit = [];
     traces.forEach((r, k) => {
@@ -151,8 +154,8 @@ export function mount({ el, hud, ctrl, out, solved }) {
       for (let s = 1; s < r.segs.length && i < 158; s++) {
         const sg = r.segs[s], last = s === r.segs.length - 1;
         let x2 = sg[2], z2 = sg[3];
-        if (last && r.out && T.gain !== 1) {           // widen the fan about its true mean, display only
-          const th = Math.atan2(r.dz, r.dx), wide = mean + (th - mean) * T.gain;
+        if (last && r.out && gain !== 1) {           // widen the fan about its true mean, display only
+          const th = Math.atan2(r.dz, r.dx), wide = mean + (th - mean) * gain;
           const L = exitLen(sg[0], sg[1], Math.cos(wide), Math.sin(wide));
           x2 = sg[0] + Math.cos(wide) * L; z2 = sg[1] + Math.sin(wide) * L;
         }
@@ -164,7 +167,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
     landing.geometry.setDrawRange(0, ln); lp.needsUpdate = true; lc.needsUpdate = true;
     const dev = r => r.out ? Math.atan2(r.dz, r.dx) / DEG : NaN;
     const red = trace(poly, glass.nNm(650)), blue = trace(poly, glass.nNm(450));
-    Object.assign(result, { devRed: dev(red), devBlue: dev(blue), tirAny, trapped, outCount, reach, fan: outs.length ? (Math.max(...outs) - Math.min(...outs)) / DEG : 0 });
+    Object.assign(result, { gainUsed: gain, devRed: dev(red), devBlue: dev(blue), tirAny, trapped, outCount, reach, fan: outs.length ? (Math.max(...outs) - Math.min(...outs)) / DEG : 0 });
     strip.light(hit.length ? nm => (hit.some(h => Math.abs(h - nm) < 8) ? 0.95 : 0.12) : null);
     if (reach >= 10 && result.fan > 0.05 && !done) { done = true; solved(); }
     report();
@@ -181,7 +184,7 @@ export function mount({ el, hud, ctrl, out, solved }) {
     R.set('n', `${n4.toFixed(4)} <span class="u">blue</span> &nbsp; ${n6.toFixed(4)} <span class="u">red</span>`, `${T.nd < 1 ? 'an index below 1: light bends away from the normal, and may not get in at all' : 'the index climbs toward the blue by ' + (n4 - n6).toFixed(4)}`);
     const d = (v) => isNaN(v) ? '<span class="u">trapped</span>' : Math.abs(v).toFixed(2) + '<span class="u">°</span>';
     R.set('dev', `${d(result.devRed)} <span class="u">red</span> &nbsp; ${d(result.devBlue)} <span class="u">blue</span>`);
-    R.set('fan', result.outCount ? fmtDeg(result.fan, 2) : '<span class="u">no exit</span>', `drawn ×${T.gain}; at ×1 the stage shows the angles as traced`);
+    R.set('fan', result.outCount ? fmtDeg(result.fan, 2) : '<span class="u">no exit</span>', result.gainUsed === 1 ? 'drawn at ×1: the angles as traced' : `drawn ×${T.gain}; at ×1 the stage shows the angles as traced`);
     const name = T.mat === 'invent' ? 'an invented glass' : MATERIALS.find(m => m.id === T.mat).name;
     if (T.nd < 1 && result.tirAny && !result.outCount) say(`Index ${T.nd.toFixed(2)}: below one, the beam meets the face and bounces off before it ever gets in. Nothing enters.`);
     else if (T.nd < 1) say(`Index ${T.nd.toFixed(2)}: below one, so the ray bends away from the normal on the way in, the opposite of glass. The ship knows no solid that does this; the phase index of a plasma comes close.`);
