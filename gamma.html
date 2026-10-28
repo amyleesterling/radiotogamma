@@ -43,13 +43,18 @@
   body[data-deck="gamma"] #vpClimb.is-grabbing { cursor: grabbing; }
   body[data-deck="gamma"] .vhud .hint {
     position: absolute; left: 14px; top: 12px; font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
-    color: rgb(var(--line) / .6); pointer-events: none; max-width: 60%;
+    color: rgb(var(--line) / .6); pointer-events: none; max-width: calc(100% - 80px);
   }
   body[data-deck="gamma"] .vhud .roof, body[data-deck="gamma"] .vhud .floor {
     position: absolute; left: 14px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase;
     color: rgb(var(--dim) / .8); pointer-events: none;
   }
   body[data-deck="gamma"] .vhud .roof { top: 30px; }
+  body[data-deck="gamma"] .vhud .hint .short { display: none; }
+  @media (max-width: 600px) {
+    body[data-deck="gamma"] .vhud .hint .long { display: none; }
+    body[data-deck="gamma"] .vhud .hint .short { display: inline; }
+  }
   body[data-deck="gamma"] .vhud .floor { bottom: 28px; }
 
   /* the probe is vertical here: a thin lift shaft on the right edge of the box */
@@ -128,7 +133,7 @@
 
       <div class="viewport" id="vpClimb">
         <div class="vhud">
-          <div class="hint" id="climbHint">drag to climb · scroll inside the box · tap a rung</div>
+          <div class="hint" id="climbHint"><span class="long">drag to climb · scroll inside the box · </span><span class="short">drag the lift · </span>tap a rung</div>
           <div class="roof">roof · 3 PeV</div>
           <div class="floor">floor · 100 keV</div>
           <div class="lift" id="lift" role="slider" tabindex="0" aria-label="Photon energy on the gamma ladder"
@@ -452,7 +457,7 @@ const WARM = new THREE.Color(232 / 255, 169 / 255, 58 / 255);  // --holo-warm, t
 const LINE = new THREE.Color(196 / 255, 228 / 255, 255 / 255);
 const rungColor = l => l.kind === 'threshold' ? LINE.clone().lerp(ACC, 0.4) : l.kind === 'edge' ? new THREE.Color(0.55, 0.5, 0.7) : ACC.clone().lerp(new THREE.Color(1, 1, 1), 0.25 * (P.log10(l.e) - LOG0) / (LOG1 - LOG0));
 
-const climb = { yDisp: yOf(truth), markerY: yOf(truth), lx: 0, hits: [], glows: [], panels: [], labels: [], motes: null, RAIL: 0.72 };
+const climb = { yDisp: yOf(truth), markerY: yOf(truth), lx: 0, hits: [], glows: [], panels: [], labels: [], dlabels: [], motes: null, RAIL: 0.72 };
 const texLoader = new THREE.TextureLoader();
 
 ship.viewport(document.getElementById('vpClimb'), {
@@ -485,7 +490,7 @@ ship.viewport(document.getElementById('vpClimb'), {
       const y = (d - LOG0) * UPD;
       batch.add(0, y, -0.01, RAIL * 2, 0.05, LINE, 0.28);
       const t = label(fmtE(Math.pow(10, d), true), { size: 18, color: '#9aa2b1', tracking: 1.5 });
-      t.userData.fit(0.2); t.position.set(-RAIL - 0.12 - t.scale.x / 2, y, 0); root.add(t);
+      t.userData.fit(0.2); t.position.set(-RAIL - 0.12 - t.scale.x / 2, y, 0); root.add(t); climb.dlabels.push(t);
     }
     batch.add(0, (yOf(FERMI.lo) + yOf(FERMI.hi)) / 2, -0.03, RAIL * 2.4, yOf(FERMI.hi) - yOf(FERMI.lo), new THREE.Color(0.5, 0.75, 1), 0.07);
     const fl = label('Fermi LAT · 20 MeV to 300 GeV', { size: 16, color: '#8fc4ff', tracking: 2 });
@@ -550,9 +555,11 @@ ship.viewport(document.getElementById('vpClimb'), {
   resize(vp) {
     // on a narrow box the ladder slides left so the rung names have room
     const aspect = vp.size.w / vp.size.h, narrow = aspect < 1;
-    climb.lx = narrow ? -1.0 : aspect < 1.4 ? -0.35 : 0;
-    climb.camZ = narrow ? 12 : aspect < 1.4 ? 9 : 7.5;
+    // the camera steps right so the ladder sits left of centre and the names have room
+    climb.lx = narrow ? 0.8 : aspect < 1.4 ? 0.35 : 0;
+    climb.camZ = narrow ? 10.5 : aspect < 1.4 ? 9 : 7.5;
     for (const t of climb.labels) { t.userData.fit(narrow ? 0.2 : 0.23); t.position.x = climb.RAIL + 0.16 + t.scale.x / 2; }
+    for (const t of climb.dlabels) { t.userData.fit(narrow ? 0.16 : 0.2); t.position.x = -climb.RAIL - 0.12 - t.scale.x / 2; }
   },
   frame(vp) {
     const { camera, dt, t } = vp;
