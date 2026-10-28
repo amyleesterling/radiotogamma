@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../vendor/scifi-ui/hologram.css"><link rel="stylesheet" href="../vendor/scifi-ui/panel-surface.css"><link rel="stylesheet" href="ship.css">
+</head><body>
+<main class="deck"><div class="deck-wrap"><section class="stage"><div class="stage-head"><div class="tag">Stage 01 · smoke</div><h1>One phenomenon. <em>Sixteen orders.</em></h1></div>
+<div id="v" style="height:420px"></div></section></div></main>
+<script src="../spectrum-data.js"></script>
+<script type="module">
+import { ship, spectrumRibbon, label, glowSprite } from './ship.js';
+ship.mount({ deck: 'bridge' });
+ship.viewport(document.getElementById('v'), {
+  setup({ scene, camera }) { camera.position.set(0, 1.5, 6); camera.lookAt(0, 0, 0);
+    const r = spectrumRibbon({ length: 8, width: 1 }); scene.add(r);
+    const l = label('10 kHz'); l.position.set(-4, -0.8, 0); scene.add(l);
+    const g = glowSprite(0x7ee0ff, 1.2); g.position.set(0, 0.8, 0); scene.add(g); },
+  frame({ scene, t }) { scene.rotation.y = Math.sin(t * .3) * .3; }
+});
+window.__ok = 1;
+</script><script src="../vendor/scifi-ui/hologram-tap.js"></script></body></html>
