@@ -39,7 +39,9 @@ export function rangeText(a, b, fmt, metresOf) {
     const d = metresOf(a) / parseFloat(va);
     const alt = tidy(P.unit(metresOf(b), [[d, ua]], ua, true));
     const [vAlt] = parts(alt);
-    if (parseFloat(vAlt) <= 9999 && parseFloat(vAlt) >= 1) return `${va} to ${vAlt} ${ua}`;
+    // a span under twenty to one shares a unit ("930 to 1020 nm"); a wider
+    // one keeps both ("1 mm to 21 cm"), which is how the data file says it
+    if (parseFloat(vAlt) / parseFloat(va) < 20 && parseFloat(vAlt) >= 1) return `${va} to ${vAlt} ${ua}`;
   }
   return `${sa} to ${sb}`;
 }

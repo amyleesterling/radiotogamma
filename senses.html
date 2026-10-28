@@ -92,6 +92,12 @@
   body[data-deck="senses"] .wing .glass h3 { color: rgb(var(--deck)); }
   body[data-deck="senses"] .wing .glass p { font-size: 14px; color: rgb(var(--ink) / .82); }
   body[data-deck="senses"] .wing-xray .glass { background: repeating-linear-gradient(45deg, rgb(226 120 180 / .03) 0 8px, rgb(226 120 180 / .07) 8px 10px), linear-gradient(158deg, rgb(15 18 24 / .96), rgb(6 10 18 / .98)); }
+  @media (max-width: 560px) {
+    body[data-deck="senses"] .vhud .cam { top: auto; bottom: 56px; }
+    body[data-deck="senses"] .vp-note.right { display: none; }
+    body[data-deck="senses"] .legend { grid-template-columns: repeat(2, 1fr); }
+    body[data-deck="senses"] .legend .readout .d { font-size: 11.5px; }
+  }
   body[data-deck="senses"] .lede-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 22px; max-width: 900px; }
   body[data-deck="senses"] .lede-split .glass { padding: 16px 18px; }
   body[data-deck="senses"] .lede-split .glass p { font-size: 14px; }
@@ -334,9 +340,14 @@ const fitDistance = (width, camera) => width / 2 / (Math.tan(camera.fov * Math.P
 function aim(mode, camera) {
   cam.mode = mode;
   const g = cam.goal;
-  if (mode === 'zoo') Object.assign(g, { x: zooCentre, y: 0.9, z: -2.2, az: 0.14, el: 0.52, d: P.clamp(fitDistance(zooWidth, camera) * 1.35, 7, 13) });
+  // a tall box (a phone) cannot take the cluster side on, so the camera swings
+  // round to look down the beam from the infrared end and lets depth do the work
+  const narrow = camera.aspect < 1.25;
+  if (mode === 'zoo') Object.assign(g, narrow
+    ? { x: zooCentre + 2.0, y: 0.7, z: -2.2, az: -0.95, el: 0.42, d: 12 }
+    : { x: zooCentre, y: 0.7, z: -1.3, az: 0.14, el: 0.56, d: P.clamp(fitDistance(zooWidth, camera) * 1.35, 7, 13) });
   if (mode === 'all') Object.assign(g, { x: 0, y: 0.6, z: -2.6, az: 0.0, el: 0.7, d: P.clamp(fitDistance(48, camera), 12, 60) });
-  if (mode === 'creature') { const z = ZOO[sel]; Object.assign(g, { x: z.x, y: z.y + 0.38, z: z.zz, az: 0.18, el: 0.3, d: 3.4 }); }
+  if (mode === 'creature') { const z = ZOO[sel]; Object.assign(g, { x: z.x, y: z.y + 0.3, z: z.zz, az: 0.22, el: 0.62, d: 3.6 }); }
   camZoo.setAttribute('aria-pressed', String(mode === 'zoo'));
   camAll.setAttribute('aria-pressed', String(mode === 'all'));
 }
@@ -355,12 +366,12 @@ zooVP = ship.viewport(vpZoo, {
     // the ruler: every decade, frequency and wavelength
     for (const t of P.DECADE_LABELS) {
       const l = label(t.label + ' · ' + Z.tidy(P.fmtWave(t.f, true)), { size: 20, color: '#9fb8d0' });
-      l.userData.fit(0.26); l.position.set(X(t.f), 0.02, 1.5); scene.add(l); rulers.push(l);
+      l.userData.fit(0.17); l.position.set(X(t.f), 0.02, 0.9); scene.add(l); rulers.push(l);
     }
     for (const b of P.BANDS) {
       const fc = Math.sqrt(b.lo * b.hi);
       const l = label(b.short, { size: 22, color: '#6f8196', tracking: 5 });
-      l.userData.fit(0.22); l.position.set(X(fc), 0.02, 2.3); scene.add(l); rulers.push(l);
+      l.userData.fit(0.15); l.position.set(X(fc), 0.02, 1.5); scene.add(l); rulers.push(l);
     }
     // every creature: its range as a strip of the real spectrum on its lane,
     // a halo in the colour of its band's centre, a stalk, and the sprite
@@ -378,7 +389,7 @@ zooVP = ship.viewport(vpZoo, {
       const mat = new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false, opacity: 0.92 });
       const sp = new THREE.Sprite(mat);
       sp.position.set(z.x, z.y + 0.52, z.zz); sp.visible = false; sp.renderOrder = 20 - z.lane;
-      sp.userData.i = i; sp.userData.h = 0.5;
+      sp.userData.i = i; sp.userData.h = 0.6;
       if (z.icon) loader.load(z.icon, tex => { tex.colorSpace = THREE.SRGBColorSpace; mat.map = tex; mat.needsUpdate = true; sp.userData.aspect = tex.image.width / tex.image.height; sp.visible = true; });
       else {
         // the Visitor arrived without a portrait: a dashed ring and a question
@@ -408,7 +419,7 @@ zooVP = ship.viewport(vpZoo, {
       const on = i === sel;
       const h = sp.userData.h * (on ? 1.3 : 1);
       sp.scale.set(h * (sp.userData.aspect || 1), h, 1);
-      sp.material.opacity += ((on ? 1 : 0.8) - sp.material.opacity) * k;
+      sp.material.opacity += ((on ? 1 : cam.mode === 'creature' ? 0.5 : 0.85) - sp.material.opacity) * k;
       const z = ZOO[i];
       const bob = ship.motion ? Math.sin(t * 1.3 + i * 1.7) * 0.03 : 0;
       sp.position.y = z.y + 0.52 + bob;
@@ -493,6 +504,7 @@ function renderSight() {
     if (z.m === 'h' && !sun) text += ` With the sun gone nothing has changed for a heat organ: warm bodies glow on their own.`;
     if (z.m === 'a') text += ` Down in the microwave the Rayleigh-Jeans tail makes brightness simply proportional to temperature, so a 34 °C person outshines a 20 °C stone by a few percent and everything else is grey.`;
     if (z.m === 'v' && z.id !== 'tilapia') text += ` In the visible band an eye sees reflected sunlight; nothing here is warm enough to glow at these wavelengths.`;
+    if (z.id === 'bee') text += ` The petal tips reflect ultraviolet the nectar guide absorbs; a bee's brain compares its UV channel against the others and sees a bullseye, where the ship, summing channels, can only hint at it.`;
     if (z.id === 'tilapia') text += ` Just past your red edge the leaf's red edge begins: chlorophyll stops absorbing and foliage turns bright.`;
   }
   sightNote.innerHTML = text;
@@ -541,7 +553,8 @@ ship.viewport(document.getElementById('vpBe'), {
   frame({ camera, dt }) {
     const k = ship.motion ? 1 - Math.exp(-dt * 4) : 1;
     be.az += (be.azGoal - be.az) * k;
-    camera.position.set(Math.sin(be.az) * 7, 2.4, Math.cos(be.az) * 7);
+    const d = P.clamp(2.8 / (Math.tan(camera.fov * Math.PI / 360) * camera.aspect), 7, 14);   // a narrow box stands further back
+    camera.position.set(Math.sin(be.az) * d, 2.4 * d / 7, Math.cos(be.az) * d);
     camera.lookAt(0.3, 0.7, 0.2);
   },
   pointer(ev, vp) {
