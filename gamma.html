@@ -176,7 +176,7 @@
       </div>
 
       <div class="viewport" id="vpBreak">
-        <div class="vp-note">100 keV to the Planck energy · 23 decades · the lit part is measured, the rest is not</div>
+        <div class="vp-note">100 keV to the Planck energy · 23 decades · lit means measured</div>
         <div class="fallback">A horizontal ruler from 100 keV to the Planck energy; the first ten decades are lit, the remaining thirteen are dark, and a glowing photon slides along it as you move the dial below.</div>
       </div>
 
@@ -452,7 +452,7 @@ const WARM = new THREE.Color(232 / 255, 169 / 255, 58 / 255);  // --holo-warm, t
 const LINE = new THREE.Color(196 / 255, 228 / 255, 255 / 255);
 const rungColor = l => l.kind === 'threshold' ? LINE.clone().lerp(ACC, 0.4) : l.kind === 'edge' ? new THREE.Color(0.55, 0.5, 0.7) : ACC.clone().lerp(new THREE.Color(1, 1, 1), 0.25 * (P.log10(l.e) - LOG0) / (LOG1 - LOG0));
 
-const climb = { yDisp: yOf(truth), markerY: yOf(truth), lx: 0, hits: [], glows: [], panels: [], motes: null };
+const climb = { yDisp: yOf(truth), markerY: yOf(truth), lx: 0, hits: [], glows: [], panels: [], labels: [], motes: null, RAIL: 0.72 };
 const texLoader = new THREE.TextureLoader();
 
 ship.viewport(document.getElementById('vpClimb'), {
@@ -460,7 +460,7 @@ ship.viewport(document.getElementById('vpClimb'), {
   setup(vp) {
     const { scene } = vp;
     const root = new THREE.Group(); scene.add(root); climb.root = root;
-    const RAIL = 0.72;                       // half the ladder's width
+    const RAIL = climb.RAIL;                 // half the ladder's width
 
     // the rails: bright below 100 TeV, dimming into the dark sky above it
     const railGeo = new THREE.PlaneGeometry(0.035, LADDER_H + 2, 1, 96);
@@ -502,7 +502,7 @@ ship.viewport(document.getElementById('vpClimb'), {
       // labels stack when rungs crowd, so the MeV cluster stays legible
       const ly = Math.max(y, lastLabelY + 0.27); lastLabelY = ly;
       const t = label(fmtE(l.e, true) + ' · ' + l.short, { size: 20, color: l.kind === 'threshold' ? '#cfe6ff' : '#f3dce9', tracking: 2 });
-      t.userData.fit(0.23); t.position.set(RAIL + 0.16 + t.scale.x / 2, ly, 0.02); root.add(t);
+      t.userData.fit(0.23); t.position.set(RAIL + 0.16 + t.scale.x / 2, ly, 0.02); root.add(t); climb.labels.push(t);
       // a wide invisible plane per rung so a tap anywhere across it selects it
       const hit = new THREE.Mesh(new THREE.PlaneGeometry(RAIL * 2 + 2.4, 0.3), new THREE.MeshBasicMaterial({ visible: false }));
       hit.position.set(0.6, y, 0.03); hit.userData.l = l; root.add(hit); climb.hits.push(hit);
@@ -549,9 +549,10 @@ ship.viewport(document.getElementById('vpClimb'), {
   },
   resize(vp) {
     // on a narrow box the ladder slides left so the rung names have room
-    const aspect = vp.size.w / vp.size.h;
-    climb.lx = aspect < 1 ? -0.75 : aspect < 1.4 ? -0.35 : 0;
-    climb.camZ = aspect < 1 ? 10.5 : 9;
+    const aspect = vp.size.w / vp.size.h, narrow = aspect < 1;
+    climb.lx = narrow ? -1.0 : aspect < 1.4 ? -0.35 : 0;
+    climb.camZ = narrow ? 12 : aspect < 1.4 ? 9 : 7.5;
+    for (const t of climb.labels) { t.userData.fit(narrow ? 0.2 : 0.23); t.position.x = climb.RAIL + 0.16 + t.scale.x / 2; }
   },
   frame(vp) {
     const { camera, dt, t } = vp;
@@ -614,10 +615,10 @@ const dial = document.getElementById('bkDial');
 let bkE = Math.pow(10, +dial.value);
 const brk = { x: 0, xDisp: 0 };
 const EVENTS = [
-  { e: PAIR, short: 'pair threshold', row: 0 },
+  { e: PAIR, short: '1.022 MeV', row: 0 },
   { e: CMB_TH, short: '412 TeV', row: 1 },
-  { e: RECORD, short: 'the record', row: 0 },
-  { e: 3.2e20, short: '320 EeV', row: 0 },
+  { e: RECORD, short: '2.5 PeV', row: 0 },
+  { e: 3.2e20, short: '320 EeV', row: 1 },
   { e: PLANCK_EV, short: 'Planck', row: 0 },
 ];
 
@@ -644,7 +645,7 @@ function verdict(e) {
     S.textContent = 'Past every photon ever recorded'; S.classList.add('hot');
     T.textContent = 'No photon above 2.5 PeV has ever been recorded. The ship is extrapolating: the arithmetic of E = hf still holds, the CMB still lies in wait, and a photon this energetic from even the nearest galaxy could not reach us. Cosmic rays, which are nuclei and not light, do reach these energies: ground arrays have looked for photons among them and set only upper limits.';
     R.textContent = 'Record: LHAASO Collaboration, Science Bulletin, 26 February 2024. Photon limits above 10¹⁸ eV: Pierre Auger Observatory.';
-  } else if (e < PLANCK_EV) {
+  } else if (e < PLANCK_EV * 0.97) {   // the dial's last step lands a hair under the exact value
     S.textContent = 'Beyond the most energetic particle'; S.classList.add('hot');
     T.textContent = 'At 3.2 × 10²⁰ eV sits the Oh-My-God particle, a cosmic ray caught over Utah in 1991 and still the most energetic particle ever recorded: about 51 joules, a baseball’s worth of kinetic energy in one nucleus. It was almost certainly a proton, not a photon. Above it the ship has no detections of anything at all, only the equation.';
     R.textContent = 'Fly’s Eye event of 15 October 1991: Bird et al., ApJ 441, 144 (1995). 3.2 × 10²⁰ eV × 1.602 × 10⁻¹⁹ J/eV = 51 J.';
@@ -708,8 +709,9 @@ ship.viewport(document.getElementById('vpBreak'), {
     const hh = 0.5, hw = hh * aspect;
     cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.position.z = 5; cam.updateProjectionMatrix();
     const pad = Math.min(0.3, hw * 0.12), W = 2 * hw - 2 * pad;
-    brk.W = W;
-    if (brk.g) { brk.g.scale.x = W; brk.g.position.x = -W / 2; }
+    brk.W = W; brk.small = W < 2.4;
+    if (brk.g) { brk.g.scale.x = W; brk.g.position.x = -W / 2; brk.g.position.y = brk.small ? 0.06 : 0; }
+    if (brk.labels) for (const t of brk.labels) t.userData.fit(t.userData.row === -1 ? (brk.small ? 0.08 : 0.1) : (brk.small ? 0.09 : 0.11));
   },
   frame(vp) {
     const { dt } = vp;
@@ -718,12 +720,13 @@ ship.viewport(document.getElementById('vpBreak'), {
     const W = brk.W;
     for (const t of brk.labels) {
       const r = t.userData.row, half = t.scale.x / 2;
-      t.position.set(P.clamp(t.userData.x * W - W / 2, -W / 2 + half - 0.08, W / 2 - half + 0.08), r === -1 ? -0.29 : r === 0 ? 0.24 : 0.37, 0.02);
+      const oy = brk.g.position.y;
+      t.position.set(P.clamp(t.userData.x * W - W / 2, -W / 2 + half - 0.08, W / 2 - half + 0.08), oy + (r === -1 ? -0.27 : r === 0 ? 0.22 : 0.35), 0.02);
     }
     brk.photon.position.x = brk.xDisp * W - W / 2; brk.photon2.position.x = brk.photon.position.x;
     const over = brk.xDisp > (LOG1 - BLOG0) / (BLOG1 - BLOG0);
     brk.photon.material.color.copy(over ? new THREE.Color(1, 0.55, 0.3) : WARM);
-    brk.photon.position.y = 0; brk.photon2.position.y = 0;
+    brk.photon.position.y = brk.g.position.y; brk.photon2.position.y = brk.g.position.y;
   },
 });
 
