@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The Light Lab</title>
-<meta name="description" content="Six hands-on light experiments: split it, bounce it, bend it, scatter it, stack it, record it. Predict first, then find out.">
+<title>Light Lab · Radio to Gamma</title>
+<meta name="description" content="Six benches of real optics in miniature: a prism, a CD, a garden-hose rainbow, a sky, a soap film, a hologram. Predict first, then break something.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Radio to Gamma">
 <meta property="og:title" content="The Light Lab · Radio to Gamma">
-<meta property="og:description" content="Six hands-on light experiments: split it, bounce it, bend it, scatter it, stack it, record it. Predict first, then find out.">
+<meta property="og:description" content="Six benches of real optics in miniature: a prism, a CD, a garden-hose rainbow, a sky, a soap film, a hologram. Predict first, then break something.">
 <meta property="og:url" content="https://radiotogamma.com/lab.html">
 <meta property="og:image" content="https://radiotogamma.com/og-card.jpg">
 <meta property="og:image:width" content="1200">
@@ -19,413 +19,221 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
-<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="vendor/scifi-ui/data-readout.css">
+<link rel="stylesheet" href="ship/ship.css">
 <style>
-
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
-  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
-  .sub { font-size: 14.5px; color: #9aa2b1; margin: 0 0 20px; line-height: 1.55; max-width: 66ch; }
-
-  /* the strip that never leaves: every experiment lights it up */
-  .stripdock { position: sticky; top: 0; z-index: 20; background: #04070a;
-               padding: 8px 0 6px; border-bottom: 1px solid rgba(196,228,255,.1); }
-  .striplabel { font-size: 10.5px; letter-spacing: .12em; color: #6c7c8c; text-transform: uppercase;
-                margin: 0 0 4px; }
-  #labStrip { display: block; width: 100%; height: 26px; border: 1px solid rgba(196,228,255,.2); }
-  .dockrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  #quizToggle { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
-    letter-spacing: .1em; cursor: pointer; background: none; color: #a07cff;
-    border: 1px solid rgba(160,124,255,.4); padding: 5px 10px; }
-  #quizToggle:hover { border-color: #a07cff; background: rgba(160,124,255,.08); }
-
-  .exp { border: 1px solid rgba(196,228,255,.14); margin: 26px 0; padding: 16px 18px; }
-  .exp h2 { font-size: 14px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 4px; font-weight: 600; }
-  .exp .goal { font-size: 15px; color: #eff4fb; font-weight: 600; margin: 0 0 12px; }
-
-  /* ---- LIGHT QUIZ modal: a holopanel that floats over the lab ---- */
-  #quizOverlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
-    padding: 18px; background: rgba(2,4,8,.72);
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-  #quizOverlay[hidden] { display: none; }
-  .quizpanel { --holo-glow: 160 124 255; width: min(560px, 100%); max-height: calc(100vh - 36px);
-    overflow-y: auto; padding: 20px 22px 18px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  .quizpanel .qhead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 4px; }
-  .quizpanel .qtag { font-size: 11px; letter-spacing: .18em; color: #a07cff; }
-  .quizpanel .qcount { font-size: 11px; color: #6c7c8c; }
-  .quizpanel .qclose { margin-left: auto; font: inherit; font-size: 15px; line-height: 1;
-    cursor: pointer; background: none; color: #6c7c8c;
-    border: 1px solid rgba(196,228,255,.18); padding: 6px 10px; }
-  .quizpanel .qclose:hover { color: #eff4fb; border-color: rgba(126,224,255,.5); }
-  .quizpanel .qdots { display: flex; gap: 6px; margin: 0 0 14px; }
-  .quizpanel .qdots i { width: 22px; height: 3px; background: rgba(196,228,255,.14); }
-  .quizpanel .qdots i.on { background: #a07cff; box-shadow: 0 0 8px rgba(160,124,255,.7); }
-  .quizpanel .qdots i.done { background: rgba(126,224,255,.55); }
-  .quizpanel .qfrom { font-size: 11px; letter-spacing: .12em; color: #7ee0ff; margin: 0 0 6px; }
-  .quizpanel .qlabtag { color: #ffd479; }
-  .quizpanel .q { font-family: "Segoe UI", system-ui, sans-serif; font-size: 16.5px;
-    color: #eff4fb; margin: 0 0 14px; line-height: 1.45; }
-  .quizpanel .choices { display: grid; gap: 8px; margin: 0 0 4px; }
-  .quizpanel .choices button { font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px;
-    text-align: left; cursor: pointer; background: rgba(196,228,255,.03); color: #cfd6e2;
-    border: 1px solid rgba(196,228,255,.18); padding: 10px 13px; min-height: 42px; }
-  .quizpanel .choices button:hover { color: #eff4fb; border-color: rgba(160,124,255,.7); }
-  .quizpanel.answered .choices button { cursor: default; opacity: .55; }
-  .quizpanel.answered .choices button:hover { border-color: rgba(196,228,255,.18); }
-  .quizpanel.answered .choices button.good { opacity: 1; color: #baf5d0;
-    border-color: rgba(120,235,170,.75); background: rgba(120,235,170,.08);
-    box-shadow: 0 0 14px rgba(120,235,170,.18); }
-  .quizpanel.answered .choices button.bad { opacity: 1; color: #ffb3a7;
-    border-color: rgba(255,120,100,.65); background: rgba(255,120,100,.07); }
-  .quizpanel .verdict { font-size: 12px; letter-spacing: .14em; margin: 12px 0 0; display: none; }
-  .quizpanel.answered .verdict { display: block; }
-  .quizpanel .verdict.good { color: #78ebaa; }
-  .quizpanel .verdict.bad { color: #ff9c8a; }
-  .quizpanel .reveal { font-family: "Segoe UI", system-ui, sans-serif; font-size: 13.5px;
-    color: #cfe6e6; line-height: 1.6; margin: 8px 0 0; display: none; }
-  .quizpanel.answered .reveal { display: block; animation: qreveal 500ms cubic-bezier(.16,1,.3,1) both; }
-  @keyframes qreveal {
-    from { opacity: 0; transform: translateY(6px); filter: blur(6px) brightness(2); }
-    to   { opacity: 1; transform: none; filter: none; }
+  /* deck 03, the Light Lab */
+  body[data-deck="lab"] .intro { display: grid; gap: 14px; padding: clamp(40px, 7vh, 80px) 0 10px; max-width: 820px; }
+  body[data-deck="lab"] .intro .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  body[data-deck="lab"] .quizbtn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; cursor: pointer;
+    background: rgb(160 124 255 / .1); color: #c9b4ff; border: 1px solid rgb(160 124 255 / .5); padding: 10px 16px; border-radius: 6px; transition: .3s;
   }
-  .quizpanel .qfoot { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; min-height: 36px; }
-  .quizpanel .qnext { font: inherit; font-size: 12px; letter-spacing: .12em; cursor: pointer;
-    background: rgba(160,124,255,.14); color: #eff4fb;
-    border: 1px solid rgba(160,124,255,.7); padding: 9px 16px; visibility: hidden; }
-  .quizpanel.answered .qnext { visibility: visible; }
-  .quizpanel .qnext:hover { background: rgba(160,124,255,.28); }
-  .quizpanel .qnote { font-size: 11px; color: #6c7c8c; }
-  .quizpanel .score { font-family: "Segoe UI", system-ui, sans-serif; font-size: 17px;
-    color: #eff4fb; margin: 6px 0 10px; }
-  @media (prefers-reduced-motion: reduce) { .quizpanel.answered .reveal { animation: none; } }
+  body[data-deck="lab"] .quizbtn:hover, body[data-deck="lab"] .quizbtn.holo-on { border-color: #a07cff; box-shadow: 0 0 18px rgb(160 124 255 / .35); }
+  body[data-deck="lab"] .benchmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 6px; }
+  body[data-deck="lab"] .benchmap a { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; text-decoration: none; color: rgb(var(--dim)); padding: 9px 12px; border: 1px solid rgb(var(--line) / .14); border-radius: 8px; transition: .3s; }
+  body[data-deck="lab"] .benchmap a:hover, body[data-deck="lab"] .benchmap a.holo-on { color: rgb(var(--deck)); border-color: rgb(var(--deck) / .6); }
+  body[data-deck="lab"] .benchmap a .k { color: rgb(var(--deck)); margin-right: 8px; }
 
-  .stage { position: relative; }
-  .exp canvas { display: block; width: 100%; touch-action: none;
-                border: 1px solid rgba(196,228,255,.16); background: #05070c; }
-  .exp .hint { font-size: 12px; color: #5c6b7a; margin: 8px 0 0; line-height: 1.5; }
-  .exp .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 10px 0 0;
-                   font-size: 12.5px; color: #8b98a8; }
-  .exp .controls label { display: flex; gap: 8px; align-items: center; }
-  .exp .controls input[type=range] { width: 150px; }
-  .exp input[type=range] {
-    -webkit-appearance: none; appearance: none; background: transparent;
-    height: 34px; cursor: ew-resize; touch-action: pan-y; }
-  .exp input[type=range]::-webkit-slider-runnable-track { height: 7px; border-radius: 4px;
-    background: linear-gradient(90deg, rgba(126,224,255,.22), rgba(126,224,255,.9));
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.55); }
-  .exp input[type=range]::-webkit-slider-thumb { -webkit-appearance: none;
-    width: 24px; height: 24px; border-radius: 50%; margin-top: -9px;
-    background: radial-gradient(circle at 34% 30%, #ffffff, #c9ecff 45%, #45b7de 92%);
-    border: 2px solid #eff4fb; cursor: grab;
-    box-shadow: 0 0 12px rgba(126,224,255,.8), 0 2px 6px rgba(0,0,0,.6);
-    transition: box-shadow .12s, transform .12s; }
-  .exp input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.1); }
-  .exp input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.2);
-    box-shadow: 0 0 20px rgba(126,224,255,1), 0 2px 8px rgba(0,0,0,.7); }
-  .exp input[type=range]::-moz-range-track { height: 7px; border-radius: 4px;
-    background: linear-gradient(90deg, rgba(126,224,255,.22), rgba(126,224,255,.9));
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.55); }
-  .exp input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%;
-    background: radial-gradient(circle at 34% 30%, #ffffff, #c9ecff 45%, #45b7de 92%);
-    border: 2px solid #eff4fb; cursor: grab;
-    box-shadow: 0 0 12px rgba(126,224,255,.8), 0 2px 6px rgba(0,0,0,.6); }
-  .exp input[type=range]:focus-visible { outline: 2px solid #7ee0ff; outline-offset: 4px; }
-  .exp .controls button, .exp .controls .tog { font: inherit; font-size: 12px; cursor: pointer;
-    background: none; color: #9aa2b1; border: 1px solid rgba(196,228,255,.16); padding: 7px 11px; }
-  .exp .controls button:hover { color: #7ee0ff; border-color: rgba(126,224,255,.5); }
-  .exp .controls button[aria-pressed="true"] { color: #7ee0ff; border-color: rgba(126,224,255,.6);
-    background: rgba(126,224,255,.08); }
-  .exp .controls button[hidden] { display: none; }
-  /* Every stage can be pulled taller or shorter: some experiments want room
-     (the bench with ten optics on it), some want to be out of the way. */
-  .stagegrip { display: flex; align-items: center; justify-content: center; gap: 8px;
-    height: 16px; margin: 3px 0 0; cursor: ns-resize; touch-action: none;
-    color: #4a5866; background: none; border: 0; width: 100%; padding: 0; }
-  .stagegrip:hover, .stagegrip:focus-visible { color: #7ee0ff; }
-  .stagegrip:focus-visible { outline: 1px solid rgba(126,224,255,.5); outline-offset: 2px; }
-  .stagegrip i { display: block; width: 26px; height: 2px; border-radius: 2px;
-                 background: currentColor; opacity: .55; }
-  .stagegrip:hover i, .stagegrip:focus-visible i { opacity: 1; }
-  .stagegrip em { font: 10px ui-monospace, Menlo, monospace; font-style: normal;
-                  letter-spacing: .1em; opacity: 0; transition: opacity .15s; }
-  .stagegrip:hover em, .stagegrip:focus-visible em { opacity: .8; }
-  /* nothing hovers on a touch screen, so the handle has to say what it is */
-  @media (hover: none) { .stagegrip em { opacity: .5; } }
-  /* direct children only: an experiment's own inner canvases (the INVENT
-     preview) must keep their own size */
-  .exp[data-resized] .stage > canvas { height: var(--stage-h) !important; }
-  /* the CD's payoff: three beats of prose under the stage, each fading in as
-     the dive reaches the pits and then the waves; never drawn over the scene */
-  .cdwhy { margin: 12px 0 0; max-width: 70ch; }
-  .cdwhy[hidden] { display: none; }
-  .cdwhy p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; color: #9aa2b1;
-             opacity: 0; transform: translateY(4px); transition: opacity .5s ease, transform .5s ease; }
-  .cdwhy p.on { opacity: 1; transform: none; }
-  .cdwhy b { color: #eff4fb; font-weight: 600; }
-  .cdwhy .num { color: #7ee0ff; margin-left: 6px; white-space: nowrap; }
-  @media (prefers-reduced-motion: reduce) { .cdwhy p { transition: none; } }
-  .foot { font-size: 12px; color: #5c6b7a; line-height: 1.6; margin-top: 26px; max-width: 70ch; }
+  /* every bench can be pulled taller or shorter from its lower right corner;
+     ship.js re-measures the box and the instrument re-lays itself out */
+  body[data-deck="lab"] .viewport { resize: vertical; min-height: 240px; max-height: 900px; cursor: grab; }
+  body[data-deck="lab"] .viewport::-webkit-resizer { background: linear-gradient(135deg, transparent 55%, rgb(var(--deck) / .6) 55%, rgb(var(--deck) / .6) 65%, transparent 65%, transparent 80%, rgb(var(--deck) / .6) 80%, rgb(var(--deck) / .6) 90%, transparent 90%); }
+  body[data-deck="lab"] .octave { position: absolute; left: 14px; right: 14px; bottom: 0; height: 6px; width: auto; display: block; opacity: .9; }
+  body[data-deck="lab"] .vp-note { bottom: 14px; max-width: 60%; line-height: 1.5; background: rgb(var(--void) / .55); padding: 4px 6px; border-radius: 4px; left: 10px; }
+  body[data-deck="lab"] .vp-note.right { left: auto; right: 10px; }
+  body[data-deck="lab"] .vp-note.right { max-width: 36%; }
+  body[data-deck="lab"] .ctrl { margin-top: 12px; }
+  body[data-deck="lab"] .dials { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 4px 22px; }
+  body[data-deck="lab"] .dial { margin-top: 10px; }
+  body[data-deck="lab"] .chips + .chips { margin-top: 8px; }
+  body[data-deck="lab"] .chips.gain { margin-top: 10px; }
+  body[data-deck="lab"] .voice { font-size: 14.5px; line-height: 1.6; color: rgb(var(--ink) / .86); margin: 16px 0 0; max-width: 78ch; min-height: 1.6em; padding-left: 14px; border-left: 2px solid rgb(var(--deck) / .8); }
+  body[data-deck="lab"] .voice.is-new { animation: labsay .6s cubic-bezier(.16, 1, .3, 1) both; }
+  @keyframes labsay { from { opacity: 0; filter: blur(4px) brightness(1.8); } to { opacity: 1; filter: none; } }
+  body[data-deck="lab"] .readout .v { font-size: clamp(17px, 1.8vw, 22px); }
+  body[data-deck="lab"] .swatch { display: inline-block; width: 1em; height: 1em; border-radius: 3px; vertical-align: -2px; margin-right: 6px; border: 1px solid rgb(var(--line) / .3); }
+  body[data-deck="lab"] .ruler { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; }
+  body[data-deck="lab"] .ruler svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  body[data-deck="lab"] .ruler line { stroke: rgb(var(--line) / .8); stroke-width: 1; }
+  body[data-deck="lab"] .ruler span { position: absolute; transform: translate(-50%, -50%); font-family: var(--mono); font-size: 11px; color: rgb(var(--ink)); background: rgb(var(--void) / .7); padding: 2px 6px; border-radius: 3px; }
+  body[data-deck="lab"] .cdwhy { margin: 14px 0 0; max-width: 70ch; }
+  body[data-deck="lab"] .cdwhy p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; color: rgb(var(--dim)); opacity: 0; transform: translateY(4px); transition: opacity .5s, transform .5s; }
+  body[data-deck="lab"] .cdwhy p.on { opacity: 1; transform: none; }
+  body[data-deck="lab"] .cdwhy b { color: rgb(var(--ink)); font-weight: 600; }
+  body[data-deck="lab"] .cdwhy .num { color: rgb(var(--deck)); margin-left: 6px; white-space: nowrap; }
+  body[data-deck="lab"] .pop { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 22px; font-weight: 500; color: #cfe6e6; pointer-events: none; animation: labsay .5s both; }
+  body[data-deck="lab"] .probe-dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgb(var(--ink) / .7); transform: translate(-50%, -50%); pointer-events: none; }
+  body[data-deck="lab"] .finder { position: absolute; left: 14px; top: 14px; width: 196px; padding: 8px 10px 10px; border-radius: 8px; background: rgb(var(--holo-panel, 15 18 24) / .8); border: 1px solid rgb(var(--line) / .18); pointer-events: none; }
+  body[data-deck="lab"] .finder .k { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase; color: rgb(var(--deck) / .9); margin-bottom: 10px; }
+  body[data-deck="lab"] .finder .bar { position: relative; height: 22px; border-bottom: 1px solid rgb(var(--line) / .2); }
+  body[data-deck="lab"] .finder .m { position: absolute; top: 2px; bottom: -4px; width: 1px; background: rgb(var(--line) / .9); transform: translateX(-50%); }
+  body[data-deck="lab"] .finder b { position: absolute; top: 50%; border-radius: 50%; transform: translate(-50%, -50%); filter: blur(1px); box-shadow: 0 0 8px currentColor; }
+  body[data-deck="lab"] .deck-foot a { color: rgb(var(--deck)); }
+  body[data-deck="lab"] .stage-head .lede b { font-weight: 500; }
+  body[data-deck="lab"] .how { font-size: 13px; color: rgb(var(--dim)); line-height: 1.6; max-width: 76ch; margin: 10px 0 0; }
+
+  /* ---- the quiz: a holopanel floating over the deck ---- */
+  #quizOverlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; background: rgb(var(--void) / .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  #quizOverlay[hidden] { display: none; }
+  .quizpanel { --holo-glow: 160 124 255; width: min(560px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; font-family: var(--mono); }
+  .quizpanel .qhead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px; }
+  .quizpanel .qtag { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #c9b4ff; }
+  .quizpanel .qcount { font-size: 11px; color: rgb(var(--dim)); }
+  .quizpanel .qclose { margin-left: auto; font: inherit; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; cursor: pointer; background: none; color: rgb(var(--dim)); border: 1px solid rgb(var(--line) / .18); padding: 6px 10px; border-radius: 6px; }
+  .quizpanel .qclose:hover, .quizpanel .qclose.holo-on { color: rgb(var(--ink)); border-color: rgb(var(--deck) / .5); }
+  .quizpanel .qdots { display: flex; gap: 6px; margin: 0 0 16px; }
+  .quizpanel .qdots i { width: 22px; height: 3px; background: rgb(var(--line) / .14); border-radius: 2px; }
+  .quizpanel .qdots i.on { background: #a07cff; box-shadow: 0 0 8px rgb(160 124 255 / .7); }
+  .quizpanel .qdots i.done { background: rgb(var(--deck) / .55); }
+  .quizpanel .qfrom { font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: rgb(var(--deck)); margin: 0 0 8px; }
+  .quizpanel .qlabtag { color: #ffd479; margin-left: 8px; }
+  .quizpanel .q { font-family: var(--sans); font-size: 17px; color: rgb(var(--ink)); margin: 0 0 14px; line-height: 1.45; }
+  .quizpanel .choices { display: grid; gap: 8px; margin: 0 0 4px; }
+  .quizpanel .choices button { font-family: var(--sans); font-size: 14px; text-align: left; cursor: pointer; background: rgb(var(--line) / .03); color: rgb(var(--ink) / .85); border: 1px solid rgb(var(--line) / .18); padding: 10px 13px; min-height: 42px; border-radius: 8px; transition: .25s; }
+  .quizpanel .choices button:hover, .quizpanel .choices button.holo-on { color: rgb(var(--ink)); border-color: rgb(160 124 255 / .7); }
+  .quizpanel.answered .choices button { cursor: default; opacity: .55; }
+  .quizpanel.answered .choices button.good { opacity: 1; color: #baf5d0; border-color: rgb(120 235 170 / .75); background: rgb(120 235 170 / .08); box-shadow: 0 0 14px rgb(120 235 170 / .18); }
+  .quizpanel.answered .choices button.bad { opacity: 1; color: #ffb3a7; border-color: rgb(255 120 100 / .65); background: rgb(255 120 100 / .07); }
+  .quizpanel .verdict { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; margin: 12px 0 0; display: none; }
+  .quizpanel.answered .verdict { display: block; }
+  .quizpanel .verdict.good { color: #78ebaa; } .quizpanel .verdict.bad { color: #ff9c8a; }
+  .quizpanel .reveal { font-family: var(--sans); font-size: 13.5px; color: rgb(var(--ink) / .8); line-height: 1.6; margin: 8px 0 0; display: none; }
+  .quizpanel.answered .reveal { display: block; animation: labsay .5s both; }
+  .quizpanel .qfoot { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; min-height: 36px; flex-wrap: wrap; }
+  .quizpanel .qnext { font: inherit; font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; cursor: pointer; background: rgb(160 124 255 / .14); color: rgb(var(--ink)); border: 1px solid rgb(160 124 255 / .7); padding: 9px 16px; border-radius: 6px; visibility: hidden; }
+  .quizpanel.answered .qnext { visibility: visible; }
+  .quizpanel .qnote { font-size: 11px; color: rgb(var(--dim)); }
+  .quizpanel .score { font-family: var(--sans); font-size: 17px; color: rgb(var(--ink)); margin: 6px 0 10px; }
+  @media (prefers-reduced-motion: reduce) { .quizpanel.answered .reveal, body[data-deck="lab"] .voice.is-new, body[data-deck="lab"] .pop { animation: none; } }
+  @media (max-width: 600px) { body[data-deck="lab"] .finder { width: 150px; } body[data-deck="lab"] .vp-note { max-width: 70%; } body[data-deck="lab"] .vp-note.right { display: none; } }
 </style>
 </head>
 <body>
-<header class="gamebar holopanel" style="--bar-accent: 126 224 255;">
-  <div class="gbrand">
-    <img class="gamebar-icon" src="favicon.png" alt="">
-    <span class="gamebar-name">THE LIGHT LAB</span>
-    <span style="flex:1"></span>
-    <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
-  </div>
-  <nav class="gbnav" aria-label="Site pages">
-    <a class="gamebar-back" href="index.html">← HOME</a>
-    <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
-    <a class="gamebar-back" href="gamma.html">GAMMA ATTIC</a>
-    <a class="gamebar-back" href="senses.html">SPECTRAL ZOO</a>
-  </nav>
-</header>
-<div class="wrap">
-  <h1>Reach in and mess with it.</h1>
-  <p class="sub">Six little instruments, one octave of spectrum. Each one starts with a question:
-     make your guess, then run the experiment yourself. The strip below stays lit the whole time,
-     showing which wavelengths each experiment is touching. Six manipulations of the same thing.</p>
-
-  <div class="stripdock">
-    <div class="dockrow">
-      <p class="striplabel">The visible octave · 750 nm to 380 nm</p>
-      <button id="quizToggle" type="button" aria-haspopup="dialog">LIGHT QUIZ</button>
+<main class="deck">
+  <div class="deck-wrap">
+    <div class="intro">
+      <div class="tag" style="font-family: var(--mono); font-size: 10.5px; letter-spacing: .3em; text-transform: uppercase; color: rgb(var(--deck));">Deck 03 · the Light Lab</div>
+      <h1>Reach in and <em>mess with it.</em></h1>
+      <p class="lede">Six benches, one octave of spectrum. Each instrument runs the real equation in miniature: Snell and Cauchy, the grating equation, Descartes' caustic, Rayleigh's fourth power, two-beam interference, and a hologram's cross term. Every bench has a dial that goes past what the world allows, so you can see what the physics does when you push it. Make your guess before you turn anything.</p>
+      <div class="row">
+        <button class="quizbtn" id="quizToggle" type="button" aria-haspopup="dialog" data-holo-tap>Light quiz · predict first</button>
+        <span class="how">The strip under each bench is the visible octave, 750 to 380 nm, lit by whatever that bench is doing to the light. Drag the lower right corner of any bench to make it taller.</span>
+      </div>
+      <nav class="benchmap" aria-label="Benches">
+        <a href="#prism" data-holo-tap><span class="k">01</span>Prism</a><a href="#cd" data-holo-tap><span class="k">02</span>The CD</a><a href="#hose" data-holo-tap><span class="k">03</span>Garden hose</a>
+        <a href="#sky" data-holo-tap><span class="k">04</span>Build a sky</a><a href="#film" data-holo-tap><span class="k">05</span>Soap film</a><a href="#holo" data-holo-tap><span class="k">06</span>Hologram</a>
+      </nav>
     </div>
-    <canvas id="labStrip" aria-label="Visible spectrum strip; lights up with the wavelengths each experiment affects"></canvas>
+
+    <section class="stage" id="prism">
+      <div class="stage-head"><div class="tag">Bench 01 · prism</div><h2>White light in. <em>Which colour bends most?</em></h2>
+        <p class="lede">A block of real glass on the bench. Every ray obeys Snell's law at each face, and every wavelength carries its own index from Cauchy's formula fitted to the catalogue numbers of the material you pick. Turn the block, change the apex, or go to INVENT and write a glass of your own: any index, even one below 1.</p></div>
+      <div class="viewport" id="vpPrism" style="height: clamp(320px, 56vh, 560px)">
+        <div class="vhud"></div>
+        <div class="vp-note">Angles traced for real. The fan is widened ×10 about its true mean, because a real fan is thin; readouts give the traced angles.</div>
+        <div class="vp-note right">drag to turn the block</div>
+        <div class="fallback">A white beam enters a glass prism from the left and leaves as a fan, blue bent hardest, landing on a screen at the right. The readouts and dials below still work.</div>
+      </div>
+      <div class="ctrl"></div><div class="out"></div>
+    </section>
+
+    <section class="stage" id="cd">
+      <div class="stage-head"><div class="tag">Bench 02 · the CD</div><h2>There is a rainbow hiding in this object. <em>Find it.</em></h2>
+        <p class="lede">A disc in the dark, a lamp you can drag, a disc you can tilt and flip. The surface solves the grating equation per pixel on the real 1.6 µm track pitch; the zoom is a camera dive onto the pits, and at the bottom the light itself is drawn as waves, summed from the pits, with no equation written anywhere. Then change the pitch: a DVD, a Blu-ray, or a grating ten micrometres coarse.</p></div>
+      <div class="viewport" id="vpCd" style="height: clamp(340px, 60vh, 600px)">
+        <div class="vhud"></div>
+        <div class="vp-note">Real pitch, real grating equation. The pits are drawn to scale; the dive compresses five orders of magnitude.</div>
+        <div class="vp-note right">drag the disc to tilt it, drag the lamp to move it</div>
+        <div class="fallback">A CD tilted under a small lamp; where the lamp grazes it a rainbow sweeps across the tracks, red on the outside. The readouts and controls below still work.</div>
+      </div>
+      <div class="ctrl"></div><div class="out"></div>
+    </section>
+
+    <section class="stage" id="hose">
+      <div class="stage-head"><div class="tag">Bench 03 · garden hose</div><h2>Make a rainbow. <em>Then make it out of diamond.</em></h2>
+        <p class="lede">You, the sun, and a cloud of spray in the yard. Every droplet is coloured by its angle from the antisolar axis, the line from the sun through your head, using Descartes' minimum-deviation angle for the droplet's index at each wavelength: 42.5° in the red, 40.6° in the violet, and a second bow from two bounces at 50 to 54° with the colours flipped. Change what the drops are made of and the cone moves, or disappears.</p></div>
+      <div class="viewport" id="vpHose" style="height: clamp(320px, 56vh, 560px)">
+        <div class="vhud"></div>
+        <div class="vp-note">Angles computed from the droplet's index. The spray and the figure are schematic; the glow inside the bow and outside the twin is a stand-in for the continuous light.</div>
+        <div class="vp-note right">drag the spray, or drag the sky to move the sun</div>
+        <div class="fallback">A figure in a yard with the sun behind it; a cloud of spray lights up in a 42 degree arc around the shadow of the head. The readouts and dials below still work.</div>
+      </div>
+      <div class="ctrl"></div><div class="out"></div>
+    </section>
+
+    <section class="stage" id="sky">
+      <div class="stage-head"><div class="tag">Bench 04 · build a sky</div><h2>Start with a white atmosphere. <em>Make Earth's.</em></h2>
+        <p class="lede">You are under a dome, and every pixel of it is lit by sunlight scattered along your line of sight. Molecules scatter by 1/λ⁴, so blue 3.3 times more than red; droplets and dust scatter every colour alike. One Earth atmosphere is an optical depth of 0.27 at 460 nm overhead, and the horizon is 38 air masses away. Drag the sun down and the noon sky becomes a sunset by the same law. Then try five atmospheres, or none.</p></div>
+      <div class="viewport" id="vpSky" style="height: clamp(320px, 56vh, 560px)">
+        <div class="vhud"></div>
+        <div class="vp-note">Single scattering, three wavelengths for the band, the sun drawn three times its true size, the aureole a simple forward lobe.</div>
+        <div class="vp-note right">drag to move the sun; shift-drag to look around</div>
+        <div class="fallback">A sky dome above a dark ground, blue overhead and paling to the horizon, with the sun reddening as it sets. The readouts and dials below still work.</div>
+      </div>
+      <div class="ctrl"></div><div class="out"></div>
+    </section>
+
+    <section class="stage" id="film">
+      <div class="stage-head"><div class="tag">Bench 05 · soap film</div><h2>No pigment, no prism, no grating. <em>Where do the colours come from?</em></h2>
+        <p class="lede">A film in a wire wand, a few hundred nanometres thick and draining. Two reflections, front and back, differ by 2 n t cos θ, and the front one flips phase, so each wavelength shows or cancels by sin² of that path. The shader sums twenty wavelengths per pixel and Newton's sequence appears on its own. Tilt the wand and every pixel takes its own angle from the camera. Thicken the film tenfold and the colour goes.</p></div>
+      <div class="viewport" id="vpFilm" style="height: clamp(320px, 56vh, 560px)">
+        <div class="vhud"></div>
+        <div class="vp-note">Interference computed per pixel. The thickness field is sculpted, not simulated; the two-beam formula with a Fresnel amplitude.</div>
+        <div class="vp-note right">move over the film to read it, drag to tilt the wand</div>
+        <div class="fallback">A round soap film in a wire wand, banded in straw, magenta, blue and green, going black from the top as it drains, then popping. The readouts and dials below still work.</div>
+      </div>
+      <div class="ctrl"></div><div class="out"></div>
+    </section>
+
+    <section class="stage" id="holo">
+      <div class="stage-head"><div class="tag">Bench 06 · hologram</div><h2>Not a picture of a thing. <em>A recording of an interference pattern.</em></h2>
+        <p class="lede">Three points of an object, a plane reference beam, and a plate exposed by |O + R|². Only the cross term knows which way the light was travelling, and that is the fringes, drawn at their real spacing. Replay the developed plate with the reference alone and the grating equation hands the object wave back, a virtual image at the recorded depth with real parallax. Break the plate: every shard still holds the whole scene. Replay it in the wrong colour: the image moves.</p></div>
+      <div class="viewport" id="vpHolo" style="height: clamp(340px, 60vh, 600px)">
+        <div class="vhud"></div>
+        <div class="vp-note">80 µm of plate at its real fringe spacing. Scale it up 1000× for a plate you can hold: the same fringes, tens of thousands of them.</div>
+        <div class="vp-note right">recording: drag the object. replaying: drag the eye</div>
+        <div class="fallback">A glass plate striped with fine fringes between a laser's reference beam and three glowing points behind it; replayed, the points reappear behind the plate for an eye in front. The readouts and dials below still work.</div>
+      </div>
+      <div class="ctrl"></div><div class="out"></div>
+    </section>
+
+    <footer class="deck-foot">
+      <p>Everything on this deck runs on the real physics in miniature: Snell and Cauchy dispersion in glass, interference from a CD's 1.6 µm track spacing, Descartes' 42° water-droplet caustic, Rayleigh's 1/λ⁴ scattering, two reflections a few hundred nanometres apart in a soap film, and a hologram's fringes solved from |O + R|² and read back out with the grating equation. Illustrative in scale where the stage says so, honest in mechanism everywhere.</p>
+      <p>Want a full optical bench with lenses, mirrors and dispersive glass you arrange yourself? The open-source <a href="https://phydemo.app/ray-optics/">Ray Optics Simulation</a> is the deep end of this pool.</p>
+      <div class="hatches">
+        <a class="hatch" href="observatory.html" data-holo-tap><span class="k">Deck 02</span><span class="t">Observatory</span><span class="d">Two signals, every number.</span></a>
+        <a class="hatch" href="gamma.html" data-holo-tap><span class="k">Deck 04</span><span class="t">Gamma Attic</span><span class="d">The top of the ruler.</span></a>
+        <a class="hatch" href="senses.html" data-holo-tap><span class="k">Deck 05</span><span class="t">Spectral Zoo</span><span class="d">Who senses what.</span></a>
+      </div>
+    </footer>
   </div>
+</main>
+<script src="spectrum-data.js"></script>
+<script src="vendor/scifi-ui/data-readout.js"></script>
+<script type="module">
+  import { ship } from './ship/ship.js';
+  import { quiz } from './lab/quiz.js';
+  import * as prism from './lab/prism.js';
+  import * as cd from './lab/cd.js';
+  import * as hose from './lab/hose.js';
+  import * as sky from './lab/sky.js';
+  import * as film from './lab/film.js';
+  import * as holo from './lab/holo.js';
+  ship.mount({ deck: 'lab' });
 
-  <div id="labMount"></div>
-
-  <p class="foot">Everything here runs on the real physics in miniature: dispersion in glass,
-     interference from a CD's 1.6 µm track spacing, the 42° water-droplet cone, Rayleigh's
-     1/λ⁴ scattering, two reflections a few hundred nanometres apart in a soap film, and a
-     hologram's fringes solved from |O + R|² and read back out with the grating equation. Illustrative in scale, honest in mechanism. Want a full optical bench with lenses,
-     mirrors, and dispersive glass you arrange yourself? The open-source
-     <a href="https://phydemo.app/ray-optics/" style="color:#7ee0ff">Ray Optics Simulation</a>
-     is the deep end of this pool.</p>
-</div>
-
-<script>
-// The shared machinery: a registry the four experiments plug into, and the
-// persistent spectrum strip they all light up.
-window.LAB = (() => {
-  'use strict';
-  // wavelength (nm, 380-750) to display rgb, decent approximation
-  function wavelengthRGB(nm) {
-    let r = 0, g = 0, b = 0, t;
-    if (nm < 440) { t = (nm - 380) / 60; r = 0.35 * (1 - t); b = 1; }
-    else if (nm < 490) { t = (nm - 440) / 50; g = t; b = 1; }
-    else if (nm < 510) { t = (nm - 490) / 20; g = 1; b = 1 - t; }
-    else if (nm < 580) { t = (nm - 510) / 70; r = t; g = 1; }
-    else if (nm < 645) { t = (nm - 580) / 65; r = 1; g = 1 - t; }
-    else { r = 1; }
-    let f = 1;
-    if (nm < 420) f = 0.4 + 0.6 * (nm - 380) / 40;
-    if (nm > 700) f = 0.4 + 0.6 * (750 - nm) / 50;
-    return [r * f, g * f, b * f];
+  const demonstrated = {};
+  const benches = [['vpPrism', prism], ['vpCd', cd], ['vpHose', hose], ['vpSky', sky], ['vpFilm', film], ['vpHolo', holo]];
+  for (const [id, mod] of benches) {
+    const el = document.getElementById(id), section = el.closest('.stage');
+    try {
+      mod.mount({ el, hud: el.querySelector('.vhud'), ctrl: section.querySelector('.ctrl'), out: section.querySelector('.out'), solved() { demonstrated[mod.question.id] = true; } });
+    } catch (e) { console.error('bench ' + id + ' failed:', e); }
   }
-
-  const strip = document.getElementById('labStrip');
-  const sctx = strip.getContext('2d');
-  let weight = () => 0.15;                 // per-nm glow, 0..1
-  function drawStrip() {
-    const r = strip.getBoundingClientRect();
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    strip.width = Math.round(r.width * dpr); strip.height = Math.round(r.height * dpr);
-    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    for (let x = 0; x < r.width; x++) {
-      const nm = 750 - (x / r.width) * 370;   // red on the left, like the big pages
-      const [cr, cg, cb] = wavelengthRGB(nm);
-      const w = Math.max(0.06, Math.min(1, weight(nm)));
-      sctx.fillStyle = 'rgb(' + Math.round(cr * 255 * w) + ',' + Math.round(cg * 255 * w) + ',' + Math.round(cb * 255 * w) + ')';
-      sctx.fillRect(x, 0, 1, r.height);
-    }
-  }
-  const api = {
-    wavelengthRGB,
-    // experiments call this with fn(nm)->0..1; the strip glows accordingly
-    light(fn) { weight = fn || (() => 0.15); drawStrip(); },
-    reset() { weight = () => 0.15; drawStrip(); },
-  };
-  addEventListener('resize', drawStrip);
-  drawStrip();
-
-  // ---- LIGHT QUIZ: a modal that walks the four questions, predict-first ----
-  // The right answer stays hidden until a choice is committed. Correct indices
-  // live here (a module may also ship question.answer and override this map).
-  const ANSWERS = { prism: 2, cd: 2, hose: 2, sky: 1, film: 1 };
-  const quizBtn = document.getElementById('quizToggle');
-  const overlay = document.createElement('div');
-  overlay.id = 'quizOverlay'; overlay.hidden = true;
-  overlay.innerHTML = '<div class="quizpanel holopanel" role="dialog" aria-modal="true" aria-label="Light quiz"></div>';
-  document.body.appendChild(overlay);
-  const panel = overlay.firstElementChild;
-  let qi = 0, score = 0, picks = [];
-
-  function quizItems() { return registry.filter(e => e.question); }
-  function closeQuiz() { overlay.hidden = true; quizBtn.focus(); }
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeQuiz(); });
-  addEventListener('keydown', e => { if (e.key === 'Escape' && !overlay.hidden) closeQuiz(); });
-
-  function materialize() {
-    panel.classList.remove('is-in'); void panel.offsetWidth; panel.classList.add('is-in');
-  }
-  function headHTML(items) {
-    return '<div class="qhead"><span class="qtag">LIGHT QUIZ</span>' +
-      '<span class="qcount num">' + Math.min(qi + 1, items.length) + ' / ' + items.length + '</span>' +
-      '<button type="button" class="qclose" aria-label="Close quiz">✕</button></div>' +
-      '<div class="qdots">' + items.map((_, k) =>
-        '<i class="' + (k < qi ? 'done' : k === qi ? 'on' : '') + '"></i>').join('') + '</div>';
-  }
-  function showQuestion() {
-    const items = quizItems();
-    if (qi >= items.length) return showScore(items);
-    const exp = items[qi];
-    panel.classList.remove('answered');
-    panel.innerHTML = headHTML(items) +
-      '<p class="qfrom">' + exp.title +
-      (exp.solvedFlag ? ' <span class="qlabtag">✦ demonstrated in the lab</span>' : '') + '</p>' +
-      '<p class="q">' + exp.question.text + '</p>' +
-      '<div class="choices">' + exp.question.choices.map((c, k) =>
-        '<button type="button" data-i="' + k + '">' + c + '</button>').join('') + '</div>' +
-      '<p class="verdict"></p><p class="reveal"></p>' +
-      '<div class="qfoot"><button type="button" class="qnext">' +
-      (qi === items.length - 1 ? 'RESULTS →' : 'NEXT →') + '</button>' +
-      '<span class="qnote">Commit to a guess. The answer stays sealed until you do.</span></div>';
-    materialize();
-    const answer = Number.isInteger(exp.question.answer) ? exp.question.answer : ANSWERS[exp.id];
-    panel.querySelectorAll('.choices button').forEach(b => b.addEventListener('click', () => {
-      if (panel.classList.contains('answered')) return;
-      const k = +b.dataset.i, right = (k === answer);
-      if (right) score++;
-      picks[qi] = right;
-      b.classList.add(right ? 'good' : 'bad');
-      if (!right) panel.querySelector('.choices button[data-i="' + answer + '"]').classList.add('good');
-      const v = panel.querySelector('.verdict');
-      v.textContent = right ? 'CORRECT' : 'NOT THIS TIME';
-      v.classList.add(right ? 'good' : 'bad');
-      panel.querySelector('.reveal').textContent = exp.question.reveal;
-      panel.querySelector('.qnote').textContent = '';
-      panel.classList.add('answered');
-    }));
-    panel.querySelector('.qnext').addEventListener('click', () => { qi++; showQuestion(); });
-    panel.querySelector('.qclose').addEventListener('click', closeQuiz);
-  }
-  function showScore(items) {
-    const n = items.length;
-    const word = score === n ? 'Fully light literate.' :
-                 score >= n - 1 ? 'One photon short of perfect.' :
-                 score >= Math.ceil(n / 2) ? 'The lab is starting to rub off on you.' :
-                 'Good news: every answer is downstairs, running live.';
-    panel.classList.remove('answered');
-    panel.innerHTML = headHTML(items) +
-      '<p class="qfrom">RESULTS</p>' +
-      '<p class="score"><span class="num">' + score + ' / ' + n + '</span> · ' + word + '</p>' +
-      '<p class="reveal" style="display:block">' + items.map((e, k) =>
-        (picks[k] ? '✓ ' : '✗ ') + e.title).join('<br>') + '</p>' +
-      '<div class="qfoot"><button type="button" class="qnext" style="visibility:visible">TRY AGAIN</button>' +
-      '<button type="button" class="qclose" style="margin-left:0">BACK TO THE LAB</button></div>';
-    materialize();
-    panel.querySelector('.qnext').addEventListener('click', () => { qi = 0; score = 0; picks = []; showQuestion(); });
-    panel.querySelectorAll('.qclose').forEach(b => b.addEventListener('click', closeQuiz));
-  }
-  quizBtn.addEventListener('click', () => {
-    qi = 0; score = 0; picks = [];
-    overlay.hidden = false;
-    showQuestion();
-  });
-
-  const mount = document.getElementById('labMount');
-  // sections land in a fixed order no matter when each module registers
-  const ORDER = ['prism', 'cd', 'hose', 'sky', 'film', 'holo'];
-  for (const id of ORDER) {
-    const slot = document.createElement('div');
-    slot.id = 'slot-' + id;
-    mount.appendChild(slot);
-  }
-  // ---- drag the bottom edge of a stage to resize it ----------------------
-  // The stage's canvases follow --stage-h; each experiment reads its own live
-  // height back out of the element, so the physics re-lays-out rather than
-  // stretching. Double-click (or Escape mid-drag) returns to the default.
-  const registry = [];
-  function addGrip(sec) {
-    const stage = sec.querySelector('.stage');
-    if (!stage) return;
-    const grip = document.createElement('button');
-    grip.type = 'button';
-    grip.className = 'stagegrip';
-    grip.title = 'Drag to resize · double-click to reset';
-    grip.setAttribute('aria-label', 'Resize this experiment. Use the up and down arrow keys.');
-    grip.innerHTML = '<i></i><em>DRAG TO RESIZE</em><i></i>';
-    sec.insertBefore(grip, stage.nextSibling);
-    const canvas = () => stage.querySelector(':scope > canvas');
-    const natural = () => {
-      const c = canvas();
-      return c ? Math.round(c.getBoundingClientRect().height) || 300 : 300;
-    };
-    let base = 0;
-    const setH = (h) => {
-      h = Math.max(160, Math.min(900, Math.round(h)));
-      sec.style.setProperty('--stage-h', h + 'px');
-      sec.dataset.resized = '1';
-      return h;
-    };
-    const reset = () => { delete sec.dataset.resized; sec.style.removeProperty('--stage-h'); };
-    grip.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      base = natural();
-      const y0 = e.clientY;
-      grip.setPointerCapture(e.pointerId);
-      const move = (ev) => setH(base + (ev.clientY - y0));
-      const up = () => {
-        grip.removeEventListener('pointermove', move);
-        grip.removeEventListener('pointerup', up);
-        grip.removeEventListener('pointercancel', up);
-      };
-      grip.addEventListener('pointermove', move);
-      grip.addEventListener('pointerup', up);
-      grip.addEventListener('pointercancel', up);
-    });
-    grip.addEventListener('dblclick', reset);
-    grip.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        setH(natural() + (e.key === 'ArrowDown' ? 1 : -1) * (e.shiftKey ? 60 : 20));
-      } else if (e.key === 'Escape') reset();
-    });
-  }
-  function register(exp) {
-    registry.push(exp);
-    const sec = document.createElement('section');
-    sec.className = 'exp'; sec.id = 'exp-' + exp.id;
-    sec.innerHTML = '<h2>' + exp.title + '</h2>' +
-      (exp.goal ? '<p class="goal">' + exp.goal + '</p>' : '') +
-      '<div class="stage"></div>' +
-      (exp.hint ? '<p class="hint">' + exp.hint + '</p>' : '');
-    (document.getElementById('slot-' + exp.id) || mount).appendChild(sec);
-    addGrip(sec);
-    const expApi = {
-      strip: api,
-      // the experiment calls this when the visitor has made the phenomenon
-      // happen; the quiz shows a "demonstrated in the lab" tag for it, but the
-      // answer itself stays sealed until they commit to a guess in the modal
-      solved() { exp.solvedFlag = true; },
-      reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-    };
-    try { exp.init(sec.querySelector('.stage'), expApi); }
-    catch (e) { console.error('experiment ' + exp.id + ' failed:', e); }
-  }
-  return { register, strip: api };
-})();
+  quiz(document.getElementById('quizToggle'), benches.map(b => b[1].question), demonstrated);
+  ship.watchEntrances();
+  window.__ok = 1;
 </script>
-<script src="lab/prism.js"></script>
-<script src="lab/cd.js"></script>
-<script src="lab/hose.js"></script>
-<script src="lab/sky.js"></script>
-<script src="lab/film.js"></script>
-<script src="lab/holo.js"></script>
-<script src="share.js"></script>
+<script src="vendor/scifi-ui/hologram-tap.js"></script>
 </body>
 </html>

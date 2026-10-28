@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The Gamma Attic</title>
-<meta name="description" content="The top floor of the spectrum is 35 octaves tall: an energy ruler from nuclear medicine to the most energetic photon ever caught.">
+<title>Gamma Attic · Radio to Gamma</title>
+<meta name="description" content="The top floor of the spectrum is 35 octaves tall: climb an energy ladder from nuclear medicine to the most energetic photon ever caught, then dial a photon past the roof and hear what breaks.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Radio to Gamma">
 <meta property="og:title" content="The Gamma Attic · Radio to Gamma">
@@ -19,316 +19,729 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/scifi-ui/hologram.css">
 <link rel="stylesheet" href="vendor/scifi-ui/panel-surface.css">
-<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="vendor/scifi-ui/data-readout.css">
+<link rel="stylesheet" href="ship/ship.css">
 <style>
+  /* deck 04, the Gamma Attic: everything here is scoped to this deck */
+  body[data-deck="gamma"] .lede b { color: rgb(var(--ink)); }
 
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 30px 20px 70px; }
-  h1 { font-size: 24px; color: #eff4fb; margin: 0 0 6px; font-weight: 650; }
-  h1 .num { color: #e278b4; }
-  .sub { font-size: 14.5px; color: #9aa2b1; margin: 0 0 24px; line-height: 1.55; max-width: 68ch; }
-  .sub b { color: #eff4fb; }
-
-  /* how wide the attic is, in octaves, against the whole downstairs */
-  .octcompare { margin: 0 0 26px; }
-  .octrow { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px;
-            align-items: center; font-size: 12.5px; color: #8b98a8; }
-  .octrow .lbl { text-align: right; }
-  .octbar { height: 14px; border: 1px solid rgba(196,228,255,.2); position: relative; }
-  .octbar i { position: absolute; inset: 0; font-style: normal; font-size: 10.5px;
-              color: #eff4fb; padding: 0 6px; line-height: 14px; white-space: nowrap; }
-  .octbar.all { background: linear-gradient(90deg, rgba(74,150,224,.35), rgba(226,120,180,.35)); }
-  .octbar.gam { background: rgba(226,120,180,.3); }
+  /* how tall the attic is, in octaves, against the whole downstairs */
+  body[data-deck="gamma"] .octcompare { display: grid; gap: 8px; margin: 0 0 22px; max-width: 760px; }
+  body[data-deck="gamma"] .octrow { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; align-items: center;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--dim)); }
+  body[data-deck="gamma"] .octbar { height: 16px; border: 1px solid rgb(var(--line) / .18); position: relative; border-radius: 3px; overflow: hidden; }
+  body[data-deck="gamma"] .octbar i { position: absolute; inset: 0; font-style: normal; font-size: 10px; letter-spacing: .1em;
+    color: rgb(var(--ink)); padding: 0 8px; line-height: 15px; white-space: nowrap; text-transform: none; }
+  body[data-deck="gamma"] .octbar.all { background: linear-gradient(90deg, rgb(74 150 224 / .35), rgb(var(--deck) / .35)); }
+  body[data-deck="gamma"] .octbar.gam { background: rgb(var(--deck) / .28); box-shadow: inset 0 0 12px rgb(var(--deck) / .25); }
   @media (max-width: 520px) {
-    .octrow { grid-template-columns: 1fr; gap: 3px; }
-    .octrow .lbl { text-align: left; }
-    .octrow .lbl:not(:first-child) { margin-top: 9px; }
+    body[data-deck="gamma"] .octrow { grid-template-columns: 1fr; gap: 4px; }
   }
 
-  .cap { font-size: 12px; letter-spacing: .1em; color: #6c7c8c; text-transform: uppercase; margin: 0 0 6px; }
-  svg.attic { display: block; width: 100%; height: auto; border: 1px solid rgba(196,228,255,.16);
-              background: #05070c; touch-action: none; cursor: crosshair; }
-  .atticnote { font-size: 12px; color: #5c6b7a; margin: 6px 0 22px; line-height: 1.5; }
+  /* the climb: the one instrument on this deck that you move through */
+  body[data-deck="gamma"] #vpClimb { height: clamp(460px, 72vh, 720px); cursor: grab; }
+  body[data-deck="gamma"] #vpClimb.is-grabbing { cursor: grabbing; }
+  body[data-deck="gamma"] .vhud .hint {
+    position: absolute; left: 14px; top: 12px; font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+    color: rgb(var(--line) / .6); pointer-events: none; max-width: calc(100% - 80px);
+  }
+  body[data-deck="gamma"] .vhud .roof, body[data-deck="gamma"] .vhud .floor {
+    position: absolute; left: 14px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase;
+    color: rgb(var(--dim) / .8); pointer-events: none;
+  }
+  body[data-deck="gamma"] .vhud .roof { top: 30px; }
+  body[data-deck="gamma"] .vhud .hint .short { display: none; }
+  @media (max-width: 600px) {
+    body[data-deck="gamma"] .vhud .hint .long { display: none; }
+    body[data-deck="gamma"] .vhud .hint .short { display: inline; }
+  }
+  body[data-deck="gamma"] .vhud .floor { bottom: 28px; }
 
-  .readout { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-             margin: 0 0 24px; }
-  .rcard { border: 1px solid rgba(196,228,255,.14); border-left: 3px solid #e8a93a; padding: 10px 13px; }
-  .rcard .l { font-size: 11px; letter-spacing: .1em; color: #6c7c8c; text-transform: uppercase; }
-  .rcard .v { font-size: 19px; color: #eff4fb; margin-top: 3px; font-variant-numeric: tabular-nums; }
-  .rcard .m { font-size: 12px; color: #9aa2b1; margin-top: 3px; }
+  /* the probe is vertical here: a thin lift shaft on the right edge of the box */
+  body[data-deck="gamma"] .lift {
+    position: absolute; right: 16px; top: 26px; bottom: 26px; width: 36px; cursor: grab; z-index: 4;
+    touch-action: none; -webkit-tap-highlight-color: transparent;
+  }
+  body[data-deck="gamma"] .lift:active { cursor: grabbing; }
+  body[data-deck="gamma"] .lift::before {
+    content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%);
+    background: linear-gradient(to top, rgb(var(--line) / .18), rgb(var(--deck) / .9));
+    box-shadow: 0 0 10px rgb(var(--deck) / .45);
+  }
+  body[data-deck="gamma"] .lift .thumb {
+    position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 40% 35%, #fff, rgb(var(--deck)) 55%, rgb(var(--deck) / .6));
+    border: 1px solid rgb(var(--deck)); box-shadow: 0 0 16px rgb(var(--deck) / .8), 0 0 32px rgb(var(--deck) / .35);
+  }
+  body[data-deck="gamma"] .lift .cap {
+    position: absolute; right: calc(100% - 4px); top: 50%; transform: translateY(-50%);
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em; font-weight: 600; white-space: nowrap;
+    color: rgb(var(--void)); background: rgb(var(--deck)); padding: 2px 7px; border-radius: 3px;
+    box-shadow: 0 0 14px rgb(var(--deck) / .8);
+  }
+  body[data-deck="gamma"] .lift:focus-visible { outline: none; }
+  body[data-deck="gamma"] .lift:focus-visible::before { width: 3px; }
 
-  .lmcard { border: 1px solid rgba(226,120,180,.3); border-left: 3px solid #e278b4;
-            background: rgba(226,120,180,.05); padding: 13px 16px; margin: 0 0 26px; }
-  .lmcard h3 { margin: 0 0 5px; font-size: 15px; color: #eff4fb; }
-  .lmcard .e { font-size: 12.5px; color: #e278b4; margin: 0 0 7px; }
-  .lmcard p { margin: 0; font-size: 13.5px; color: #9aa2b1; line-height: 1.6; }
-  /* the photograph is the payoff, so it sits directly under the ruler you just
-     dragged, above the numbers rather than three cards below them */
-  .lmfig { margin: 0 0 20px; }
-  .lmfig img { display: block; width: 100%; max-width: 560px;
-               border: 1px solid rgba(226,120,180,.3); }
-  .lmfig figcaption { font-size: 11px; color: #5c6b7a; margin-top: 6px; max-width: 560px;
-                      line-height: 1.5; }
-  .lmfig figcaption b { color: #e278b4; font-weight: 600; }
+  /* what the rung is */
+  body[data-deck="gamma"] .rung-card { margin-top: 14px; }
+  body[data-deck="gamma"] .rung-card .e { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; color: rgb(var(--deck)); margin: 0 0 8px; }
+  body[data-deck="gamma"] .rung-card h3.name { font-family: var(--sans); font-size: clamp(18px, 2vw, 22px); letter-spacing: 0; text-transform: none; color: rgb(var(--ink)); font-weight: 500; margin: 0 0 4px; }
+  body[data-deck="gamma"] .rung-card .src { font-size: 12px; color: rgb(var(--dim)); margin: 10px 0 0; }
+  body[data-deck="gamma"] .rung-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  body[data-deck="gamma"] .rung-grid.has-fig { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
+  @media (max-width: 680px) { body[data-deck="gamma"] .rung-grid.has-fig { grid-template-columns: 1fr; } }
+  body[data-deck="gamma"] .lmfig { margin: 0; }
+  body[data-deck="gamma"] .lmfig[hidden] { display: none !important; }
+  body[data-deck="gamma"] .lmfig img { display: block; width: 100%; height: auto; border: 1px solid rgb(var(--deck) / .35); border-radius: 6px; }
+  body[data-deck="gamma"] .lmfig figcaption { font-size: 11.5px; color: rgb(var(--dim)); margin-top: 6px; line-height: 1.5; }
+  body[data-deck="gamma"] .lmfig figcaption b { color: rgb(var(--deck)); font-weight: 600; }
 
-  .dark { border: 1px solid rgba(196,228,255,.14); padding: 15px 18px; margin: 0 0 22px; }
-  .dark h2 { font-size: 13px; letter-spacing: .12em; color: #e278b4; margin: 0 0 9px; font-weight: 600; }
-  .dark p { font-size: 13.5px; color: #9aa2b1; line-height: 1.6; margin: 0 0 8px; }
-  .dark p:last-child { margin: 0; }
-  .dark b { color: #cfe6e6; }
+  /* break it */
+  body[data-deck="gamma"] #vpBreak { height: clamp(170px, 26vh, 230px); }
+  body[data-deck="gamma"] .verdict { margin-top: 14px; }
+  body[data-deck="gamma"] .verdict .state { font-family: var(--mono); font-size: 10.5px; letter-spacing: .26em; text-transform: uppercase; color: rgb(var(--deck)); margin: 0 0 10px; }
+  body[data-deck="gamma"] .verdict .state.hot { color: rgb(var(--holo-warm)); }
+  body[data-deck="gamma"] .verdict p { font-size: 15px; line-height: 1.6; }
+  body[data-deck="gamma"] .verdict p.src { font-size: 12px; color: rgb(var(--dim)); }
+  body[data-deck="gamma"] .dial .dial-k b { font-family: var(--mono); }
 </style>
 </head>
 <body>
-<header class="gamebar holopanel" style="--bar-accent: 226 120 180;">
-  <div class="gbrand">
-    <img class="gamebar-icon" src="favicon.png" alt="">
-    <span class="gamebar-name">THE GAMMA ATTIC</span>
-    <span style="flex:1"></span>
-    <button class="gamebar-back gamebar-share" id="shareBtn" type="button">SHARE ↗</button>
+<main class="deck">
+  <div class="deck-wrap">
+
+    <section class="stage" id="climb">
+      <div class="stage-head">
+        <div class="tag">Deck 04 · the Gamma Attic</div>
+        <h1>The top floor is <em>35 octaves</em> tall.</h1>
+        <p class="lede"><b>Gamma ray is not a band with two edges. It is the open-ended top of the spectrum:</b>
+          everything above the x-rays, however high. From its doorstep near 100 keV to the most energetic photon ever caught,
+          the gamma "band" spans more than ten orders of magnitude, wider than any other named band and about as wide as
+          radio, microwave and infrared put together. The ship has laid it out as a ladder. Climb.</p>
+      </div>
+
+      <div class="octcompare rise" aria-label="The attic compared with the whole main view, in octaves">
+        <div class="octrow">
+          <span class="lbl">the whole main view</span>
+          <div class="octbar all" style="width: 100%"><i>10 kHz to 100 EHz · 53 octaves</i></div>
+        </div>
+        <div class="octrow">
+          <span class="lbl">the attic alone</span>
+          <div class="octbar gam" style="width: 65%"><i>100 keV to 2.5 PeV · 34.5 octaves</i></div>
+        </div>
+      </div>
+
+      <div class="viewport" id="vpClimb">
+        <div class="vhud">
+          <div class="hint" id="climbHint"><span class="long">drag to climb · scroll inside the box · </span><span class="short">drag the lift · </span>tap a rung</div>
+          <div class="roof">roof · 3 PeV</div>
+          <div class="floor">floor · 100 keV</div>
+          <div class="lift" id="lift" role="slider" tabindex="0" aria-label="Photon energy on the gamma ladder"
+               aria-orientation="vertical" aria-valuemin="19.383" aria-valuemax="29.861" aria-valuenow="20.092" aria-valuetext="511 keV">
+            <div class="thumb"></div>
+            <div class="cap" id="liftCap">511 keV</div>
+          </div>
+        </div>
+        <div class="vp-note">log scale · 10.5 decades in one box</div>
+        <div class="fallback">A vertical ladder of light from 100 keV at the floor to 3 PeV at the roof, with a glowing rung at each landmark and the three photographs hung at their rungs. The readouts below still work: use the lift control or the chips.</div>
+      </div>
+
+      <div class="chips" id="chips" role="group" aria-label="Landmarks on the ladder"></div>
+
+      <div class="readouts">
+        <div class="readout"><p class="k">Photon energy</p><p class="v" id="rE"></p><p class="d" id="rEm"></p></div>
+        <div class="readout"><p class="k">Frequency</p><p class="v" id="rF"></p><p class="d" id="rFm"></p></div>
+        <div class="readout"><p class="k">Wavelength</p><p class="v" id="rL"></p><p class="d" id="rLm"></p></div>
+        <div class="readout"><p class="k">Where you are</p><p class="v" id="rW"></p><p class="d" id="rWm"></p></div>
+      </div>
+
+      <div class="holopanel glass rung-card" id="rungCard">
+        <div class="rung-grid" id="rungGrid">
+          <div>
+            <h3>What is here</h3>
+            <p class="e" id="lmE"></p>
+            <h3 class="name" id="lmName"></h3>
+            <p id="lmWhy"></p>
+            <p class="src" id="lmSrc"></p>
+          </div>
+          <figure class="lmfig" id="lmFigure" hidden>
+            <img id="lmImg" alt="" width="900" height="900" loading="lazy">
+            <figcaption id="lmCredit"></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="stage" id="breakit">
+      <div class="stage-head">
+        <div class="tag">Stage 02 · break it</div>
+        <h2>Dial a photon <em>past the roof.</em></h2>
+        <p class="lede">The ladder stops at 3 PeV because the data do. Physics does not. Push one photon's energy up the dial,
+          past every rung ever measured, and the ship will say, honestly, what happens to it on the way.</p>
+      </div>
+
+      <div class="viewport" id="vpBreak">
+        <div class="vp-note">100 keV to the Planck energy · 23 decades · lit means measured</div>
+        <div class="fallback">A horizontal ruler from 100 keV to the Planck energy; the first ten decades are lit, the remaining thirteen are dark, and a glowing photon slides along it as you move the dial below.</div>
+      </div>
+
+      <div class="dial">
+        <div class="dial-k"><span>Photon energy</span><b id="bkE">1.00 MeV</b></div>
+        <input class="beam" type="range" id="bkDial" min="5" max="28.0867" step="0.01" value="6"
+               aria-label="Photon energy, log scale, 100 keV to the Planck energy" aria-valuetext="1.00 MeV">
+      </div>
+
+      <div class="readouts">
+        <div class="readout"><p class="k">Energy</p><p class="v" id="bE"></p><p class="d" id="bEm"></p></div>
+        <div class="readout"><p class="k">Frequency</p><p class="v" id="bF"></p><p class="d">oscillations per second</p></div>
+        <div class="readout"><p class="k">Wavelength</p><p class="v" id="bL"></p><p class="d" id="bLm"></p></div>
+      </div>
+
+      <div class="holopanel glass verdict" id="verdict" aria-live="polite">
+        <p class="state" id="vState"></p>
+        <p id="vText"></p>
+        <p class="src" id="vSrc"></p>
+      </div>
+    </section>
+
+    <section class="stage" id="why">
+      <div class="grid-2">
+        <div class="holopanel glass rise">
+          <h3>Why the attic looks empty</h3>
+          <p>Nature's known accelerators, pulsar winds, supernova remnants, the jets of feeding black holes and the
+            winds of giant star clusters, seem to top out near PeV photon energies. Above about 100 TeV the universe
+            itself censors the view: over intergalactic distances, gamma rays annihilate against the infrared background
+            and then against the cosmic microwave background itself. So the highest floors are structurally sound but
+            unvisited: allowed by the physics, unreached by the sources, and hidden by the sky.</p>
+          <p>One PeV photon carries about 1.6 × 10<sup>-4</sup> joules: the kinetic energy of a ping-pong ball rolling
+            across a table at a third of a metre per second, packed into a single quantum of light. And the attic does
+            not stop at the record: between 2.5 PeV and the Planck energy lie almost thirteen more orders of magnitude
+            in which no photon has ever been seen.</p>
+        </div>
+        <div class="holopanel glass rise">
+          <h3>Other decks</h3>
+          <div class="hatches" style="margin-top: 4px">
+            <a class="hatch" href="observatory.html"><span class="k">Deck 02</span><span class="t">Observatory</span><span class="d">Put a 140 keV gamma next to AM radio and read every number.</span></a>
+            <a class="hatch" href="lab.html"><span class="k">Deck 03</span><span class="t">Light Lab</span><span class="d">Six benches where the visible band bends, splits and interferes.</span></a>
+            <a class="hatch" href="senses.html"><span class="k">Deck 05</span><span class="t">Spectral Zoo</span><span class="d">Nothing alive senses gamma rays. Here is who senses what.</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="deck-foot">
+      <p>Every number on this deck is computed from the exact SI constants in the ship's physics kernel; landmark energies are the evaluated nuclear lines (Tc-99m 140.5 keV, Cs-137 661.7 keV, Co-60 1.333 MeV, K-40 1.461 MeV, Tl-208 2.614 MeV) and the published detections named on each rung. The ladder's vertical scale is logarithmic: one decade of energy is the same height everywhere on it.</p>
+      <p>Images: the Moon in gamma rays, NASA / EGRET, Compton Gamma Ray Observatory. Five-year all-sky map above 1 GeV, NASA / DOE / Fermi LAT Collaboration. Crab Nebula, NASA / ESA / Hubble, J. Hester and A. Loll.</p>
+    </footer>
   </div>
-  <nav class="gbnav" aria-label="Site pages">
-    <a class="gamebar-back" href="index.html">← HOME</a>
-    <a class="gamebar-back" href="observatory.html">OBSERVATORY</a>
-    <a class="gamebar-back" href="lab.html">LIGHT LAB</a>
-    <a class="gamebar-back" href="senses.html">SPECTRAL ZOO</a>
-  </nav>
-</header>
-<div class="wrap">
-  <h1>The top floor is <span class="num">35 octaves</span> tall.</h1>
-  <p class="sub"><b>Gamma ray is not a band with two edges. It is the open-ended top of the spectrum:</b>
-     everything above the x-rays, however high. From its doorstep near 100 keV to the most energetic
-     photon ever caught, the gamma "band" spans about ten orders of magnitude, wider than every other
-     named band combined. Drag the marker; tap a landmark.</p>
+</main>
 
-  <div class="octcompare">
-    <div class="octrow">
-      <span class="lbl">the whole main view</span>
-      <div class="octbar all" style="width: 100%"><i>radio → gamma · 53 octaves</i></div>
-      <span class="lbl">the gamma attic alone</span>
-      <div class="octbar gam" style="width: 66%"><i>100 keV → 1.4 PeV · 35 octaves</i></div>
-    </div>
-  </div>
+<script src="spectrum-data.js"></script>
+<script type="module">
+import { ship, THREE, label, glowSprite } from './ship/ship.js';
+import * as P from './ship/physics.js';
 
-  <p class="cap">Photon energy, 100 keV to 3 PeV</p>
-  <svg class="attic" id="atticSvg" role="application"
-       aria-label="Gamma-ray energy ruler from 100 kiloelectronvolts to 3 petaelectronvolts. Drag the marker; select a landmark."></svg>
-  <p class="atticnote">The hatched right end is where the extragalactic sky goes dark: a photon above
-     ~100 TeV crossing intergalactic space collides with background starlight and becomes an
-     electron-positron pair before it can arrive. And the attic does not stop at the record:
-     between 1.4 PeV and the Planck energy lie thirteen more orders of magnitude in which
-     no photon has ever been seen.</p>
+ship.mount({ deck: 'gamma' });
 
-  <figure class="lmfig" id="lmFigure" hidden>
-    <img id="lmImg" alt="">
-    <figcaption id="lmCredit"></figcaption>
-  </figure>
+/* ---- units the kernel does not yet carry ----------------------------------
+   physics.js's energy ladder stops at GeV and its frequency ladder at EHz; the
+   attic needs TeV and PeV, and frequencies past 1e21 Hz read better in
+   scientific notation. Integrator: these two belong in ship/physics.js. */
+const EUX = [[1e15, 'PeV'], [1e12, 'TeV'], [1e9, 'GeV'], [1e6, 'MeV'], [1e3, 'keV'], [1, 'eV']];
+const UNIT_NAME = { PeV: 'petaelectronvolts', TeV: 'teraelectronvolts', GeV: 'gigaelectronvolts', MeV: 'megaelectronvolts',
+  keV: 'kiloelectronvolts', eV: 'electronvolts', pm: 'picometres', fm: 'femtometres', m: 'metres', EHz: 'exahertz' };
+const fmtE = (e, plain) => P.unit(e, EUX, 'eV', plain);
+// past an exaelectronvolt the prefixes stop teaching anything; scientific notation does
+const fmtEB = (e, plain) => e >= 1e18 ? P.sci(e, plain) + (plain ? ' eV' : ' <span class="u">eV</span>') : fmtE(e, plain);
+const fmtF = (f, plain) => f >= 1e21 ? P.sci(f, plain) + (plain ? ' Hz' : ' <span class="u">Hz</span>') : P.fmtFreq(f, plain);
+const fmtL = (m, plain) => m >= 1e-16 ? P.fmtLength(m, plain) : P.sci(m, plain) + (plain ? ' m' : ' <span class="u">m</span>');
+const spell = s => { const u = UNIT_NAME[s.trim().split(' ').pop()]; return u ? u + ' · ' : ''; };
+const human = v => v < 1000 ? P.num(v) : (Math.round(v / Math.pow(10, Math.floor(P.log10(v)) - 2)) * Math.pow(10, Math.floor(P.log10(v)) - 2)).toLocaleString('en-US');
+const ME = 510998.95;                         // eV, the electron's rest energy (CODATA 2018)
+const PAIR = 2 * ME;                          // 1.0220 MeV, the pair production threshold
+const CMB_EPS = 2.701 * 8.617333262e-5 * 2.725;  // 6.34e-4 eV, the mean CMB photon
+const CMB_TH = ME * ME / CMB_EPS;             // 4.12e14 eV, head-on pair threshold on a mean CMB photon
+const PLANCK_EV = 1.220890e28;                // the Planck energy in eV (CODATA 2018, 1.220890e19 GeV)
+const RECORD = 2.5e15;                        // LHAASO, Cygnus bubble, Science Bulletin, 26 Feb 2024
+const fOf = e => P.freqOfEV(e), lamOf = e => P.C / fOf(e);
 
-  <div class="readout">
-    <div class="rcard"><div class="l">Photon energy</div><div class="v num" id="rE"></div><div class="m" id="rEm"></div></div>
-    <div class="rcard"><div class="l">Frequency</div><div class="v num" id="rF"></div><div class="m" id="rFm"></div></div>
-    <div class="rcard"><div class="l">Wavelength</div><div class="v num" id="rL"></div><div class="m" id="rLm"></div></div>
-  </div>
+/* ---- the rungs --------------------------------------------------------------
+   energies in eV. `img` and `credit` are the three photographs and their
+   credits, exactly as the old attic carried them. `kind` draws the rung:
+   line (a nuclear line), source (a sky), threshold (a rule of physics), edge
+   (where the view ends). */
+const LM = [
+  { e: 140.511e3, kind: 'line', name: 'Tc-99m, nuclear medicine', short: 'Tc-99m',
+    why: 'The workhorse tracer of nuclear medicine: injected, it lets a gamma camera watch organs work, then decays away within a day.',
+    src: '140.511 keV: the evaluated Tc-99m line (NNDC / NuDat).' },
+  { e: 510.999e3, kind: 'line', name: 'Positron annihilation (PET)', short: 'annihilation',
+    why: 'When a positron meets an electron, both vanish into a back-to-back pair of 511 keV photons. A PET scanner catches the pair and draws the line between them: imaging with antimatter. This is also the electron’s rest energy, which is why the energy readout counts in units of it.',
+    src: '510.999 keV: the electron rest energy m c squared (CODATA 2018).' },
+  { e: 661.657e3, kind: 'line', name: 'Cs-137', short: 'Cs-137',
+    why: 'The signature line of cesium-137, the fingerprint by which fallout and orphaned medical sources are recognized.',
+    src: '661.657 keV (NNDC / NuDat).' },
+  { e: PAIR, kind: 'threshold', name: 'Pair production threshold', short: 'pair threshold',
+    why: 'Two electron rest energies. From this rung up, a photon passing a nucleus can vanish and leave an electron and a positron behind: light becoming matter. Below it a photon can scatter or be absorbed, but it cannot become a pair, whatever it hits.',
+    src: '2 × 510.999 keV = 1.0220 MeV.' },
+  { e: 1332.49e3, kind: 'line', name: 'Co-60 sterilization', short: 'Co-60',
+    why: 'Cobalt-60’s gammas sterilize medical instruments and food by the pallet: intensity doing useful work. It emits two lines, 1.173 and 1.333 MeV; this rung is the upper one.',
+    src: '1332.49 keV (NNDC / NuDat).' },
+  { e: 1460.82e3, kind: 'line', name: 'K-40, the line in every room', short: 'K-40',
+    why: 'Potassium-40 is in every brick, every banana, and you. A 70 kg body holds about 140 g of potassium, enough potassium-40 for roughly 4,400 decays a second, about one in nine of them giving this photon. It is usually the strongest line in a room’s natural background.',
+    src: '1460.82 keV, gamma branch 10.72% (NNDC / NuDat). Activity: 140 g K × 0.0117% K-40, half-life 1.248 billion years, gives 4,440 Bq.' },
+  { e: 2614.51e3, kind: 'line', name: 'Tl-208, nature’s loudest line', short: 'Tl-208',
+    why: 'The highest-energy gamma line common in nature, from thorium’s decay chain: it is in the background hum of every rock.',
+    src: '2614.51 keV (NNDC / NuDat).' },
+  { e: 67.49e6, kind: 'source', name: 'Pion bump, cosmic rays', short: 'Pion bump',
+    why: 'Cosmic rays striking interstellar gas make neutral pions, which decay to two gamma rays; in the pion’s own frame each carries half its rest energy, 67.5 MeV, and the glow of the Milky Way’s disk peaks there. It happens to rock too. This is the actual Moon, photographed in gamma rays: cosmic rays striking the regolith make it glow.',
+    src: 'Neutral pion rest energy 134.977 MeV, halved (Particle Data Group).',
+    img: 'gammaimg/gamma-moon.jpg', w: 360, h: 362, credit: 'The Moon in gamma rays · NASA / EGRET, Compton Gamma Ray Observatory' },
+  { e: 1e9, kind: 'source', name: 'The Fermi sky', short: 'Fermi sky',
+    why: 'At GeV energies the Fermi telescope maps thousands of pulsars and blazars: black-hole jets pointed straight at us. Five years of that sky, whole: the red spine is the Milky Way’s disk, every dot a distant engine. Fermi’s Large Area Telescope sees from 20 MeV to above 300 GeV, the band the ship has shaded along the rails.',
+    src: 'LAT energy range 20 MeV to greater than 300 GeV (NASA, Fermi LAT instrument description).',
+    img: 'gammaimg/fermi-sky.jpg', w: 900, h: 506, credit: 'Five-year all-sky map above 1 GeV · NASA / DOE / Fermi LAT Collaboration' },
+  { e: 1e12, kind: 'source', name: 'Crab Nebula at 1 TeV', short: 'Crab, 1 TeV',
+    why: 'Too energetic to catch directly, TeV photons are seen by the blue flash they make striking the atmosphere. The Crab Nebula, a pulsar-driven wreck of a supernova seen in 1054, is the standard candle every gamma-ray telescope is measured against. LHAASO has since caught the Crab a thousand times higher on this ladder, at 1.1 PeV.',
+    src: 'LHAASO Collaboration, Science 373, 425 (2021): Crab photons from 0.5 TeV to 1.1 PeV.',
+    img: 'gammaimg/crab.jpg', w: 900, h: 900, credit: 'Crab Nebula · NASA / ESA / Hubble, J. Hester and A. Loll' },
+  { e: 1e14, kind: 'edge', name: '100 TeV: the sky goes dark', short: 'the sky goes dark',
+    why: 'Above here, extragalactic gamma rays annihilate against background starlight en route, and soon against the cosmic microwave background itself: a mean CMB photon, 0.63 meV, can stop a photon above 412 TeV head-on. The mean free path falls to kiloparsecs. Only sources inside our galaxy can still be seen.',
+    src: 'Threshold (m c²)² / ε with ε = 2.70 kT at 2.725 K gives 4.12 × 10¹⁴ eV. Gould and Schréder, Phys. Rev. 155, 1404 (1967).' },
+  { e: 1.4e15, kind: 'source', name: 'LHAASO, 1.4 PeV', short: 'LHAASO, 2021',
+    why: 'The first photon above a petaelectronvolt from a known source, caught in 2021 from within the Milky Way, near the Cygnus region. One quantum of light carrying 2.2 × 10⁻⁴ joules.',
+    src: 'LHAASO Collaboration, Nature 594, 33 (2021). 1.4 × 10¹⁵ eV × 1.602 × 10⁻¹⁹ J/eV = 2.24 × 10⁻⁴ J.' },
+  { e: RECORD, kind: 'source', name: 'The record: 2.5 PeV', short: 'the record',
+    why: 'The most energetic photon ever recorded, from a bubble of ultra-high-energy light around the Cygnus OB2 star cluster, caught by LHAASO and reported in 2024. Its 4.0 × 10⁻⁴ joules is a 2.7 g ping-pong ball rolling at half a metre per second, in a single quantum. The ladder ends a little above here, because nothing has been seen beyond it.',
+    src: 'LHAASO Collaboration, Science Bulletin, 26 February 2024. 2.5 × 10¹⁵ eV = 4.01 × 10⁻⁴ J; v = sqrt(2E / 0.0027 kg) = 0.55 m/s.' },
+];
+const FERMI = { lo: 20e6, hi: 300e9 };
 
-  <div class="lmcard" id="lmCard" hidden>
-    <h3 id="lmName"></h3><div class="e num" id="lmE"></div><p id="lmWhy"></p>
-  </div>
+/* ---- the truth ---------------------------------------------------------- */
+const LOG0 = 5, LOG1 = P.log10(3e15);          // the ruler, 100 keV to 3 PeV, in log10 eV
+let truth = LM[1].e;                            // the photon on the ladder, in eV
+let sel = LM[1];                                // the rung it sits on, or null
+const UPD = 3;                                  // ladder units per decade: the compression the vp-note admits to
+const yOf = e => (P.log10(e) - LOG0) * UPD;
+const LADDER_H = (LOG1 - LOG0) * UPD;
+const nearRung = e => LM.find(l => Math.abs(P.log10(e / l.e)) < 0.002) || null;
 
-  <div class="dark">
-    <h2>✦ WHY THE ATTIC LOOKS EMPTY</h2>
-    <p>Nature's known accelerators, pulsar winds, supernova remnants, and the jets of feeding black
-       holes, seem to top out near PeV photon energies. Above ~100 TeV the universe itself censors
-       the view: over intergalactic distances, gamma rays annihilate against the cosmic background
-       light. So the highest floors are structurally sound but unvisited: allowed by the physics,
-       unreached by the sources, and hidden by the sky.</p>
-    <p>One PeV photon carries about 1.6 × 10⁻⁴ joules: the kinetic energy of a ping-pong ball
-       rolling across a table at a third of a meter per second, or of a thousand flying
-       mosquitoes, packed into a single quantum of light.</p>
-  </div>
-</div>
+function setTruth(e, rung) {
+  truth = P.clamp(e, Math.pow(10, LOG0), Math.pow(10, LOG1));
+  sel = rung !== undefined ? rung : nearRung(truth);
+  readout();
+}
 
-<script>
-(() => {
-  'use strict';
-  const C = 299792458, EV_PER_HZ = 4.135667696e-15;
-  const E0 = 5, E1 = Math.log10(3e15);       // log10 eV range: 1e5 .. 3e15
-  const DARK = 1e14;                          // extragalactic opacity begins
-  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-  const log = Math.log10;
+/* ---- DOM: chips, lift, readouts ------------------------------------------- */
+const chips = document.getElementById('chips');
+LM.forEach((l, i) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip'; b.dataset.i = i;
+  b.innerHTML = '<span class="b">' + fmtE(l.e, true) + '</span>' + l.short;
+  b.addEventListener('click', () => setTruth(l.e, l));
+  chips.appendChild(b);
+});
 
-  const EU = [[1e15,'PeV'],[1e12,'TeV'],[1e9,'GeV'],[1e6,'MeV'],[1e3,'keV'],[1,'eV']];
-  const num = v => v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : String(Math.round(v));
-  const SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
-                '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
-  const sup = n => String(n).split('').map(c => SUP[c]).join('');
-  const sci = (v, unit) => {
-    const e = Math.floor(Math.log10(v));
-    return (v / Math.pow(10, e)).toFixed(2) + ' × 10' + sup(e) + ' ' + unit;
+const lift = document.getElementById('lift'), liftCap = document.getElementById('liftCap'), liftThumb = lift.querySelector('.thumb');
+const frac = () => (P.log10(truth) - LOG0) / (LOG1 - LOG0);
+function liftFromPointer(ev) {
+  const r = lift.getBoundingClientRect();
+  const k = 1 - P.clamp((ev.clientY - r.top) / r.height, 0, 1);
+  setTruth(Math.pow(10, LOG0 + k * (LOG1 - LOG0)), null);
+}
+let liftDrag = false;
+lift.addEventListener('pointerdown', ev => { liftDrag = true; lift.setPointerCapture(ev.pointerId); liftFromPointer(ev); ev.preventDefault(); });
+lift.addEventListener('pointermove', ev => { if (liftDrag) liftFromPointer(ev); });
+lift.addEventListener('pointerup', () => { liftDrag = false; setTruth(truth); });
+lift.addEventListener('pointercancel', () => { liftDrag = false; });
+lift.addEventListener('keydown', ev => {
+  const step = ev.shiftKey ? 0.5 : 0.1;
+  let d = 0;
+  if (ev.key === 'ArrowUp' || ev.key === 'ArrowRight') d = step;
+  else if (ev.key === 'ArrowDown' || ev.key === 'ArrowLeft') d = -step;
+  else if (ev.key === 'PageUp') d = 1; else if (ev.key === 'PageDown') d = -1;
+  else if (ev.key === 'Home') { ev.preventDefault(); setTruth(Math.pow(10, LOG0)); return; }
+  else if (ev.key === 'End') { ev.preventDefault(); setTruth(Math.pow(10, LOG1)); return; }
+  else return;
+  ev.preventDefault();
+  setTruth(Math.pow(10, P.log10(truth) + d));
+});
+
+const $ = id => document.getElementById(id);
+function readout() {
+  const f = fOf(truth), lam = lamOf(truth);
+  const eText = fmtE(truth), eP = fmtE(truth, true);
+  $('rE').innerHTML = eText;
+  const er = truth / ME;
+  $('rEm').textContent = spell(eP) + 'one photon, ' + (er < 1.5 && er > 0.67 ? 'about an electron’s rest energy'
+    : er >= 1 ? human(er) + '× an electron’s rest energy' : '1/' + human(1 / er) + ' of an electron’s rest energy');
+  $('rF').innerHTML = fmtF(f);
+  $('rFm').textContent = spell(fmtF(f, true)) + 'oscillations per second';
+  $('rL').innerHTML = fmtL(lam);
+  const nuc = lam / 1e-14;
+  $('rLm').textContent = spell(fmtL(lam, true)) + (nuc > 1.5 ? human(nuc) + '× an atomic nucleus' : nuc > 0.67 ? 'about the size of an atomic nucleus' : '1/' + human(1 / nuc) + ' of an atomic nucleus');
+  const dec = P.log10(truth) - LOG0;
+  $('rW').innerHTML = P.num(dec) + ' <span class="u">decades up</span>';
+  const below = [...LM].reverse().find(l => l.e < truth / 1.005), above = LM.find(l => l.e > truth * 1.005);
+  $('rWm').textContent = P.num(dec * Math.LN10 / Math.LN2) + ' octaves above the floor' + (sel ? '' :
+    (below && above ? '; between ' + below.short + ' and ' + above.short : below ? '; above every rung' : '; below the first rung'));
+
+  // the rung card: a landmark, or an honest "between"
+  if (sel) {
+    $('lmE').textContent = fmtE(sel.e, true);
+    $('lmName').textContent = sel.name;
+    $('lmWhy').textContent = sel.why;
+    $('lmSrc').textContent = sel.src;
+  } else {
+    $('lmE').textContent = eP;
+    $('lmName').textContent = 'Between rungs';
+    $('lmWhy').textContent = (below ? 'The rung below is ' + below.name + ' at ' + fmtE(below.e, true) + '. ' : 'Nothing on the ladder sits below here. ')
+      + (above ? 'The rung above is ' + above.name + ' at ' + fmtE(above.e, true) + '.' : 'Nothing on the ladder has ever been seen above here.');
+    $('lmSrc').textContent = '';
+  }
+  const fig = $('lmFigure'), grid = $('rungGrid');
+  if (sel && sel.img) {
+    fig.hidden = false; grid.classList.add('has-fig');
+    const im = $('lmImg');
+    if (im.getAttribute('src') !== sel.img) { im.src = sel.img; im.alt = sel.name; im.width = sel.w; im.height = sel.h; }
+    $('lmCredit').innerHTML = '<b>' + sel.name + '</b> · ' + sel.credit;
+  } else { fig.hidden = true; grid.classList.remove('has-fig'); }
+
+  // chips and the lift
+  chips.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(sel === LM[+c.dataset.i])));
+  const logHz = P.log10(f);
+  lift.setAttribute('aria-valuenow', logHz.toFixed(3));
+  lift.setAttribute('aria-valuetext', eP + ', ' + fmtF(f, true) + (sel ? ', ' + sel.name : ''));
+  liftCap.textContent = eP;
+  const top = (1 - frac()) * 100 + '%';
+  liftThumb.style.top = top; liftCap.style.top = top;
+}
+
+/* ---- the climb: a ladder of light in the viewport --------------------------- */
+/* one geometry for every soft bar on the ladder: rungs, decade ticks, the
+   Fermi band, the marker. Each quad fades across its own uv so it reads as
+   light rather than paint. */
+function makeBatch({ blending = THREE.AdditiveBlending, dark = false } = {}) {
+  const pos = [], uv = [], col = [], alp = [], idx = [];
+  const add = (x, y, z, w, h, c, a) => {
+    const i = pos.length / 3;
+    pos.push(x - w / 2, y - h / 2, z, x + w / 2, y - h / 2, z, x + w / 2, y + h / 2, z, x - w / 2, y + h / 2, z);
+    uv.push(0, 0, 1, 0, 1, 1, 0, 1);
+    for (let k = 0; k < 4; k++) { col.push(c.r, c.g, c.b); alp.push(a); }
+    idx.push(i, i + 1, i + 2, i, i + 2, i + 3);
   };
-  const human = v => v < 1000 ? num(v)
-    : (Math.round(v / Math.pow(10, Math.floor(log(v)) - 2)) * Math.pow(10, Math.floor(log(v)) - 2)).toLocaleString('en-US');
-  const fmtE = e => { for (const [d,u] of EU) if (e >= d) return num(e/d) + ' ' + u; return num(e) + ' eV'; };
-  const fmtF = f => f >= 1e21 ? sci(f, 'Hz') : num(f / 1e18) + ' EHz';
-  const fmtL = l => l >= 1e-12 ? num(l / 1e-12) + ' pm'
-    : l >= 1e-16 ? num(l / 1e-15) + ' fm' : sci(l, 'm');
-  // the abbreviation spelled out: almost nobody has met a petaelectronvolt or a
-  // femtometre before, and the symbol alone teaches them nothing
-  const UNIT_NAME = { PeV: 'petaelectronvolts', TeV: 'teraelectronvolts', GeV: 'gigaelectronvolts',
-    MeV: 'megaelectronvolts', keV: 'kiloelectronvolts', eV: 'electronvolts',
-    pm: 'picometres', fm: 'femtometres', m: 'metres', EHz: 'exahertz' };
-  // plain Hz is deliberately absent: its card already says oscillations per
-  // second, and "hertz · oscillations per second" says the same thing twice
-  const spell = s => { const u = UNIT_NAME[s.split(' ').pop()]; return u ? u + ' · ' : ''; };
+  const build = () => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute('alpha', new THREE.Float32BufferAttribute(alp, 1));
+    g.setIndex(idx);
+    const m = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending, side: THREE.DoubleSide,
+      uniforms: { uI: { value: 1 } },
+      vertexShader: `attribute float alpha; attribute vec3 color; varying vec2 vUv; varying vec3 vC; varying float vA;
+        void main(){ vUv = uv; vC = color; vA = alpha; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `uniform float uI; varying vec2 vUv; varying vec3 vC; varying float vA;
+        void main(){
+          float dy = abs(vUv.y - 0.5) * 2.0, dx = abs(vUv.x - 0.5) * 2.0;
+          float core = exp(-dy * dy * 6.0), ends = ${dark ? '1.0' : 'smoothstep(1.0, 0.72, dx)'};
+          float a = core * ends * vA * uI;
+          gl_FragColor = vec4(vC * a, a); }`,
+    });
+    return new THREE.Mesh(g, m);
+  };
+  return { add, build };
+}
+const ACC = new THREE.Color(226 / 255, 120 / 255, 180 / 255);  // the deck accent
+const WARM = new THREE.Color(232 / 255, 169 / 255, 58 / 255);  // --holo-warm, the one warm thing: the photon itself
+const LINE = new THREE.Color(196 / 255, 228 / 255, 255 / 255);
+const rungColor = l => l.kind === 'threshold' ? LINE.clone().lerp(ACC, 0.4) : l.kind === 'edge' ? new THREE.Color(0.55, 0.5, 0.7) : ACC.clone().lerp(new THREE.Color(1, 1, 1), 0.25 * (P.log10(l.e) - LOG0) / (LOG1 - LOG0));
 
-  // energy in eV; each landmark is a real thing that emits there
-  const LM = [
-    { e: 1.4e5, name: 'Tc-99m, nuclear medicine', why: 'The workhorse tracer of nuclear medicine: injected, it lets a gamma camera watch organs work, then decays away within a day.' },
-    { e: 5.11e5, name: 'Positron annihilation (PET)', why: 'When a positron meets an electron, both vanish into a back-to-back pair of 511 keV photons. A PET scanner catches the pair and draws the line between them: imaging with antimatter.' },
-    { e: 6.62e5, name: 'Cs-137', why: 'The signature line of cesium-137, the fingerprint by which fallout and orphaned medical sources are recognized.' },
-    { e: 1.33e6, name: 'Co-60 sterilization', why: 'Cobalt-60’s gammas sterilize medical instruments and food by the pallet: intensity doing useful work.' },
-    { e: 2.61e6, name: 'Tl-208, nature’s loudest line', why: 'The highest-energy gamma line common in nature, from thorium’s decay chain: it is in the background hum of every rock.' },
-    { e: 6.7e7, name: 'Pion bump, cosmic rays', why: 'Cosmic rays striking interstellar gas make neutral pions, which decay to gamma rays peaking near 70 MeV: the glow of the Milky Way’s disk. It happens to rock too. This is the actual Moon, photographed in gamma rays: cosmic rays striking the regolith make it glow.', img: 'gammaimg/gamma-moon.jpg', credit: 'The Moon in gamma rays · NASA / EGRET, Compton Gamma Ray Observatory' },
-    { e: 1e9, name: 'The Fermi sky', why: 'At GeV energies the Fermi telescope maps thousands of pulsars and blazars: black-hole jets pointed straight at us. Five years of that sky, whole: the red spine is the Milky Way\'s disk, every dot a distant engine.', img: 'gammaimg/fermi-sky.jpg', credit: 'Five-year all-sky map above 1 GeV · NASA / DOE / Fermi LAT Collaboration' },
-    { e: 1e12, name: 'Crab Nebula at 1 TeV', why: 'Too energetic to catch directly, TeV photons are seen by the blue flash they make striking the atmosphere. The Crab Nebula, a pulsar-driven wreck of a supernova seen in 1054, is the standard candle every gamma-ray telescope is measured against.', img: 'gammaimg/crab.jpg', credit: 'Crab Nebula · NASA / ESA / Hubble, J. Hester and A. Loll' },
-    { e: 1e14, name: '100 TeV: the sky goes dark', why: 'Above here, extragalactic gamma rays annihilate against background starlight en route. Only sources inside our galaxy can still be seen.' },
-    { e: 1.4e15, name: 'LHAASO record, 1.4 PeV', why: 'The most energetic photon ever detected, caught in 2021 from within the Milky Way: a single quantum carrying the kinetic energy of a ping-pong ball rolling slowly across a table.' },
-  ];
+const climb = { yDisp: yOf(truth), markerY: yOf(truth), lx: 0, hits: [], glows: [], panels: [], labels: [], dlabels: [], motes: null, RAIL: 0.72 };
+const texLoader = new THREE.TextureLoader();
 
-  const svg = document.getElementById('atticSvg');
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  function el(t, a, p, txt) { const e = document.createElementNS(SVGNS, t);
-    for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt;
-    if (p) p.appendChild(e); return e; }
+ship.viewport(document.getElementById('vpClimb'), {
+  fov: 40,
+  setup(vp) {
+    const { scene } = vp;
+    const root = new THREE.Group(); scene.add(root); climb.root = root;
+    const RAIL = climb.RAIL;                 // half the ladder's width
 
-  let OW = 1000, marker = 5.11e5, sel = LM[1];
-  const X = e => (log(e) - E0) / (E1 - E0) * OW;
-  const E = x => Math.pow(10, E0 + clamp(x / OW, 0, 1) * (E1 - E0));
-
-  function draw() {
-    const w = Math.round(svg.getBoundingClientRect().width);
-    if (w > 0) OW = Math.max(300, w);
-    svg.setAttribute('viewBox', '0 0 ' + OW + ' 150');
-    svg.textContent = '';
-    const defs = el('defs', {}, svg);
-    const grad = el('linearGradient', { id: 'gat', x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
-    el('stop', { offset: '0%', 'stop-color': '#7ee0ff', 'stop-opacity': .18 }, grad);
-    el('stop', { offset: '100%', 'stop-color': '#e278b4', 'stop-opacity': .3 }, grad);
-    const hat = el('pattern', { id: 'hatch', width: 7, height: 7, patternUnits: 'userSpaceOnUse',
-                                patternTransform: 'rotate(45)' }, defs);
-    el('rect', { width: 7, height: 7, fill: 'rgba(226,120,180,.08)' }, hat);
-    el('rect', { width: 2, height: 7, fill: 'rgba(226,120,180,.35)' }, hat);
-
-    el('rect', { x: 0, y: 52, width: OW, height: 40, fill: 'url(#gat)' }, svg);
-    el('rect', { x: X(DARK), y: 52, width: OW - X(DARK), height: 40, fill: 'url(#hatch)' }, svg);
-    el('rect', { x: 0, y: 52, width: OW, height: 40, fill: 'none', stroke: 'rgba(196,228,255,.2)' }, svg);
-
-    // decade ticks, labeled where there is room
-    let last = -1e9;
-    for (let d = E0; d <= Math.floor(E1); d++) {
-      const x = X(Math.pow(10, d));
-      el('line', { x1: x, x2: x, y1: 92, y2: 100, stroke: '#3a4756' }, svg);
-      if (x - last > 64 && x > 24 && x < OW - 30) {
-        el('text', { x, y: 114, 'font-size': 10, fill: '#6c7c8c', 'text-anchor': 'middle' }, svg, fmtE(Math.pow(10, d)));
-        last = x;
-      }
+    // the rails: bright below 100 TeV, dimming into the dark sky above it
+    const railGeo = new THREE.PlaneGeometry(0.035, LADDER_H + 2, 1, 96);
+    const rc = [], rp = railGeo.attributes.position;
+    for (let i = 0; i < rp.count; i++) {
+      const y = rp.getY(i) + LADDER_H / 2;
+      const dark = P.clamp((y - yOf(1e14)) / (LADDER_H - yOf(1e14)), 0, 1);
+      const c = ACC.clone().lerp(new THREE.Color(0.25, 0.2, 0.35), dark * 0.85);
+      rc.push(c.r, c.g, c.b);
     }
-    // landmarks with finger-sized targets, labels on two collision rows
-    const rows = [-1e9, -1e9];
+    railGeo.setAttribute('color', new THREE.Float32BufferAttribute(rc, 3));
+    const railMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+    const railGlowMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false });
+    for (const sx of [-RAIL, RAIL]) {
+      const r = new THREE.Mesh(railGeo, railMat); r.position.set(sx, LADDER_H / 2, 0); root.add(r);
+      const g = new THREE.Mesh(railGeo, railGlowMat); g.position.set(sx, LADDER_H / 2, -0.02); g.scale.x = 6; root.add(g);
+    }
+
+    // the soft bars: decade ticks, the Fermi band, every rung
+    const batch = makeBatch();
+    for (let d = LOG0; d <= Math.floor(LOG1); d++) {
+      const y = (d - LOG0) * UPD;
+      batch.add(0, y, -0.01, RAIL * 2, 0.05, LINE, 0.28);
+      const t = label(fmtE(Math.pow(10, d), true), { size: 18, color: '#9aa2b1', tracking: 1.5 });
+      t.userData.fit(0.2); t.position.set(-RAIL - 0.12 - t.scale.x / 2, y, 0); root.add(t); climb.dlabels.push(t);
+    }
+    batch.add(0, (yOf(FERMI.lo) + yOf(FERMI.hi)) / 2, -0.03, RAIL * 2.4, yOf(FERMI.hi) - yOf(FERMI.lo), new THREE.Color(0.5, 0.75, 1), 0.07);
+    const fl = label('Fermi LAT · 20 MeV to 300 GeV', { size: 16, color: '#8fc4ff', tracking: 2 });
+    fl.userData.fit(0.17); fl.material.rotation = Math.PI / 2;
+    fl.position.set(-RAIL - 0.22, (yOf(FERMI.lo) + yOf(FERMI.hi)) / 2, 0); root.add(fl);
+
+    let lastLabelY = -1e9;
     for (const l of LM) {
-      const x = X(l.e);
-      el('line', { x1: x, x2: x, y1: 44, y2: 52, stroke: '#8b98a8', 'stroke-width': 1.5 }, svg);
-      el('circle', { cx: x, cy: 38, r: sel === l ? 7 : 5,
-                     fill: sel === l ? '#e278b4' : '#eff4fb',
-                     stroke: sel === l ? '#eff4fb' : 'rgba(4,7,10,.9)', 'stroke-width': 1.5,
-                     'pointer-events': 'none' }, svg);
-      const short = l.name.split(',')[0];
-      const wpx = short.length * 6.4;
-      let row = -1;
-      if (rows[0] + 14 < x - wpx / 2) row = 0; else if (rows[1] + 14 < x - wpx / 2) row = 1;
-      if (row >= 0) {
-        const lx = clamp(x, wpx / 2 + 2, OW - wpx / 2 - 2);
-        el('text', { x: lx, y: row === 0 ? 12 : 26, 'font-size': 10.5, fill: sel === l ? '#e278b4' : '#9aa2b1',
-                     'text-anchor': 'middle', 'data-e': l.e, style: 'cursor:pointer' }, svg, short);
-        rows[row] = lx + wpx / 2;
+      const y = yOf(l.e), c = rungColor(l);
+      const thin = l.kind === 'threshold';
+      batch.add(0, y, 0, RAIL * 2 + 0.1, thin ? 0.04 : 0.11, c, thin ? 0.9 : 1.3);
+      const g = glowSprite(c, l.kind === 'edge' ? 1.1 : 0.7, l.kind === 'threshold' ? 0.35 : 0.8);
+      g.position.set(0, y, 0.05); root.add(g); climb.glows.push({ g, l, base: g.scale.x });
+      // labels stack when rungs crowd, so the MeV cluster stays legible
+      const ly = Math.max(y, lastLabelY + 0.27); lastLabelY = ly;
+      const t = label(fmtE(l.e, true) + ' · ' + l.short, { size: 20, color: l.kind === 'threshold' ? '#cfe6ff' : '#f3dce9', tracking: 2 });
+      t.userData.fit(0.23); t.position.set(RAIL + 0.16 + t.scale.x / 2, ly, 0.02); root.add(t); climb.labels.push(t);
+      // a wide invisible plane per rung so a tap anywhere across it selects it
+      const hit = new THREE.Mesh(new THREE.PlaneGeometry(RAIL * 2 + 2.4, 0.3), new THREE.MeshBasicMaterial({ visible: false }));
+      hit.position.set(0.6, y, 0.03); hit.userData.l = l; root.add(hit); climb.hits.push(hit);
+    }
+    root.add(batch.build());
+
+    // the dark above 100 TeV: a veil in front of the rails, soft at its foot
+    const veil = makeBatch({ blending: THREE.NormalBlending, dark: true });
+    veil.add(0, (yOf(1e14) + LADDER_H + 3) / 2, 0.2, 12, LADDER_H + 3 - yOf(1e14) + 1.2, new THREE.Color(0, 0, 0), 0.5);
+    const vm = veil.build(); root.add(vm);
+
+    // the three photographs, hung behind the rails at their rungs
+    for (const l of LM) {
+      if (!l.img) continue;
+      const w = 2.0, h = w * l.h / l.w;
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.001, depthWrite: false });
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+      m.position.set(0, yOf(l.e) + h / 2 + 0.28, -0.6); root.add(m);
+      const frame = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: ACC, transparent: true, opacity: 0.55 }));
+      frame.position.copy(m.position); root.add(frame);
+      texLoader.load(l.img, tex => { tex.colorSpace = THREE.SRGBColorSpace; mat.map = tex; mat.needsUpdate = true; climb.panels.push({ mat, m, l, t0: ship.time }); vp.invalidate(); });
+    }
+
+    // the photon: one warm thing on a cool ladder
+    const mk = makeBatch();
+    mk.add(0, 0, 0.08, RAIL * 2 + 0.5, 0.09, WARM, 1.6);
+    climb.marker = mk.build(); root.add(climb.marker);
+    climb.markerGlow = glowSprite(WARM, 0.9, 0.9); climb.markerGlow.position.z = 0.1; root.add(climb.markerGlow);
+
+    // motes drifting up the shaft: ambient, held under reduced motion
+    const N = 520, mp = new Float32Array(N * 3), ms = new Float32Array(N);
+    for (let i = 0; i < N; i++) { mp[i * 3] = (Math.random() * 2 - 1) * RAIL * 1.4; mp[i * 3 + 1] = Math.random() * (LADDER_H + 2) - 1; mp[i * 3 + 2] = (Math.random() - 0.5) * 1.2; ms[i] = 0.4 + Math.random() * 0.6; }
+    const mg = new THREE.BufferGeometry(); mg.setAttribute('position', new THREE.BufferAttribute(mp, 3)); mg.setAttribute('speed', new THREE.BufferAttribute(ms, 1));
+    climb.motes = new THREE.Points(mg, new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uT: { value: 0 }, uPR: { value: ship.pixelRatio }, uH: { value: LADDER_H + 2 }, uC: { value: ACC } },
+      vertexShader: `attribute float speed; uniform float uT, uPR, uH; varying float vA;
+        void main(){ vec3 p = position; p.y = mod(p.y + 1.0 + uT * 0.35 * speed, uH) - 1.0;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); vA = 0.35 + 0.65 * speed; gl_PointSize = (1.2 + speed * 2.2) * uPR * 40.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform vec3 uC; varying float vA; void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; float a = smoothstep(1.0, 0.0, r); a *= a * vA; gl_FragColor = vec4(uC * a, a); }`,
+    }));
+    root.add(climb.motes);
+    this.resize(vp);
+  },
+  resize(vp) {
+    // on a narrow box the ladder slides left so the rung names have room
+    const aspect = vp.size.w / vp.size.h, narrow = aspect < 1;
+    // the camera steps right so the ladder sits left of centre and the names have room
+    climb.lx = narrow ? 0.8 : aspect < 1.4 ? 0.35 : 0;
+    climb.camZ = narrow ? 10.5 : aspect < 1.4 ? 9 : 7.5;
+    for (const t of climb.labels) { t.userData.fit(narrow ? 0.2 : 0.23); t.position.x = climb.RAIL + 0.16 + t.scale.x / 2; }
+    for (const t of climb.dlabels) { t.userData.fit(narrow ? 0.16 : 0.2); t.position.x = -climb.RAIL - 0.12 - t.scale.x / 2; }
+  },
+  frame(vp) {
+    const { camera, dt, t } = vp;
+    const ty = yOf(truth), k = 1 - Math.exp(-dt * 5), km = 1 - Math.exp(-dt * 12);
+    climb.yDisp += (ty - climb.yDisp) * k;
+    climb.markerY += (ty - climb.markerY) * km;
+    camera.position.set(climb.lx, climb.yDisp, climb.camZ);
+    camera.lookAt(climb.lx, climb.yDisp + 0.55, 0);
+    climb.marker.position.y = climb.markerY; climb.markerGlow.position.y = climb.markerY;
+    const breathe = ship.motion ? 1 + 0.08 * Math.sin(t * 2.2) : 1;
+    climb.markerGlow.scale.set(0.9 * breathe, 0.9 * breathe, 1);
+    for (const { g, l, base } of climb.glows) {
+      const on = sel === l ? 1.8 : 1;
+      const s = g.scale.x + (base * on - g.scale.x) * k;
+      g.scale.set(s, s, 1);
+    }
+    for (const p of climb.panels) {
+      const near = Math.exp(-Math.pow((climb.yDisp - p.m.position.y) / 2.2, 2));
+      const fade = Math.min(1, (ship.time - p.t0) / 0.8);
+      p.mat.opacity += ((0.35 + 0.6 * near) * fade - p.mat.opacity) * k;
+    }
+    if (climb.motes) { climb.motes.material.uniforms.uT.value = t; climb.motes.visible = ship.motion; }
+  },
+  pointer(ev, vp) {
+    const el = vp.el;
+    if (ev.target === lift || lift.contains(ev.target)) return;
+    if (ev.type === 'pointerdown') {
+      climb.drag = { y0: ev.clientY, log0: P.log10(truth), moved: false, id: ev.pointerId };
+      el.setPointerCapture(ev.pointerId); el.classList.add('is-grabbing');
+    } else if (ev.type === 'pointermove' && climb.drag) {
+      const dy = ev.clientY - climb.drag.y0;
+      if (Math.abs(dy) > 5) climb.drag.moved = true;
+      if (climb.drag.moved) {
+        // visible height in ladder units over the box height in pixels, then decades
+        const unitsPerPx = 2 * climb.camZ * Math.tan(vp.camera.fov * Math.PI / 360) / vp.size.h;
+        setTruth(Math.pow(10, climb.drag.log0 + dy * unitsPerPx / UPD), null);
       }
+    } else if ((ev.type === 'pointerup' || ev.type === 'pointercancel') && climb.drag) {
+      const d = climb.drag; climb.drag = null; el.classList.remove('is-grabbing');
+      // a cancelled pointer is a scroll that began on the box, not a tap on a rung
+      if (d.moved || ev.type === 'pointercancel') { setTruth(truth); return; }
+      const hit = vp.ray.intersectObjects(climb.hits, false)[0];
+      if (hit) setTruth(hit.object.userData.l.e, hit.object.userData.l);
     }
-    // the marker
-    const mx = X(marker);
-    el('rect', { x: mx - 22, y: 30, width: 44, height: 110, fill: 'transparent', id: 'atticHandle',
-                 tabindex: 0, role: 'slider', 'aria-label': 'Gamma photon energy',
-                 'aria-valuemin': E0, 'aria-valuemax': E1, 'aria-valuenow': log(marker).toFixed(2),
-                 'aria-valuetext': fmtE(marker), style: 'cursor:grab' }, svg);
-    el('line', { x1: mx, x2: mx, y1: 44, y2: 100, stroke: '#e8a93a', 'stroke-width': 2.5, 'pointer-events': 'none' }, svg);
-    el('circle', { cx: mx, cy: 44, r: 5, fill: '#e8a93a', 'pointer-events': 'none' }, svg);
-    el('text', { x: clamp(mx, 40, OW - 40), y: 140, 'font-size': 11.5, fill: '#e8a93a',
-                 'text-anchor': 'middle', 'font-weight': 600, 'pointer-events': 'none' }, svg, fmtE(marker));
+  },
+});
+
+// a wheel inside the box climbs the ladder; at either end it lets the page go on
+document.getElementById('vpClimb').addEventListener('wheel', ev => {
+  const lg = P.log10(truth);
+  if ((ev.deltaY > 0 && lg >= LOG1 - 1e-9) || (ev.deltaY < 0 && lg <= LOG0 + 1e-9)) return;
+  ev.preventDefault();
+  const d = ev.deltaMode === 1 ? ev.deltaY * 16 : ev.deltaMode === 2 ? ev.deltaY * 400 : ev.deltaY;
+  setTruth(Math.pow(10, lg + d * 0.0022), null);
+}, { passive: false });
+
+/* ---- break it: the extrapolated ruler ------------------------------------- */
+const BLOG0 = 5, BLOG1 = P.log10(PLANCK_EV);
+const dial = document.getElementById('bkDial');
+let bkE = Math.pow(10, +dial.value);
+const brk = { x: 0, xDisp: 0 };
+const EVENTS = [
+  { e: PAIR, short: '1.022 MeV', row: 0 },
+  { e: CMB_TH, short: '412 TeV', row: 1 },
+  { e: RECORD, short: '2.5 PeV', row: 0 },
+  { e: 3.2e20, short: '320 EeV', row: 1 },
+  { e: PLANCK_EV, short: 'Planck', row: 0 },
+];
+
+function verdict(e) {
+  const S = $('vState'), T = $('vText'), R = $('vSrc');
+  S.classList.remove('hot');
+  if (e < PAIR) {
+    S.textContent = 'Ordinary gamma ray';
+    T.textContent = 'Below 1.022 MeV this photon cannot become matter. It can knock an electron loose or scatter off one, but making an electron and a positron costs two electron rest energies, and it does not have them. Nuclear medicine lives down here.';
+    R.textContent = 'Threshold 2 × 510.999 keV = 1.0220 MeV.';
+  } else if (e < 1e11) {
+    S.textContent = 'Light that can become matter';
+    T.textContent = 'From 1.022 MeV up, this photon passing a nucleus can vanish and leave an electron and a positron behind. That is how Fermi sees its photons: tungsten foils convert them, and the pair’s tracks point back to the sky. The photon itself still crosses the universe untouched; empty space has no nuclei to spare.';
+    R.textContent = 'Pair production in a nuclear field; the Fermi LAT tracker uses tungsten converter foils (NASA).';
+  } else if (e < CMB_TH) {
+    S.textContent = 'The universe starts to fog';
+    T.textContent = 'Above about 100 GeV, a photon from billions of light years away begins to meet starlight: the extragalactic background light has enough energy per photon to pair-produce with it head-on. Distant blazars fade from here up, and by 100 TeV only the local universe is left. This photon still needs matter or other light to die; in a vacuum it would fly forever.';
+    R.textContent = 'EBL absorption measured in Fermi LAT blazar spectra: Ackermann et al., Science 338, 1190 (2012).';
+  } else if (e <= RECORD) {
+    S.textContent = 'The CMB itself can stop it';
+    T.textContent = 'Past 412 TeV a mean photon of the cosmic microwave background, 0.63 meV, has enough centre-of-mass energy to turn this photon into an electron-positron pair head-on. There are 411 of those photons in every cubic centimetre of the universe. Around 1 to 2 PeV the mean free path falls to about ten thousand light years: everything outside our galaxy is gone, and the PeV sky is a map of our own neighbourhood. This is still inside the data: LHAASO has caught photons here.';
+    R.textContent = 'Threshold (m c²)² / ε, ε = 2.70 kT at 2.725 K. Gould and Schréder, Phys. Rev. 155, 1404 (1967); minimum mean free path about 7 to 10 kpc near 2 PeV.';
+  } else if (e < 3.2e20) {
+    S.textContent = 'Past every photon ever recorded'; S.classList.add('hot');
+    T.textContent = 'No photon above 2.5 PeV has ever been recorded. The ship is extrapolating: the arithmetic of E = hf still holds, the CMB still lies in wait, and a photon this energetic from even the nearest galaxy could not reach us. Cosmic rays, which are nuclei and not light, do reach these energies: ground arrays have looked for photons among them and set only upper limits.';
+    R.textContent = 'Record: LHAASO Collaboration, Science Bulletin, 26 February 2024. Photon limits above 10¹⁸ eV: Pierre Auger Observatory.';
+  } else if (e < PLANCK_EV * 0.97) {   // the dial's last step lands a hair under the exact value
+    S.textContent = 'Beyond the most energetic particle'; S.classList.add('hot');
+    T.textContent = 'At 3.2 × 10²⁰ eV sits the Oh-My-God particle, a cosmic ray caught over Utah in 1991 and still the most energetic particle ever recorded: about 51 joules, a baseball’s worth of kinetic energy in one nucleus. It was almost certainly a proton, not a photon. Above it the ship has no detections of anything at all, only the equation.';
+    R.textContent = 'Fly’s Eye event of 15 October 1991: Bird et al., ApJ 441, 144 (1995). 3.2 × 10²⁰ eV × 1.602 × 10⁻¹⁹ J/eV = 51 J.';
+  } else {
+    S.textContent = 'The Planck energy. The ship stops here'; S.classList.add('hot');
+    T.textContent = 'At 1.22 × 10²⁸ eV the photon’s wavelength is 1.0 × 10⁻³⁴ m, two pi times the Planck length. By the only arithmetic we have, the energy inside one wavelength is enough to make a black hole of about that size. No tested theory describes a photon on this rung, so the dial ends. Every rung below it is real.';
+    R.textContent = 'Planck energy 1.220890 × 10¹⁹ GeV (CODATA 2018); λ = hc / E = 1.016 × 10⁻³⁴ m = 2π × 1.616 × 10⁻³⁵ m.';
   }
+}
+function breakReadout() {
+  const e = bkE, f = fOf(e), lam = lamOf(e);
+  const eP = fmtEB(e, true);
+  $('bkE').innerHTML = fmtEB(e); dial.setAttribute('aria-valuetext', eP + ', ' + fmtF(f, true));
+  $('bE').innerHTML = fmtEB(e);
+  const J = e * P.EV;
+  $('bEm').innerHTML = (e < 1e18 ? spell(eP) : '') + 'one photon, ' + P.sci(J) + ' <span class="u">J</span>';
+  $('bF').innerHTML = fmtF(f);
+  $('bL').innerHTML = fmtL(lam);
+  const lp = lam / 1.616255e-35;   // the Planck length, CODATA 2018
+  $('bLm').innerHTML = lam >= 1e-16 ? (lam / 1e-14 > 0.67 ? 'about the size of an atomic nucleus' : '1/' + human(1e-14 / lam) + ' of an atomic nucleus')
+    : (lp < 1000 ? P.num(lp) : P.sci(lp)) + '× the Planck length';
+  verdict(e);
+  brk.x = (P.log10(e) - BLOG0) / (BLOG1 - BLOG0);
+}
+dial.addEventListener('input', () => { bkE = Math.pow(10, +dial.value); breakReadout(); });
 
-  function readout() {
-    const f = marker / EV_PER_HZ, lam = C / f;
-    const eText = fmtE(marker), fText = fmtF(f), lText = fmtL(lam);
-    document.getElementById('rE').textContent = eText;
-    const er = marker / 5.11e5;
-    document.getElementById('rEm').textContent = spell(eText) + 'one photon, ' + (er < 1.5 && er > 0.67
-      ? 'about an electron’s rest energy'
-      : er >= 1 ? human(er) + '× an electron’s rest energy'
-      : '1/' + human(1 / er) + ' of an electron’s rest energy');
-    document.getElementById('rF').textContent = fText;
-    document.getElementById('rFm').textContent = spell(fText) + 'oscillations per second';
-    document.getElementById('rL').textContent = lText;
-    const nuc = lam / 1e-14;
-    document.getElementById('rLm').textContent = spell(lText) + (nuc > 1.5 ? human(nuc) + '× an atomic nucleus' : nuc > 0.67 ? 'about the size of an atomic nucleus' : '1/' + human(1 / nuc) + ' of an atomic nucleus');
-    const card = document.getElementById('lmCard');
-    if (sel) {
-      card.hidden = false;
-      document.getElementById('lmName').textContent = sel.name;
-      document.getElementById('lmE').textContent = fmtE(sel.e);
-      document.getElementById('lmWhy').textContent = sel.why;
-    } else card.hidden = true;
-    // the figure lives above the readout, so it names itself rather than
-    // relying on the card further down the page
-    const fig = document.getElementById('lmFigure');
-    if (sel && sel.img) {
-      fig.hidden = false;
-      const im = document.getElementById('lmImg');
-      if (im.getAttribute('src') !== sel.img) { im.src = sel.img; im.alt = sel.name; }
-      document.getElementById('lmCredit').innerHTML = '<b>' + sel.name + '</b> · ' + sel.credit;
-    } else fig.hidden = true;
-  }
-
-  function render() { draw(); readout(); }
-
-  let dragging = false;
-  const svgX = e => { const r = svg.getBoundingClientRect(); return (e.clientX - r.left) / r.width * OW; };
-  svg.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    const de = e.target.getAttribute && e.target.getAttribute('data-e');
-    if (de) { sel = LM.find(l => l.e === +de); marker = +de; render(); return; }
-    // a tap in the pin zone selects the nearest landmark within a finger's
-    // width, so the dots don't need pixel aim on a phone
-    const px = svgX(e), py = (e.clientY - svg.getBoundingClientRect().top) /
-                             svg.getBoundingClientRect().height * 150;
-    if (py < 50) {
-      let best = null, bd = 26;
-      for (const l of LM) { const d = Math.abs(X(l.e) - px); if (d < bd) { bd = d; best = l; } }
-      if (best) { sel = best; marker = best.e; render(); return; }
+ship.viewport(document.getElementById('vpBreak'), {
+  camera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10),
+  setup(vp) {
+    const { scene } = vp;
+    const g = new THREE.Group(); scene.add(g); brk.g = g;
+    const X = e => (P.log10(e) - BLOG0) / (BLOG1 - BLOG0);
+    const lit = X(Math.pow(10, LOG1)), rec = X(RECORD);
+    const b = makeBatch();
+    b.add(lit / 2, 0, 0, lit, 0.09, ACC, 1.3);                                   // the measured ruler
+    b.add((1 + lit) / 2, 0, 0, 1 - lit, 0.05, new THREE.Color(0.35, 0.3, 0.45), 0.6); // the extrapolation
+    b.add(rec, 0, 0.01, 0.006, 0.26, WARM, 1.2);                                  // the record, warm
+    for (const ev of EVENTS) {
+      if (ev.e === RECORD) continue;
+      b.add(X(ev.e), 0, 0.01, 0.004, 0.22, LINE, 0.9);
     }
-    dragging = true; svg.setPointerCapture(e.pointerId);
-    marker = E(svgX(e)); sel = null; render();
-  });
-  svg.addEventListener('pointermove', e => { if (dragging) { marker = E(svgX(e)); sel = null; render(); } });
-  svg.addEventListener('pointerup', () => { dragging = false; });
-  svg.addEventListener('keydown', e => {
-    if (e.target.id !== 'atticHandle') return;
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    e.preventDefault();
-    marker = Math.pow(10, clamp(log(marker) + (e.shiftKey ? 0.5 : 0.1) * (e.key === 'ArrowRight' ? 1 : -1), E0, E1));
-    sel = null; render();
-    document.getElementById('atticHandle').focus();
-  });
+    for (let d = Math.ceil(BLOG0); d <= Math.floor(BLOG1); d++) b.add((d - BLOG0) / (BLOG1 - BLOG0), 0, -0.01, 0.0025, 0.14, LINE, 0.25);
+    const mesh = b.build(); mesh.scale.set(1, 1, 1); g.add(mesh);
+    brk.labels = [];
+    for (const ev of EVENTS) {
+      const t = label(ev.short, { size: 17, color: ev.e === RECORD ? '#e8a93a' : '#cfe6ff', tracking: 1.5 });
+      t.userData.fit(0.11); t.userData.x = X(ev.e); t.userData.row = ev.row; scene.add(t); brk.labels.push(t);
+    }
+    for (const [e, txt] of [[1e5, '100 keV'], [1e10, '10 GeV'], [1e18, '1 EeV'], [1e23, '100 ZeV']]) {
+      const t = label(txt, { size: 16, color: '#9aa2b1', tracking: 1.5 });
+      t.userData.fit(0.1); t.userData.x = X(e); t.userData.row = -1; scene.add(t); brk.labels.push(t);
+    }
+    // sprites take their parent's scale, so the photon and the labels live in the scene, placed by hand each frame
+    brk.photon = glowSprite(WARM, 0.5, 1); brk.photon.position.z = 0.05; scene.add(brk.photon);
+    brk.photon2 = glowSprite(0xffffff, 0.16, 1); brk.photon2.position.z = 0.06; scene.add(brk.photon2);
+    brk.xDisp = brk.x;
+    this.resize(vp);
+  },
+  resize(vp) {
+    const aspect = vp.size.w / vp.size.h, cam = vp.camera;
+    const hh = 0.5, hw = hh * aspect;
+    cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.position.z = 5; cam.updateProjectionMatrix();
+    const pad = Math.min(0.3, hw * 0.12), W = 2 * hw - 2 * pad;
+    brk.W = W; brk.small = W < 2.4;
+    if (brk.g) { brk.g.scale.x = W; brk.g.position.x = -W / 2; brk.g.position.y = brk.small ? 0.06 : 0; }
+    if (brk.labels) for (const t of brk.labels) t.userData.fit(t.userData.row === -1 ? (brk.small ? 0.08 : 0.1) : (brk.small ? 0.09 : 0.11));
+  },
+  frame(vp) {
+    const { dt } = vp;
+    const k = 1 - Math.exp(-dt * 9);
+    brk.xDisp += (brk.x - brk.xDisp) * k;
+    const W = brk.W;
+    for (const t of brk.labels) {
+      const r = t.userData.row, half = t.scale.x / 2;
+      const oy = brk.g.position.y;
+      t.position.set(P.clamp(t.userData.x * W - W / 2, -W / 2 + half - 0.08, W / 2 - half + 0.08), oy + (r === -1 ? -0.27 : r === 0 ? 0.22 : 0.35), 0.02);
+    }
+    brk.photon.position.x = brk.xDisp * W - W / 2; brk.photon2.position.x = brk.photon.position.x;
+    const over = brk.xDisp > (LOG1 - BLOG0) / (BLOG1 - BLOG0);
+    brk.photon.material.color.copy(over ? new THREE.Color(1, 0.55, 0.3) : WARM);
+    brk.photon.position.y = brk.g.position.y; brk.photon2.position.y = brk.g.position.y;
+  },
+});
 
-  addEventListener('resize', render);
-  render();
-})();
+/* ---- first readouts --------------------------------------------------------- */
+setTruth(LM[1].e, LM[1]);
+breakReadout();
+ship.watchEntrances();
 </script>
-<script src="share.js"></script>
+<script src="vendor/scifi-ui/hologram-tap.js"></script>
 </body>
 </html>

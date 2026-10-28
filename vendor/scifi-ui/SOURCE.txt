@@ -1,6 +1,13 @@
-hologram.css and panel-surface.css are copied unmodified from
-https://github.com/amyleesterling/scifi-ui at commit 2b17596, taken 2026-08-27.
-Live demo: https://amyleesterling.github.io/scifi-ui
+Copied unmodified from https://github.com/amyleesterling/scifi-ui at commit
+66dd598, taken 2026-10-28. Live demo: https://amyleesterling.github.io/scifi-ui
+
+  hologram.css      the main set: tokens, holoframe, holoboot, holorail, holocard
+  hologram-tap.js   the tap layer that makes every hover treatment reachable on
+                    a screen with no pointer; every page loads it
+  panel-surface.css .holopanel, the shared dark panel with the lit top hairline
+                    and the materialise entrance; every deck panel builds on it
+  data-readout.css  .holoreadout, a stat row with its distribution and source
+  data-readout.js   line; the Bridge and the Observatory use it for live numbers
 
 Nothing in this folder is edited. If a component needs a change, change it
 upstream and copy it down again, so the library stays the single source.

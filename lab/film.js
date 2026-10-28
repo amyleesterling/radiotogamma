@@ -1,268 +1,167 @@
-/* E. SOAP FILM — thin-film interference: no pigment, no prism, no grating.
-   Two reflections, one from the front of the film and one from the back, a
-   few hundred nanometres apart. For each wavelength the extra trip either
-   lands the second reflection in step with the first (the colour shows) or
-   out of step (it cancels). The film is only a few wavelengths thick, so its
-   colours are its thickness made visible; as it drains and thins past what
-   any wavelength can survive, it goes black, then pops.
-   Self-contained experiment for The Light Lab; plugs into window.LAB. */
-(function () {
-  'use strict';
-  if (!window.LAB || !window.LAB.register) return;
-  var TAU = Math.PI * 2, H = 380, N_FILM = 1.33;
-  var MONO = '12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-  function sm(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
+/* lab/film.js: bench 05, SOAP FILM.
+ *
+ * A film of soapy water in a wire wand, a few hundred nanometres thick,
+ * draining under gravity. Two reflections, one from the front face and one
+ * from the back, differ in path by 2 n t cos(theta_t), and the front one
+ * flips phase, so for each wavelength the pair add as sin^2(2 pi n t
+ * cos(theta_t) / lambda). The shader sums that over twenty wavelengths per
+ * pixel, weighted by each wavelength's colour, and Newton's sequence falls
+ * out: black, silver, straw, magenta, blue, green, then paler and paler as
+ * the orders crowd. On the ship the viewing angle is not a slider: tilt the
+ * wand and every pixel takes its own angle from the camera.
+ *
+ * Schematic: the thickness field is a sculpted wedge with a swirl, not a
+ * fluid simulation; reflectance uses the two-beam approximation with a
+ * Fresnel amplitude (n - 1)^2 / (n + 1)^2 relative to water.
+ */
+import { ship } from '../ship/ship.js';
+import { fitFov, THREE, P, TAU, DEG, clamp, sm, GLSL_WL, rgb01, octave, dial, chips, readouts, voice, benchFloor, tag } from './bench.js';
 
-  window.LAB.register({
-    id: 'film',
-    title: 'E. SOAP FILM',
-    goal: 'NO PIGMENT, NO PRISM, NO GRATING. WHERE DO THE COLOURS COME FROM?',
-    question: {
-      text: 'A soap bubble has no pigment. Where do its swirling colours come from?',
-      choices: ['Oil in the soap, floating on the water',
-                'Two reflections, front and back of the film, in and out of step',
-                'The film splits light like a tiny prism',
-                'The colours of the room, reflected'],
-      answer: 1,
-      reveal: 'Two reflections, one from the front of the film and one from the back, a few hundred nanometres apart. For some wavelengths the extra trip puts the second reflection in step with the first and that colour shows; for others it lands out of step and cancels. The film is only a few wavelengths thick, so its colours are its thickness made visible. As it drains and thins past about 30 nm, every colour cancels at once and the film goes black, moments before it pops.'
-    },
-    hint: 'Move over the film to read its thickness. Tilt the wand with the slider and watch every colour slide toward blue. Let it drain: the black spreading from the top is the film going thinner than any wavelength can survive, moments before it pops.',
-    init: init
-  });
+export const question = {
+  id: 'film', title: 'Bench 05 · Soap film',
+  text: 'A soap bubble has no pigment. Where do its swirling colours come from?',
+  choices: ['Oil in the soap, floating on the water', 'Two reflections, front and back of the film, in and out of step', 'The film splits light like a tiny prism', 'The colours of the room, reflected'], answer: 1,
+  reveal: 'Two reflections, one from the front of the film and one from the back, a few hundred nanometres apart. For some wavelengths the extra trip puts the second reflection in step with the first and that colour shows; for others it lands out of step and cancels. The film is only a few wavelengths thick, so its colours are its thickness made visible. As it drains and thins past about 30 nm, every colour cancels at once and the film goes black, moments before it pops.',
+};
 
-  function init(mount, api) {
-    var canvas = document.createElement('canvas');
-    canvas.style.height = H + 'px';
-    canvas.style.cursor = 'crosshair';
-    canvas.setAttribute('aria-label', 'A soap film in a wire wand, draining and swirling with interference colours');
-    mount.appendChild(canvas);
-    var ctx = canvas.getContext('2d');
-    var controls = document.createElement('div');
-    controls.className = 'controls';
-    controls.innerHTML =
-      '<label>Tilt the wand <input type="range" min="0" max="70" value="0" aria-label="Viewing angle, degrees from face-on"></label>' +
-      '<span class="num" id="filmAngle">0°</span>' +
-      '<button type="button" id="filmNew">BLOW A NEW FILM</button>' +
-      '<button type="button" id="filmPause" aria-pressed="false">HOLD THE DRAIN</button>';
-    mount.appendChild(controls);
-    var angleIn = controls.querySelector('input'), angleOut = controls.querySelector('#filmAngle');
-    var newBtn = controls.querySelector('#filmNew'), pauseBtn = controls.querySelector('#filmPause');
+/* the thickness field in nm, shared by the shader and the probe, u,v in -1..1 */
+const THICK_GLSL = `
+float sm1(float x){ x = clamp(x, 0.0, 1.0); return x * x * (3.0 - 2.0 * x); }
+float thickness(float u, float v, float t){
+  float top = 520.0 * exp(-t / 9.0), bot = 1150.0 * exp(-t / 45.0) + 240.0;
+  float s = (v + 1.0) / 2.0;
+  float base = top + (bot - top) * pow(s, 1.7);
+  float rr = sqrt(u * u + v * v), an = atan(v, u);
+  float sw = sin(3.1 * u + t * 0.35 + sin(2.2 * v - t * 0.27)) * sin(2.6 * v - t * 0.22 + cos(3.4 * u + t * 0.19)) * 0.5
+           + sin(6.5 * u - 5.1 * v + t * 0.5) * 0.18 + sin(3.0 * an + 4.0 * rr - t * 0.45) * 0.35 * rr * (1.0 - rr);
+  float th = base * (1.0 + 0.22 * sw);
+  float front = sm1((t - 10.0) / 14.0) * 0.55;
+  float blk = 1.0 - sm1((s - front + 0.06 + 0.05 * sw) / 0.08);
+  return max(0.0, th * (1.0 - 0.985 * blk) + 12.0 * blk); }`;
+function thicknessJS(u, v, t) {
+  const top = 520 * Math.exp(-t / 9), bot = 1150 * Math.exp(-t / 45) + 240, s = (v + 1) / 2, base = top + (bot - top) * Math.pow(s, 1.7);
+  const rr = Math.sqrt(u * u + v * v), an = Math.atan2(v, u);
+  const sw = Math.sin(3.1 * u + t * 0.35 + Math.sin(2.2 * v - t * 0.27)) * Math.sin(2.6 * v - t * 0.22 + Math.cos(3.4 * u + t * 0.19)) * 0.5 + Math.sin(6.5 * u - 5.1 * v + t * 0.5) * 0.18 + Math.sin(3 * an + 4 * rr - t * 0.45) * 0.35 * rr * (1 - rr);
+  const th = base * (1 + 0.22 * sw), front = sm((t - 10) / 14) * 0.55, blk = 1 - sm((s - front + 0.06 + 0.05 * sw) / 0.08);
+  return Math.max(0, th * (1 - 0.985 * blk) + 12 * blk);
+}
+const FRAG = `
+precision highp float;
+varying vec2 vUv; varying vec3 vN, vW; uniform float uT, uN, uMul, uAlive; uniform vec3 uCam, uWsum;
+${GLSL_WL}
+${THICK_GLSL}
+void main(){
+  float u = vUv.x * 2.0 - 1.0, v = 1.0 - vUv.y * 2.0;
+  if (u * u + v * v > 1.0) discard;
+  vec3 V = normalize(uCam - vW); float cosI = abs(dot(normalize(vN), V));
+  float sinT = sqrt(max(0.0, 1.0 - cosI * cosI)) / uN; float cosT = sqrt(max(0.0, 1.0 - sinT * sinT));
+  float t = thickness(u, v, uT) * uMul;
+  vec3 acc = vec3(0.0);
+  for (int i = 0; i < 20; i++) {
+    float nm = 380.0 + 370.0 * float(i) / 19.0;
+    float s = sin(6.2831853 * uN * t * cosT / nm);
+    acc += s * s * wl2rgb(nm); }
+  acc /= uWsum;
+  float mean = (acc.r + acc.g + acc.b) / 3.0;
+  acc = clamp(mean + (acc - mean) * 1.6, 0.0, 1.0);
+  float r = (uN - 1.0) / (uN + 1.0), rw = 0.33 / 2.33;
+  float fres = clamp((r * r) / (rw * rw), 0.0, 3.0);
+  float win = 0.5 + 0.5 * sm1((u + 1.0) / 0.55) * (1.0 - sm1((u + 0.05) / 0.5)) * sm1((v + 1.0) / 0.5) * (1.0 - sm1((v + 0.1) / 0.5)) + 0.2 * exp(-((u - 0.45) * (u - 0.45) * 4.0 + (v - 0.5) * (v - 0.5) * 6.0));
+  float rim = 1.0 - 0.3 * sm1((u * u + v * v - 0.8) / 0.2);
+  gl_FragColor = vec4(acc * win * rim * fres * uAlive, uAlive); }`;
+const VERT = 'varying vec2 vUv; varying vec3 vN, vW; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
 
-    var W = 860, dpr = 1, cx = W / 2, cy = H * 0.5, R = 150;
-    var tau = api.reducedMotion ? 9 : 0;             // seconds of draining
-    var held = false, popped = 0, rafId = 0, onScreen = true, lastNow = 0;
-    var pointer = null, solvedDone = false;
-    var cosT = 1;                                    // cos of the angle inside the film
+export function mount({ el, hud, ctrl, out, solved }) {
+  const T = { n: 1.33, mul: 1, held: false };
+  const strip = octave(hud), say = voice(out);
+  let tau = ship.motion ? 0 : 9, popped = 0, done = false, probe = null;
+  const wsum = [0, 0, 0]; for (let i = 0; i < 20; i++) { const c = rgb01(380 + 370 * i / 19); wsum[0] += c[0]; wsum[1] += c[1]; wsum[2] += c[2]; }
+  const mat = new THREE.ShaderMaterial({ uniforms: { uT: { value: 0 }, uN: { value: 1.33 }, uMul: { value: 1 }, uAlive: { value: 1 }, uCam: { value: new THREE.Vector3() }, uWsum: { value: new THREE.Vector3(...wsum) } }, vertexShader: VERT, fragmentShader: FRAG, side: THREE.DoubleSide, transparent: true });
+  const R0 = 1.2;
+  const film = new THREE.Mesh(new THREE.PlaneGeometry(2 * R0, 2 * R0, 1, 1), mat);
+  const metal = new THREE.MeshStandardMaterial({ color: 0x9aa6b4, metalness: 0.9, roughness: 0.35 });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(R0 + 0.03, 0.035, 10, 72), metal);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 10), metal); handle.position.set((R0 + 0.7) * 0.707, -(R0 + 0.7) * 0.707, 0); handle.rotation.z = Math.PI / 4;
+  const wand = new THREE.Group(); wand.add(film, ring, handle);
+  const pop = document.createElement('div'); pop.className = 'pop'; pop.textContent = 'pop.'; pop.hidden = true; hud.appendChild(pop);
+  const cursor = document.createElement('div'); cursor.className = 'probe-dot'; cursor.hidden = true; hud.appendChild(cursor);
+  let camera;
 
-    // ---- the colour of a film, by thickness: a lookup, rebuilt per tilt -----
-    // Reflectance of the two-beam film for each wavelength: the front
-    // reflection flips phase and the back one does not, so the two add as
-    // 1 - e^(i delta) with delta = 4 pi n t cos(theta_t) / lambda, which is
-    // 4 sin^2(delta / 2): zero at zero thickness (the black film), peaks where
-    // 2 n t cos(theta_t) = (m + 1/2) lambda. Integrated over the visible band
-    // with the strip's wavelength-to-colour weights, Newton's sequence falls out of it:
-    // black, silver, straw, magenta, blue, green, and then paler and paler as
-    // the orders crowd together and white light's colours blur back to grey.
-    var LUT_MAX = 2400, LUT_STEP = 2, lut = new Float32Array((LUT_MAX / LUT_STEP + 1) * 3);
-    var WL = [], WRGB = [], wsum = [0, 0, 0];
-    for (var nm = 380; nm <= 750; nm += 5) {
-      var c = api.strip.wavelengthRGB(nm);
-      WL.push(nm); WRGB.push(c);
-      wsum[0] += c[0]; wsum[1] += c[1]; wsum[2] += c[2];
-    }
-    function reflect(t, nm) {                        // 0..1, two-beam film
-      var s = Math.sin(2 * Math.PI * N_FILM * t * cosT / nm);
-      return s * s;
-    }
-    function buildLUT() {
-      for (var i = 0; i <= LUT_MAX / LUT_STEP; i++) {
-        var t = i * LUT_STEP, r = 0, g = 0, b = 0;
-        for (var k = 0; k < WL.length; k++) {
-          var rf = reflect(t, WL[k]);
-          r += rf * WRGB[k][0]; g += rf * WRGB[k][1]; b += rf * WRGB[k][2];
-        }
-        // the physics gives pale colours on an sRGB screen; a modest boost of
-        // saturation, around the same grey, keeps the sequence but lets it
-        // read the way a film does to the eye against a dark room
-        r /= wsum[0]; g /= wsum[1]; b /= wsum[2];
-        var mean = (r + g + b) / 3, k = 1.45;
-        lut[i * 3] = Math.max(0, Math.min(1, mean + (r - mean) * k));
-        lut[i * 3 + 1] = Math.max(0, Math.min(1, mean + (g - mean) * k));
-        lut[i * 3 + 2] = Math.max(0, Math.min(1, mean + (b - mean) * k));
-      }
-    }
-    function setAngle(deg) {
-      var s = Math.sin(deg * Math.PI / 180) / N_FILM;
-      cosT = Math.sqrt(Math.max(0, 1 - s * s));
-      angleOut.textContent = Math.round(deg) + '°';
-      buildLUT();
-    }
-    setAngle(0);
-
-    // ---- the film's thickness field, in nm -----------------------------------
-    // A gravity wedge (thin at the top, thick at the bottom) that drains with
-    // time, a slow swirl riding on it, and a black front descending from the
-    // top once the crown is thinner than any visible wavelength can reflect.
-    function thickness(u, v, t) {                    // u,v in -1..1 across the wand
-      // a fresh film is a few hundred nm at the crown and about a micron at
-      // the foot: the vivid first three orders of Newton's sequence
-      var top = 520 * Math.exp(-t / 9), bot = 1150 * Math.exp(-t / 45) + 240;
-      var s = (v + 1) / 2;                           // 0 top .. 1 bottom
-      var base = top + (bot - top) * Math.pow(s, 1.7);
-      var rr = Math.sqrt(u * u + v * v), an = Math.atan2(v, u);
-      var sw = Math.sin(3.1 * u + t * 0.35 + Math.sin(2.2 * v - t * 0.27)) *
-               Math.sin(2.6 * v - t * 0.22 + Math.cos(3.4 * u + t * 0.19)) * 0.5 +
-               Math.sin(6.5 * u - 5.1 * v + t * 0.5) * 0.18 +
-               Math.sin(3 * an + 4 * rr - t * 0.45) * 0.35 * rr * (1 - rr); // a slow vortex
-      var th = base * (1 + 0.22 * sw);
-      // the black film: the crown thins past ~30 nm and the front creeps down
-      var front = sm((t - 10) / 14) * 0.55;          // how far down the black has crept
-      var blk = 1 - sm((s - front + 0.06 + 0.05 * sw) / 0.08);
-      return Math.max(0, th * (1 - 0.985 * blk) + 12 * blk);
-    }
-
-    // ---- painting ------------------------------------------------------------
-    var off = document.createElement('canvas'), octx = off.getContext('2d'), img = null, OW = 0, OH = 0;
-    function draw(now) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = '#05070c'; ctx.fillRect(0, 0, W, H);
-      var vg = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 2.6);
-      vg.addColorStop(0, 'rgba(20,28,40,.35)'); vg.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-      if (!popped) {
-        // the film itself, at half resolution, then smoothed up
-        var half = 0.5, ow = Math.round(W * half), oh = Math.round(H * half);
-        if (ow !== OW || oh !== OH) { OW = ow; OH = oh; off.width = ow; off.height = oh; img = octx.createImageData(ow, oh); }
-        var data = img.data, rr = R * half, ccx = cx * half, ccy = cy * half;
-        var maxI = LUT_MAX / LUT_STEP;
-        for (var y = 0; y < oh; y++) {
-          var dy = (y - ccy) / rr;
-          for (var x = 0; x < ow; x++) {
-            var dx = (x - ccx) / rr, q = dx * dx + dy * dy, o = (y * ow + x) * 4;
-            if (q > 1) { data[o + 3] = 0; continue; }
-            var th = thickness(dx, dy, tau);
-            var i = Math.min(maxI, Math.round(th / LUT_STEP)) * 3;
-            // a window reflected in the film, up and to the left, with a
-            // softer second pane low on the right: the light that makes the colours
-            var win = 0.5 + 0.5 * sm((dx + 1.0) / 0.55) * (1 - sm((dx + 0.05) / 0.5)) * sm((dy + 1.0) / 0.5) * (1 - sm((dy + 0.1) / 0.5)) +
-                      0.2 * Math.exp(-((dx - 0.45) * (dx - 0.45) * 4 + (dy - 0.5) * (dy - 0.5) * 6));
-            var rim = 1 - 0.3 * sm((q - 0.8) / 0.2);
-            data[o] = Math.min(255, 255 * lut[i] * win * rim);
-            data[o + 1] = Math.min(255, 255 * lut[i + 1] * win * rim);
-            data[o + 2] = Math.min(255, 255 * lut[i + 2] * win * rim);
-            data[o + 3] = 255;
-          }
-        }
-        octx.putImageData(img, 0, 0);
-        ctx.save();
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(off, 0, 0, W, H);
-        ctx.restore();
-      }
-      // the wand: a metal ring with a handle off to the lower right
-      ctx.save();
-      ctx.lineWidth = 7;
-      var mg = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
-      mg.addColorStop(0, '#aeb8c4'); mg.addColorStop(0.5, '#5c6774'); mg.addColorStop(1, '#c8d0da');
-      ctx.strokeStyle = mg;
-      ctx.beginPath(); ctx.arc(cx, cy, R + 3, 0, TAU); ctx.stroke();
-      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,.35)';
-      ctx.beginPath(); ctx.arc(cx, cy, R + 5.5, Math.PI * 1.1, Math.PI * 1.55); ctx.stroke();
-      ctx.lineWidth = 9; ctx.strokeStyle = mg; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(cx + (R + 5) * 0.72, cy + (R + 5) * 0.72);
-      ctx.lineTo(cx + R * 1.55, cy + R * 1.55); ctx.stroke();
-      ctx.restore();
-      if (popped) {
-        ctx.fillStyle = 'rgba(207,230,230,' + (0.9 * Math.max(0, 1 - (now - popped) / 1500)).toFixed(3) + ')';
-        ctx.font = '600 15px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('pop.', cx, cy + 6);
-      }
-      // the thickness readout follows the pointer
-      if (pointer && !popped) {
-        var pu = (pointer.x - cx) / R, pv = (pointer.y - cy) / R;
-        if (pu * pu + pv * pv <= 1) {
-          var t = thickness(pu, pv, tau);
-          var lines = describe(t);
-          ctx.font = MONO; ctx.textAlign = 'left';
-          var bw = 0; for (var li = 0; li < lines.length; li++) bw = Math.max(bw, ctx.measureText(lines[li]).width);
-          var bx = Math.min(W - bw - 22, Math.max(10, pointer.x + 16)), by = Math.max(10, Math.min(H - 16 * lines.length - 18, pointer.y - 30));
-          ctx.fillStyle = 'rgba(5,7,12,.85)'; ctx.fillRect(bx, by, bw + 14, 16 * lines.length + 8);
-          ctx.strokeStyle = 'rgba(196,228,255,.25)'; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, by + 0.5, bw + 13, 16 * lines.length + 7);
-          for (var lj = 0; lj < lines.length; lj++) {
-            ctx.fillStyle = lj === 0 ? '#eff4fb' : '#9aa2b1';
-            ctx.fillText(lines[lj], bx + 7, by + 16 + lj * 16);
-          }
-          ctx.strokeStyle = 'rgba(239,244,251,.6)'; ctx.beginPath(); ctx.arc(pointer.x, pointer.y, 5, 0, TAU); ctx.stroke();
-        }
-      }
-    }
-    // which colours a film of thickness t sends back, and which it swallows
-    function describe(t) {
-      if (t < 40) return ['film here: ' + Math.round(t) + ' nm', 'thinner than any visible wave can', 'survive: every colour cancels. black.'];
-      var path = 2 * N_FILM * t * cosT, on = [], off2 = [];
-      for (var m = 0; m < 8; m++) {
-        var lc = path / (m + 0.5); if (lc >= 380 && lc <= 750) on.push(Math.round(lc));
-        if (m >= 1) { var ld = path / m; if (ld >= 380 && ld <= 750) off2.push(Math.round(ld)); }
-      }
-      var name = function (nm) { return nm < 450 ? 'violet' : nm < 495 ? 'blue' : nm < 570 ? 'green' : nm < 590 ? 'yellow' : nm < 620 ? 'orange' : 'red'; };
-      var l1 = 'film here: ' + Math.round(t) + ' nm  ·  round trip ' + Math.round(path) + ' nm';
-      var l2 = on.length ? 'in step, shows: ' + on.map(function (n) { return n + ' nm ' + name(n); }).join(', ') : 'in step: nothing in the visible band';
-      var l3 = off2.length ? 'out of step, cancels: ' + off2.map(function (n) { return n + ' nm ' + name(n); }).join(', ') : 'out of step: nothing visible cancels';
-      return [l1, l2, l3];
-    }
-
-    // ---- time: draining, popping, refilling ----------------------------------
-    function step(now) {
-      if (!lastNow) lastNow = now;
-      var dt = Math.min(0.05, (now - lastNow) / 1000); lastNow = now;
-      if (!held && !popped && !api.reducedMotion) tau += dt;
-      if (!popped && tau > 34) { popped = now; api.strip.reset(); }
-      if (popped && now - popped > 2200) { popped = 0; tau = 0; }
-      draw(now);
-    }
-    function active() { return onScreen && !document.hidden && !api.reducedMotion; }
-    function loop() {
-      if (rafId) return;
-      rafId = requestAnimationFrame(function tick(now) {
-        step(now);
-        rafId = active() ? requestAnimationFrame(tick) : 0;
-        if (!rafId) lastNow = 0;
-      });
-    }
-    if (window.IntersectionObserver) new IntersectionObserver(function (en) { onScreen = en[0].isIntersecting; if (active()) loop(); }).observe(canvas);
-    document.addEventListener('visibilitychange', function () { if (active()) loop(); });
-
-    // ---- interaction ---------------------------------------------------------
-    function toLocal(e) { var r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-    function lightStrip() {
-      if (!pointer || popped) return;
-      var pu = (pointer.x - cx) / R, pv = (pointer.y - cy) / R;
-      if (pu * pu + pv * pv > 1) return;
-      var t = thickness(pu, pv, tau);
-      api.strip.light(function (nm) { return 0.12 + 0.85 * reflect(t, nm); });
-      if (!solvedDone) { solvedDone = true; api.solved(); }
-    }
-    canvas.addEventListener('pointermove', function (e) { pointer = toLocal(e); lightStrip(); if (!rafId) draw(performance.now()); });
-    canvas.addEventListener('pointerdown', function (e) { pointer = toLocal(e); lightStrip(); if (!rafId) draw(performance.now()); e.preventDefault(); });
-    canvas.addEventListener('pointerleave', function () { pointer = null; if (!rafId) draw(performance.now()); });
-    angleIn.addEventListener('input', function () { setAngle(+angleIn.value); lightStrip(); if (!rafId) draw(performance.now()); });
-    newBtn.addEventListener('click', function () { tau = 0; popped = 0; if (!rafId) draw(performance.now()); });
-    pauseBtn.addEventListener('click', function () {
-      held = !held; pauseBtn.setAttribute('aria-pressed', String(held));
-      pauseBtn.textContent = held ? 'LET IT DRAIN' : 'HOLD THE DRAIN';
-    });
-    function resize() {
-      var rect = canvas.getBoundingClientRect();
-      if (rect.width < 40) return;
-      W = rect.width; H = Math.max(160, Math.round(rect.height) || H);
-      dpr = Math.min(2, window.devicePixelRatio || 1);
-      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
-      cx = W / 2; cy = H * 0.5; R = Math.min(W * 0.36, H * 0.4);
-      draw(performance.now());
-    }
-    if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
-    else window.addEventListener('resize', resize);
-    resize();
-    if (active()) loop();
+  /* ---- readouts ---- */
+  const R = readouts(out, [
+    { id: 'here', k: 'film under the pointer', d: 'move over the film to read it' },
+    { id: 'on', k: 'in step, shows', d: '2 n t cos θ = (m + ½) λ' },
+    { id: 'off', k: 'out of step, cancels', d: '2 n t cos θ = m λ' },
+  ]);
+  function describe(t, cosT) {
+    if (t < 40) return [`${Math.round(t)}<span class="u">nm</span>`, 'thinner than any visible wave can survive', 'every colour cancels at once: the black film'];
+    const path = 2 * T.n * t * cosT, on = [], off = [];
+    for (let m = 0; m < 12; m++) { const lc = path / (m + 0.5); if (lc >= 380 && lc <= 750) on.push(Math.round(lc)); if (m >= 1) { const ld = path / m; if (ld >= 380 && ld <= 750) off.push(Math.round(ld)); } }
+    const name = nm => nm < 450 ? 'violet' : nm < 495 ? 'blue' : nm < 570 ? 'green' : nm < 590 ? 'yellow' : nm < 620 ? 'orange' : 'red';
+    return [`${Math.round(t)}<span class="u">nm</span> <span class="u">round trip ${Math.round(path)} nm</span>`, on.length ? on.map(n => `${n} nm ${name(n)}`).join(', ') : 'nothing in the visible band', off.length ? off.map(n => `${n} nm ${name(n)}`).join(', ') : 'nothing visible cancels'];
   }
-})();
+  function reportProbe() {
+    if (!probe || popped) { cursor.hidden = true; return; }
+    const t = thicknessJS(probe.u, probe.v, tau) * T.mul, lines = describe(t, probe.cosT);
+    R.set('here', lines[0], `view angle ${(Math.acos(probe.cosI) / DEG).toFixed(0)}° from the normal here, ${(Math.acos(probe.cosT) / DEG).toFixed(0)}° inside the film`);
+    R.set('on', lines[1]); R.set('off', lines[2]);
+    strip.light(nm => { const s = Math.sin(TAU * T.n * t * probe.cosT / nm); return 0.12 + 0.85 * s * s; });
+    if (!done) { done = true; solved(); }
+  }
+  function reportState() {
+    if (Math.abs(T.n - 1) < 0.01) say('Index 1.00: there is no interface. Nothing reflects from the front or the back, so there is nothing to interfere. The film is invisible.');
+    else if (T.mul > 4) say(`${T.mul.toFixed(0)}× thicker: a few microns now, so dozens of wavelengths are in step at once and their colours add back to grey. Thick films are colourless; the colour was the thinness.`);
+    else if (T.mul < 0.3) say('A film this thin is below the first order everywhere: every colour cancels and the whole film is black before it has drained at all.');
+    else if (T.n > 1.9) say(`n ${T.n.toFixed(2)}: each face reflects ${(100 * Math.pow((T.n - 1) / (T.n + 1), 2)).toFixed(0)}% instead of water’s 2%, so the same thickness is far brighter, and the colours shift because the optical path is n times the thickness.`);
+    else say(tau > 24 && !popped ? 'The crown has thinned past 30 nm and gone black: the front reflection flips phase and the back one does not, so a vanishing path leaves them exactly out of step. The film is about to pop.' : 'Drag to tilt the wand: every pixel takes its own viewing angle, and the colours slide toward blue as the path inside the film shortens by cos θ.');
+  }
+
+  /* ---- controls ---- */
+  chips(ctrl, [{ id: 'new', name: 'blow a new film' }, { id: 'hold', name: 'hold the drain' }], { radio: false, onPick: (it, b) => {
+    if (it.id === 'new') { tau = 0; popped = 0; mat.uniforms.uAlive.value = 1; pop.hidden = true; reportState(); }
+    else { T.held = !T.held; b.setAttribute('aria-pressed', String(T.held)); b.textContent = T.held ? 'let it drain' : 'hold the drain'; }
+  } });
+  const dials = document.createElement('div'); dials.className = 'dials'; ctrl.appendChild(dials);
+  dial(dials, { label: 'film index n', min: 1, max: 2.5, step: 0.01, value: 1.33, fmt: v => v.toFixed(2), onInput: v => { T.n = v; mat.uniforms.uN.value = v; reportProbe(); reportState(); } });
+  dial(dials, { label: 'thickness, times', min: -1, max: 1, step: 0.01, value: 0, fmt: v => '×' + Math.pow(10, v).toFixed(2), onInput: v => { T.mul = Math.pow(10, v); mat.uniforms.uMul.value = T.mul; reportProbe(); reportState(); } });
+
+  let drag = null; const tmp = new THREE.Vector3();
+  ship.viewport(el, {
+    fov: 36,
+    resize(vp) { fitFov(vp, 36); },
+    setup(vp) {
+      camera = vp.camera; camera.position.set(0, 0.6, 5.2); camera.lookAt(0, 0, 0);
+      const key = new THREE.DirectionalLight(0xfff2dc, 1.6); key.position.set(-3, 4, 3);
+      vp.scene.add(wand, benchFloor(12, 12).translateY(-1.8), new THREE.AmbientLight(0x6f84a0, 0.9), key);
+      reportState();
+    },
+    frame(vp) {
+      if (!T.held && !popped && ship.motion) tau += vp.dt;
+      if (!popped && tau > 34) { popped = vp.t || 1e-3; mat.uniforms.uAlive.value = 0; pop.hidden = false; strip.reset(); }
+      if (popped && vp.t - popped > 2.2) { popped = 0; tau = 0; mat.uniforms.uAlive.value = 1; pop.hidden = true; }
+      mat.uniforms.uT.value = tau; mat.uniforms.uCam.value.copy(camera.position);
+      if (!drag && ship.motion) { wand.rotation.y += (Math.sin(vp.t * 0.23) * 0.35 - wand.rotation.y) * (1 - Math.exp(-vp.dt * 1.5)); }
+      if (probe) reportProbe();
+      if (ship.motion && Math.floor(tau) % 6 === 0 && !popped) reportState();
+    },
+    pointer(ev, vp) {
+      if (ev.type === 'pointerdown') { el.setPointerCapture(ev.pointerId); el.classList.add('is-grabbing'); drag = { x: ev.clientX, y: ev.clientY, ry: wand.rotation.y, rx: wand.rotation.x, moved: false }; }
+      if (ev.type === 'pointermove' && drag) { const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true; wand.rotation.y = drag.ry + dx * 0.008; wand.rotation.x = clamp(drag.rx + dy * 0.008, -1.2, 1.2); }
+      if (ev.type === 'pointerup' || ev.type === 'pointercancel') { drag = null; el.classList.remove('is-grabbing'); }
+      if (ev.type === 'pointermove' || ev.type === 'pointerdown') {
+        const hit = vp.ray.intersectObject(film, false)[0];
+        if (hit) {
+          const u = hit.uv.x * 2 - 1, v = 1 - hit.uv.y * 2;
+          if (u * u + v * v <= 1) {
+            tmp.copy(camera.position).sub(hit.point).normalize();
+            const n = hit.face.normal.clone().transformDirection(film.matrixWorld), cosI = Math.abs(n.dot(tmp)), sinT = Math.sqrt(1 - cosI * cosI) / T.n;
+            probe = { u, v, cosI, cosT: Math.sqrt(Math.max(0, 1 - sinT * sinT)) };
+            const r = el.getBoundingClientRect(); cursor.hidden = false; cursor.style.left = (ev.clientX - r.left) + 'px'; cursor.style.top = (ev.clientY - r.top) + 'px';
+            return;
+          }
+        }
+        probe = null; cursor.hidden = true;
+      }
+    },
+  });
+}
