@@ -271,9 +271,9 @@ const zooCentre = (X(ZOO_LO) + X(ZOO_HI)) / 2, zooWidth = X(ZOO_HI) - X(ZOO_LO);
 let sel = 0;
 let sun = 1;
 const listeners = [];
-function select(i, { reveal = false } = {}) {
+function select(i, { reveal = false, fly = true } = {}) {
   sel = i;
-  for (const fn of listeners) fn(ZOO[i], reveal);
+  for (const fn of listeners) fn(ZOO[i], reveal, fly);
 }
 
 /* ---- the DOM roster, chips and the card -------------------------------- */
@@ -334,33 +334,33 @@ const fitDistance = (width, camera) => width / 2 / (Math.tan(camera.fov * Math.P
 function aim(mode, camera) {
   cam.mode = mode;
   const g = cam.goal;
-  if (mode === 'zoo') Object.assign(g, { x: zooCentre, y: 0.9, z: -2.2, az: 0.14, el: 0.52, d: P.clamp(fitDistance(zooWidth, camera), 5, 10) });
+  if (mode === 'zoo') Object.assign(g, { x: zooCentre, y: 0.9, z: -2.2, az: 0.14, el: 0.52, d: P.clamp(fitDistance(zooWidth, camera) * 1.35, 7, 13) });
   if (mode === 'all') Object.assign(g, { x: 0, y: 0.6, z: -2.6, az: 0.0, el: 0.7, d: P.clamp(fitDistance(48, camera), 12, 60) });
   if (mode === 'creature') { const z = ZOO[sel]; Object.assign(g, { x: z.x, y: z.y + 0.38, z: z.zz, az: 0.18, el: 0.3, d: 3.4 }); }
   camZoo.setAttribute('aria-pressed', String(mode === 'zoo'));
   camAll.setAttribute('aria-pressed', String(mode === 'all'));
 }
-const sprites = [], halos = [];
+const sprites = [], halos = [], rulers = [];
 let zooVP = null;
 zooVP = ship.viewport(vpZoo, {
   fov: 38,
   setup({ scene, camera }) {
     // the beam itself, wide enough to run under every lane
-    const ribbon = spectrumRibbon({ length: 16 * U, width: 8, intensity: 0.5, soft: 0.6 });
+    const ribbon = spectrumRibbon({ length: 16 * U, width: 8, intensity: 0.32, soft: 0.6 });
     ribbon.rotation.x = -Math.PI / 2; ribbon.position.set(0, 0, -2.8);
     scene.add(ribbon);
-    const core = spectrumRibbon({ length: 16 * U, width: 1.6, intensity: 0.9, soft: 1 });
+    const core = spectrumRibbon({ length: 16 * U, width: 1.4, intensity: 0.55, soft: 1 });
     core.rotation.x = -Math.PI / 2; core.position.set(0, 0.005, 0.6);
     scene.add(core);
     // the ruler: every decade, frequency and wavelength
     for (const t of P.DECADE_LABELS) {
       const l = label(t.label + ' · ' + Z.tidy(P.fmtWave(t.f, true)), { size: 20, color: '#9fb8d0' });
-      l.userData.fit(0.26); l.position.set(X(t.f), 0.02, 1.7); scene.add(l);
+      l.userData.fit(0.26); l.position.set(X(t.f), 0.02, 1.5); scene.add(l); rulers.push(l);
     }
     for (const b of P.BANDS) {
       const fc = Math.sqrt(b.lo * b.hi);
       const l = label(b.short, { size: 22, color: '#6f8196', tracking: 5 });
-      l.userData.fit(0.22); l.position.set(X(fc), 0.02, 2.5); scene.add(l);
+      l.userData.fit(0.22); l.position.set(X(fc), 0.02, 2.3); scene.add(l); rulers.push(l);
     }
     // every creature: its range as a strip of the real spectrum on its lane,
     // a halo in the colour of its band's centre, a stalk, and the sprite
@@ -371,14 +371,14 @@ zooVP = ship.viewport(vpZoo, {
       const bar = spectrumRibbon({ length: Math.max(dec * U, 0.08), width: 0.36, lo: P.posOf(z.lo), hi: P.posOf(z.hi), intensity: 1.4, soft: 0.9 });
       bar.rotation.x = -Math.PI / 2; bar.position.set(z.x, z.y + 0.012, z.zz);
       scene.add(bar);
-      const halo = glowSprite(colorOf(z.fc), 0.9, 0.3);
-      halo.position.set(z.x, z.y + 0.5, z.zz); halo.renderOrder = 10 - z.lane;
+      const halo = glowSprite(colorOf(z.fc), 0.75, 0.3);
+      halo.position.set(z.x, z.y + 0.42, z.zz); halo.renderOrder = 10 - z.lane;
       scene.add(halo); halos.push(halo);
       stalk.push(z.x, z.y + 0.012, z.zz, z.x, z.y + 0.3, z.zz);
       const mat = new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false, opacity: 0.92 });
       const sp = new THREE.Sprite(mat);
-      sp.position.set(z.x, z.y + 0.6, z.zz); sp.visible = false; sp.renderOrder = 20 - z.lane;
-      sp.userData.i = i; sp.userData.h = 0.62;
+      sp.position.set(z.x, z.y + 0.52, z.zz); sp.visible = false; sp.renderOrder = 20 - z.lane;
+      sp.userData.i = i; sp.userData.h = 0.5;
       if (z.icon) loader.load(z.icon, tex => { tex.colorSpace = THREE.SRGBColorSpace; mat.map = tex; mat.needsUpdate = true; sp.userData.aspect = tex.image.width / tex.image.height; sp.visible = true; });
       else {
         // the Visitor arrived without a portrait: a dashed ring and a question
@@ -401,6 +401,8 @@ zooVP = ship.viewport(vpZoo, {
     const n = cam.now;
     camera.position.set(n.x + n.d * Math.sin(n.az) * Math.cos(n.el), n.y + n.d * Math.sin(n.el), n.z + n.d * Math.cos(n.az) * Math.cos(n.el));
     camera.lookAt(n.x, n.y, n.z);
+    // a ruler label the camera has flown right up to would fill the box; it fades
+    for (const l of rulers) { const dist = l.position.distanceTo(camera.position); l.material.opacity = P.clamp((dist - 1.6) / 1.6, 0, 1); }
     // the chosen creature swells a little and its halo wakes; the rest hover
     sprites.forEach((sp, i) => {
       const on = i === sel;
@@ -409,19 +411,20 @@ zooVP = ship.viewport(vpZoo, {
       sp.material.opacity += ((on ? 1 : 0.8) - sp.material.opacity) * k;
       const z = ZOO[i];
       const bob = ship.motion ? Math.sin(t * 1.3 + i * 1.7) * 0.03 : 0;
-      sp.position.y = z.y + 0.6 + bob;
+      sp.position.y = z.y + 0.52 + bob;
       halos[i].material.opacity += ((on ? 0.85 : 0.3) - halos[i].material.opacity) * k;
-      halos[i].position.y = z.y + 0.5 + bob;
+      halos[i].position.y = z.y + 0.42 + bob;
     });
   },
   pointer(ev, vp) {
     const el = vp.el;
-    if (ev.type === 'pointerdown') { el.__drag = { x: ev.clientX, y: ev.clientY, moved: false, cam: cam.now.x }; el.setPointerCapture && el.setPointerCapture(ev.pointerId); return; }
+    // a press that starts on a HUD control is that control's press
+    if (ev.type === 'pointerdown') { if (ev.target.closest('button')) return; el.__drag = { x: ev.clientX, y: ev.clientY, moved: false, cam: cam.now.x, id: ev.pointerId }; return; }
     const d = el.__drag;
     if (!d) return;
     if (ev.type === 'pointermove') {
       const dx = ev.clientX - d.x;
-      if (!d.moved && Math.abs(dx) > 6) { d.moved = true; el.classList.add('is-grabbing'); cam.mode = 'free'; camZoo.setAttribute('aria-pressed', 'false'); camAll.setAttribute('aria-pressed', 'false'); }
+      if (!d.moved && Math.abs(dx) > 6) { d.moved = true; el.classList.add('is-grabbing'); el.setPointerCapture && el.setPointerCapture(d.id); cam.mode = 'free'; camZoo.setAttribute('aria-pressed', 'false'); camAll.setAttribute('aria-pressed', 'false'); }
       if (d.moved) {
         // a pixel of drag is a slice of the view's width at the target's distance
         const per = 2 * cam.now.d * Math.tan(vp.camera.fov * Math.PI / 360) * vp.camera.aspect / vp.size.w;
@@ -440,7 +443,7 @@ zooVP = ship.viewport(vpZoo, {
 });
 camZoo.addEventListener('click', () => aim('zoo', zooVP.camera));
 camAll.addEventListener('click', () => aim('all', zooVP.camera));
-listeners.push(() => aim('creature', zooVP.camera));
+listeners.push((z, reveal, fly) => { if (fly) aim('creature', zooVP.camera); });
 
 /* ---- instrument 2: be the creature -------------------------------------- */
 const legend = document.getElementById('legend'), sightNote = document.getElementById('sightNote'), bePicked = document.getElementById('bePicked');
@@ -543,9 +546,14 @@ ship.viewport(document.getElementById('vpBe'), {
   },
   pointer(ev, vp) {
     const el = vp.el;
-    if (ev.type === 'pointerdown') { el.__drag = { x: ev.clientX, az: be.azGoal }; el.setPointerCapture && el.setPointerCapture(ev.pointerId); el.classList.add('is-grabbing'); return; }
+    if (ev.type === 'pointerdown') { if (ev.target.closest('button')) return; el.__drag = { x: ev.clientX, az: be.azGoal, id: ev.pointerId, moved: false }; return; }
     if (!el.__drag) return;
-    if (ev.type === 'pointermove') { be.azGoal = el.__drag.az + (ev.clientX - el.__drag.x) * 0.008; return; }
+    if (ev.type === 'pointermove') {
+      const d = el.__drag;
+      if (!d.moved && Math.abs(ev.clientX - d.x) > 6) { d.moved = true; el.classList.add('is-grabbing'); el.setPointerCapture && el.setPointerCapture(d.id); }
+      if (d.moved) be.azGoal = d.az + (ev.clientX - d.x) * 0.008;
+      return;
+    }
     el.__drag = null; el.classList.remove('is-grabbing');
   },
 });
@@ -554,7 +562,7 @@ beNight.addEventListener('click', () => { sun = 0; beDay.setAttribute('aria-pres
 listeners.push(() => renderSight());
 
 /* ---- first light ------------------------------------------------------- */
-select(0);
+select(0, { fly: false });
 if (document.body.classList.contains('no-webgl')) renderSight();   // the legend works from the DOM alone
 ship.watchEntrances && ship.watchEntrances();
 </script>

@@ -74,7 +74,7 @@ body[data-deck="observatory"] .picker li.custom button { color: rgb(var(--beam))
 body[data-deck="observatory"] .probe.a { --p: var(--pa); } body[data-deck="observatory"] .probe.b { --p: var(--pb); }
 body[data-deck="observatory"] .probe { transition: opacity .4s; }
 body[data-deck="observatory"] .probe.dim { opacity: .3; }
-body[data-deck="observatory"] .probe .cap { top: 14px; }
+body[data-deck="observatory"] .probe .cap { top: 14px; white-space: nowrap; }
 body[data-deck="observatory"] .vhud .lm {
   position: absolute; transform: translate(-50%, -100%); background: none; border: 0; padding: 4px 4px 10px; cursor: pointer;
   font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; color: rgb(var(--dim)); white-space: nowrap; line-height: 1;
@@ -121,10 +121,10 @@ body[data-deck="observatory"] .ctl.coral { color: rgb(var(--shift)); border-colo
 body[data-deck="observatory"] .ctl.coral:hover, body[data-deck="observatory"] .ctl.coral.holo-on { border-color: rgb(var(--shift)); background: rgb(var(--shift) / .1); }
 body[data-deck="observatory"] #vpOver { height: 96px; margin-top: 10px; cursor: pointer; }
 body[data-deck="observatory"] #vpOver .mark { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); background: rgb(var(--p)); box-shadow: 0 0 8px rgb(var(--p)); pointer-events: none; }
-body[data-deck="observatory"] #vpOver .mark span { position: absolute; top: 8px; left: 6px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: rgb(var(--p)); white-space: nowrap; }
+body[data-deck="observatory"] #vpOver .mark span { position: absolute; top: 6px; left: 6px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: rgb(var(--p)); white-space: nowrap; }
 body[data-deck="observatory"] #vpOver .mark.flip span { left: auto; right: 6px; }
 body[data-deck="observatory"] #vpOver .mark.a { --p: var(--pa); } body[data-deck="observatory"] #vpOver .mark.b { --p: var(--pb); }
-body[data-deck="observatory"] #vpOver .focwin { position: absolute; top: 18px; bottom: 26px; border: 1px solid rgb(var(--deck) / .8); background: rgb(var(--deck) / .07); border-radius: 4px; cursor: grab; box-shadow: 0 0 14px rgb(var(--deck) / .25); }
+body[data-deck="observatory"] #vpOver .focwin { position: absolute; top: 22px; bottom: 24px; border: 1px solid rgb(var(--deck) / .8); background: rgb(var(--deck) / .07); border-radius: 4px; cursor: grab; box-shadow: 0 0 14px rgb(var(--deck) / .25); }
 body[data-deck="observatory"] #vpOver .focwin:active { cursor: grabbing; }
 body[data-deck="observatory"] #vpOver .label { top: 50%; }
 body[data-deck="observatory"] .ovnote { font-size: 12.5px; color: rgb(var(--dim)); margin: 8px 0 0; line-height: 1.55; max-width: 80ch; }
@@ -245,6 +245,7 @@ body[data-deck="observatory"] .tourpanel .tnote { font-size: 11.5px; color: rgb(
 body[data-deck="observatory"] .testout { font-family: var(--mono); font-size: 12px; color: rgb(var(--deck)); border: 1px solid rgb(var(--line) / .2); border-radius: 8px; padding: 10px 12px; margin: 16px 0 0; white-space: pre-wrap; }
 body[data-deck="observatory"] .testout.fail { color: #ffb3a7; border-color: rgb(255 120 100 / .6); }
 
+@media (max-width: 980px) { body[data-deck="observatory"] #lmHint { display: none; } }
 @media (max-width: 700px) {
   body[data-deck="observatory"] .composer { grid-template-columns: 1fr; }
   body[data-deck="observatory"] .swap { justify-self: center; }
@@ -289,11 +290,11 @@ body[data-deck="observatory"] .testout.fail { color: #ffb3a7; border-color: rgb(
       <div class="viewport" id="vpMain" style="height: clamp(340px, 58vh, 600px)">
         <div class="vhud" id="hudMain">
           <span class="crumbs" id="crumbs"></span>
-          <span class="lmhint" id="lmHint">Click moves the active probe · drag a probe · scroll to zoom</span>
-          <div class="probe a" id="probeA" role="slider" tabindex="0" aria-label="Probe A" aria-valuemin="4" aria-valuemax="20" aria-valuenow="8" data-m="a"><span class="cap">A<small></small></span></div>
+                    <div class="probe a" id="probeA" role="slider" tabindex="0" aria-label="Probe A" aria-valuemin="4" aria-valuemax="20" aria-valuenow="8" data-m="a"><span class="cap">A<small></small></span></div>
           <div class="probe b" id="probeB" role="slider" tabindex="0" aria-label="Probe B" aria-valuemin="4" aria-valuemax="20" aria-valuenow="14.75" data-m="b"><span class="cap">B<small></small></span></div>
         </div>
         <div class="vp-note" id="vpNote">Waves compressed for display: cycles follow log frequency</div>
+        <div class="vp-note right" id="lmHint"></div>
         <div class="fallback">A ribbon of light, 10 kHz on the left to 100 EHz on the right, with probes A and B standing on it, their waves above, and a beam between them labelled with their ratio. Every number lives in the readouts below.</div>
       </div>
 
@@ -410,7 +411,7 @@ body[data-deck="observatory"] .testout.fail { color: #ffb3a7; border-color: rgb(
       </div>
 
       <!-- the ratio and the lockstep -->
-      <div class="holopanel glass ratiobox rise" id="ratioBox">
+      <div class="holopanel glass ratiobox" id="ratioBox">
         <div class="rhead">
           <div class="big" id="ratioBig"></div>
           <div class="rel" id="ratioRel"></div>
@@ -435,7 +436,7 @@ body[data-deck="observatory"] .testout.fail { color: #ffb3a7; border-color: rgb(
            Whatever moves A to B moves all four in lockstep.</p>
       </div>
       <div class="grid-2">
-        <div class="holopanel glass rise">
+        <div class="holopanel glass">
           <div class="tscroll">
             <table class="qtable">
               <thead><tr><th></th><th class="a" id="thA"></th><th class="b" id="thB"></th><th>B vs A</th></tr></thead>
@@ -443,7 +444,7 @@ body[data-deck="observatory"] .testout.fail { color: #ffb3a7; border-color: rgb(
             </table>
           </div>
         </div>
-        <div class="holopanel glass rise">
+        <div class="holopanel glass">
           <h3>Same power, different photons</h3>
           <div class="modes" role="radiogroup" aria-label="Comparison basis">
             <label><input type="radio" name="pmode" value="power" checked> Equal power</label>
@@ -474,9 +475,9 @@ beam power      P = photons per second × energy per photon</pre>
            stated rather than hidden.</p>
       </div>
       <div class="grid-2">
-        <div class="holopanel glass scalecard a rise"><img id="scaleImgA" alt="" width="84" height="84"><div>
+        <div class="holopanel glass scalecard a"><img id="scaleImgA" alt="" width="84" height="84"><div>
           <div class="who" id="scaleWhoA"></div><div class="what" id="scaleWhatA"></div><div class="desc" id="scaleDescA"></div></div></div>
-        <div class="holopanel glass scalecard b rise"><img id="scaleImgB" alt="" width="84" height="84"><div>
+        <div class="holopanel glass scalecard b"><img id="scaleImgB" alt="" width="84" height="84"><div>
           <div class="who" id="scaleWhoB"></div><div class="what" id="scaleWhatB"></div><div class="desc" id="scaleDescB"></div></div></div>
       </div>
     </section>
@@ -489,7 +490,7 @@ beam power      P = photons per second × energy per photon</pre>
         <p class="lede">Everything on the ribbon, from the slowest radio rumble to the fiercest gamma ray, fits in a
            window of about <b>53 octaves</b> of frequency. That is the entire observed electromagnetic range.</p>
       </div>
-      <div class="holopanel glass rise">
+      <div class="holopanel glass">
         <p>An <b>octave</b> is one doubling. The word is borrowed from music: the A above middle C
            vibrates 440 times a second, and the next A up, at 880, is the same note one octave higher.
            Frequency works the same way everywhere, so the natural unit of the spectrum is not
@@ -581,6 +582,7 @@ function encodeState() {
   if (S.focLo > F0 + 1e-6 || S.focHi < F1 - 1e-6) p.set('focus', S.focLo.toFixed(3) + '_' + S.focHi.toFixed(3));
   if (S.layer) p.set('layer', S.layer);
   if (S.layer === 'shift') { p.set('z', K.fmtZ(S.shiftZ)); p.set('src', S.shiftSrc); }
+  if (new URLSearchParams(location.search).has('test')) p.set('test', '1');
   history.replaceState(null, '', '?' + p.toString());
 }
 function decodeState() {
@@ -624,11 +626,20 @@ function strip(n, color, opacity) {
   };
   return m;
 }
-const RIB_L = 12, RIB_W = 1.3;           // the ribbon in its own units; the group is scaled to fit the box
+const RIB_L = 12, RIB_W = 2.0;           // the ribbon in its own units; the group is scaled to fit the box
 
+/* ---- the senses cast: six creatures from the shared zoo ------------------- */
+const OBS_ZOO = ['human', 'skin', 'bee', 'bird', 'shrimp', 'viper'];
+const SENSES = OBS_ZOO.map(id => ZOO.find(z => z.id === id));
+const SZ_LO = 2e12, SZ_HI = 1.2e15;
+const fmtLam = f => { const l = P.C / f; return l >= 1e-6 ? parseFloat((l * 1e6).toPrecision(3)) + ' µm' : Math.round(l * 1e9) + ' nm'; };
+
+const uPx = d => ((((d - F0) / (F1 - F0)) - 0.5) * RIB_L / OV_L + 0.5) * (O.vp ? O.vp.size.w : 1);   // log10 Hz -> px in the strip
+const fPx = f => ((ovU(f) - 0.5) * RIB_L / OV_L + 0.5) * (O.vp ? O.vp.size.w : 1);
+const O = {};
 /* ---- the main instrument ---------------------------------------------------- */
 const M = {                                 // scene registry and display state
-  k: 1, cam: { x: 0, y: 2.1, z: 6.2, lx: 0, ly: 0.35, lz: 0 }, disp: null, hudDirty: true,
+  k: 1, cam: { x: 0, y: 3.4, z: 5.4, lx: 0, ly: 0.9, lz: 0 }, disp: null, hudDirty: true,
   phase: { a: 0, b: 0, t: 0 }, pulse: 0, camMoved: true,
 };
 const x12 = f => ((log(f) - S.focLo) / span() - 0.5) * RIB_L;        // ribbon position of a frequency
@@ -641,9 +652,9 @@ const vpMain = ship.viewport($('vpMain'), {
   setup(vp) {
     const G = new THREE.Group(); vp.scene.add(G); M.G = G;
     // the ribbon, flat, and a wide faint halo under it so it reads as light on a floor of glass
-    M.ribbon = spectrumRibbon({ length: RIB_L, width: RIB_W, intensity: 1.15, segments: 512 });
+    M.ribbon = spectrumRibbon({ length: RIB_L, width: RIB_W, intensity: 1.3, segments: 512 });
     M.ribbon.rotation.x = -Math.PI / 2; G.add(M.ribbon);
-    M.halo = spectrumRibbon({ length: RIB_L, width: RIB_W * 3.2, intensity: 0.14, soft: 0.6 });
+    M.halo = spectrumRibbon({ length: RIB_L, width: RIB_W * 2.6, intensity: 0.22, soft: 0.6 });
     M.halo.rotation.x = -Math.PI / 2; M.halo.position.y = -0.01; G.add(M.halo);
     // landmark ticks on the far edge, one geometry
     const tp = new Float32Array(LANDMARKS.length * 6);
@@ -673,12 +684,12 @@ const vpMain = ship.viewport($('vpMain'), {
     G.add(M.trav.glow, M.trav.pillar, M.trav.wave, M.trav.waveHalo);
     // layer: matter shelves and the scale ladder
     M.matter = new THREE.Group(); G.add(M.matter);
-    M.shelves = K.REGIMES.map((r, i) => { const s = strip(2, 0x7ee0ff, 0.16); s.userData.r = r; s.userData.y = 0.42 + i * 0.13; M.matter.add(s); return s; });
+    M.shelves = K.REGIMES.map((r, i) => { const s = strip(2, 0x7ee0ff, 0.26); s.userData.r = r; s.userData.y = 0.55 + i * 0.21; M.matter.add(s); return s; });
     const loader = new THREE.TextureLoader();
     M.scaleSprites = SCALE_OBJECTS.filter(o => P.freqOfLambda(o.size) >= FMIN && P.freqOfLambda(o.size) <= FMAX).map(o => {
       const tex = loader.load(o.img); tex.colorSpace = THREE.SRGBColorSpace;
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.95 }));
-      sp.scale.set(0.62, 0.62, 1); sp.userData.o = o; M.matter.add(sp); return sp;
+      sp.scale.set(0.58, 0.58, 1); sp.userData.o = o; M.matter.add(sp); return sp;
     });
     // layer: the sky surface, its ridge line and its curtain down to the ribbon
     M.sky = new THREE.Group(); G.add(M.sky);
@@ -727,7 +738,7 @@ const vpMain = ship.viewport($('vpMain'), {
     // the ribbon fills nine tenths of the box whatever its aspect: scale the whole instrument
     const cam = vp.camera, d = Math.hypot(M.cam.z, M.cam.y);
     const halfW = d * Math.tan(cam.fov / 2 * Math.PI / 180) * cam.aspect;
-    M.k = halfW / (RIB_L / 2 * 1.1);
+    M.k = halfW / (RIB_L / 2 * 1.2);
     if (M.G) { M.G.scale.setScalar(M.k); M.hudDirty = true; }
   },
   frame(vp) {
@@ -737,9 +748,9 @@ const vpMain = ship.viewport($('vpMain'), {
     const c = M.cam, d = M.disp;
     if (S.lockOn) {
       const tx = x12(travHz()) * M.k;
-      c.x = tx; c.y = 1.25 * M.k + 0.35; c.z = 3.4 * M.k + 0.6; c.lx = tx; c.ly = 0.45 * M.k; c.lz = 0;
+      c.x = tx; c.y = 1.6 * M.k + 0.5; c.z = 3.2 * M.k + 0.6; c.lx = tx; c.ly = 0.5 * M.k; c.lz = 0;
     } else {
-      c.x = motion ? ship.pointer.x * 0.12 : 0; c.y = 2.1; c.z = 6.2; c.lx = 0; c.ly = 0.35 * M.k; c.lz = 0;
+      c.x = motion ? ship.pointer.x * 0.12 : 0; c.y = 3.4; c.z = 5.4; c.lx = 0; c.ly = 0.9 * M.k; c.lz = 0;
     }
     const kk = 1 - Math.exp(-dt * 5);
     let moved = 0;
@@ -848,9 +859,9 @@ function relayout() {
   if (M.matter.visible) {
     for (const s of M.shelves) {
       const r = s.userData.r, y = s.userData.y, x0 = clamp(x12(r.lo), -RIB_L / 2, RIB_L / 2), x1 = clamp(x12(r.hi), -RIB_L / 2, RIB_L / 2);
-      s.visible = x1 > x0; s.userData.set(u => { const x = x0 + (x1 - x0) * u; return [x, y, -0.08, x, y, 0.08]; });
+      s.visible = x1 > x0; s.userData.set(u => { const x = x0 + (x1 - x0) * u; return [x, y, -0.16, x, y, 0.16]; });
     }
-    for (const sp2 of M.scaleSprites) { const f = P.freqOfLambda(sp2.userData.o.size); sp2.visible = inLens(f); sp2.position.set(x12(f), 0.36, RIB_W * 0.55); }
+    for (const sp2 of M.scaleSprites) { const f = P.freqOfLambda(sp2.userData.o.size); sp2.visible = inLens(f); sp2.position.set(x12(f), 0.3, RIB_W * 0.72); }
   }
   // the sky surface
   M.sky.visible = S.layer === 'sky';
@@ -909,8 +920,8 @@ function drawWaves() {
       cyc = Math.min(4e6, Math.max(1e-4, f * S.obsWin));
       const pxPerCycle = (M.vp ? M.vp.size.w : 900) * 0.9 / cyc;
       res = clamp((pxPerCycle - 3.2) / (7 - 3.2), 0, 1);
-    } else { xc = x12(f); hl = 1.25; y0 = 0.95; cyc = 3 + 20 * clamp(P.posOf(f), 0, 1); }
-    waveTo(pr.wave, pr.waveHalo, xc, hl, y0, 0.2, cyc, M.phase[m], res, waveMode);
+    } else { xc = x12(f); hl = 1.4; y0 = 1.05; cyc = 3 + 20 * clamp(P.posOf(f), 0, 1); }
+    waveTo(pr.wave, pr.waveHalo, xc, hl, y0, 0.26, cyc, M.phase[m], res, waveMode);
   }
   const trav = S.lockOn && !dimLayer && !waveMode;
   for (const key in M.trav) M.trav[key].visible = trav;
@@ -994,7 +1005,7 @@ function layoutHud() {
   M.tickEls.forEach((el, i) => {
     const tk = ticks[i]; if (!tk) { el.hidden = true; return; }
     const p = px(x12(tk[0]), 0, RIB_W / 2 + 0.05, vp);
-    const ok = p.x - lastX > 56 && p.x > 24 && p.x < W - 24 && !p.behind;
+    const ok = p.x - lastX > 56 && p.x > 34 && p.x < W - 34 && !p.behind;
     el.hidden = !ok; if (!ok) return;
     el.textContent = tk[1]; el.style.left = p.x + 'px'; el.style.top = (p.y + 8) + 'px'; lastX = p.x;
   });
@@ -1013,8 +1024,8 @@ function layoutHud() {
   M.shelfEls.forEach((el, i) => {
     const s = M.shelves[i], r = s.userData.r, on = M.matter.visible && s.visible;
     el.hidden = !on; if (!on) return;
-    const x0 = clamp(x12(r.lo), -RIB_L / 2, RIB_L / 2), p = px(x0, s.userData.y, 0.1, vp);
-    el.style.left = (p.x + r.name.length * 3 + 8) + 'px'; el.style.top = p.y + 'px';
+    const x0 = clamp(x12(r.lo), -RIB_L / 2, RIB_L / 2), p = px(x0, s.userData.y, 0.2, vp), half = r.name.length * 3;
+    el.style.left = clamp(p.x + half + 10, half + 4, W - half - 4) + 'px'; el.style.top = (p.y + 9) + 'px';
   });
   if (M.sky.visible) {
     const items = K.SKY_LABELS.map((l, i) => { const f = Math.pow(10, l[0]), p = px(x12(f), l[2] === 'open' ? 0.08 + 1.15 * K.transAt(f) + 0.22 : 0.7, 0, vp); return { el: M.skyEls[i], x: p.x, y: p.y, w: l[1].length * 6 + 6, pri: l[3], behind: p.behind || !inLens(f) }; })
@@ -1040,7 +1051,6 @@ function layoutHud() {
 }
 
 /* ---- the overview strip: the whole window, the lens, the probes ------------- */
-const O = {};
 const ovU = f => S.linear ? f / FMAX : clamp(P.posOf(f), 0, 1);
 const OV_L = 12.6;
 const vpOver = ship.viewport($('vpOver'), {
@@ -1080,8 +1090,6 @@ const vpOver = ship.viewport($('vpOver'), {
     } else if (ev.type === 'pointerup' || ev.type === 'pointercancel') O.drag = null;
   },
 });
-const uPx = d => ((((d - F0) / (F1 - F0)) - 0.5) * RIB_L / OV_L + 0.5) * O.vp.size.w;   // log10 Hz -> px in the strip
-const fPx = f => ((ovU(f) - 0.5) * RIB_L / OV_L + 0.5) * O.vp.size.w;
 function layoutOver() {
   if (!O.vp) return;
   const W = O.vp.size.w;
@@ -1100,18 +1108,12 @@ function layoutOver() {
   });
   P.BANDS.forEach((b, i) => { const e = O.bands[i], x0 = fPx(b.lo), x1 = fPx(b.hi); e.hidden = x1 - x0 < 46; e.style.left = (x0 + x1) / 2 + 'px'; });
   const tks = S.linear ? [0, 25, 50, 75, 100].map(v => [v * 1e18, v ? v + ' EHz' : '0']) : [4, 8, 12, 16, 20].map(d => [Math.pow(10, d), P.fmtFreq(Math.pow(10, d), true).replace('.00', '').replace(/\.0 /, ' ')]);
-  O.ticks.forEach((e, i) => { const t = tks[i]; e.hidden = !t; if (!t) return; e.textContent = t[1]; e.style.left = clamp(S.linear ? (t[0] / FMAX - 0.5) * RIB_L / OV_L * W + W / 2 : fPx(t[0]), 22, W - 22) + 'px'; });
+  O.ticks.forEach((e, i) => { const t = tks[i]; e.hidden = !t; if (!t) return; e.textContent = t[1]; e.style.bottom = '6px'; e.style.top = 'auto'; e.style.left = clamp(S.linear ? (t[0] / FMAX - 0.5) * RIB_L / OV_L * W + W / 2 : fPx(t[0]), 22, W - 22) + 'px'; });
   $('ovNote').textContent = S.linear
     ? 'Same window, linear scale: every tenfold step no longer gets equal room, so nearly the entire lower-frequency universe, radio through ultraviolet, collapses into the left sliver. A logarithmic scale gives every tenfold increase equal room. Switch back to breathe again.'
     : 'The whole window, 10 kHz to 100 EHz: sixteen orders of magnitude of one phenomenon, not the physical beginning or end of the spectrum. Click a band to put the lens on it, or drag the bright window.';
   $('ovNote').classList.toggle('linear', S.linear);
 }
-
-/* ---- the senses cast: six creatures from the shared zoo ------------------- */
-const OBS_ZOO = ['human', 'skin', 'bee', 'bird', 'shrimp', 'viper'];
-const SENSES = OBS_ZOO.map(id => ZOO.find(z => z.id === id));
-const SZ_LO = 2e12, SZ_HI = 1.2e15;
-const fmtLam = f => { const l = P.C / f; return l >= 1e-6 ? parseFloat((l * 1e6).toPrecision(3)) + ' µm' : Math.round(l * 1e9) + ' nm'; };
 
 /* ---- DOM renders ------------------------------------------------------------ */
 function crumbs() {
@@ -1133,7 +1135,7 @@ function renderComposer() {
     pr.setAttribute('aria-label', 'Probe ' + m.toUpperCase() + ', ' + nameOf(m));
   }
   $('crumbs').textContent = crumbs();
-  $('lmHint').textContent = 'Click moves ' + S.active.toUpperCase() + ' · drag a probe · scroll to zoom · double-click a landmark to centre it';
+  $('lmHint').textContent = 'Click moves ' + S.active.toUpperCase() + ' · drag · scroll zooms · double-click a landmark';
 }
 function renderRatio() {
   const r = Math.max(S.aHz, S.bHz) / Math.min(S.aHz, S.bHz), hi = hiM(), lo = loM();
@@ -1284,7 +1286,7 @@ function initShift() {
 }
 const VP_NOTES = {
   none: 'Waves compressed for display: cycles follow log frequency', matter: 'Positions exact · icons not to scale', wave: 'Lane length = the window · speed compressed',
-  senses: 'Lens on 2 THz to 1.2 PHz · the box is the creature’s range', sky: 'Clear sky, sea level, schematic · height = fraction reaching the ground',
+  senses: 'Lens on 2 THz to 1.2 PHz · the box is the creature’s range', sky: 'Clear sky at sea level, schematic · height = fraction through',
   shift: 'Upper ribbon: the same light where it arrives · waves compressed', stories: 'Waves compressed for display: cycles follow log frequency',
 };
 function applyLayer() {
@@ -1452,6 +1454,7 @@ function tourStep() {
 tourBtn.addEventListener('click', () => { ti = 0; tOverlay.hidden = false; tourStep(); });
 
 /* ---- boot --------------------------------------------------------------------------- */
+const wantTest = new URLSearchParams(location.search).has('test');
 decodeState();
 initShift();
 applyLayer();
@@ -1461,7 +1464,7 @@ if (new URLSearchParams(location.search).get('layer')) {
   setTimeout(goLayer, 80);
   if (document.readyState === 'complete') setTimeout(goLayer, 400); else addEventListener('load', () => setTimeout(goLayer, 60), { once: true });
 }
-if (new URLSearchParams(location.search).has('test')) {
+if (wantTest) {
   const out = K.selfTest((ok) => {
     const keepA = [S.aHz, S.aId];
     setMarker('a', P.freqOfLambda(633e-9)); ok('snap to red laser line', S.aId === 'red-laser');

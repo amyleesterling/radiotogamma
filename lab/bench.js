@@ -173,7 +173,7 @@ export function readouts(host, items) {
 export function voice(host) {
   const p = document.createElement('p'); p.className = 'voice'; p.setAttribute('aria-live', 'polite'); host.appendChild(p);
   let last = '';
-  return { say(t) { if (t === last) return; last = t; p.classList.remove('is-new'); void p.offsetWidth; p.textContent = t; p.classList.add('is-new'); } };
+  return t => { if (t === last) return; last = t; p.classList.remove('is-new'); void p.offsetWidth; p.textContent = t; p.classList.add('is-new'); };
 }
 export const fmtDeg = (v, d = 1) => v.toFixed(d) + '<span class="u">°</span>';
 export const fmtNm = v => Math.round(v) + '<span class="u">nm</span>';
