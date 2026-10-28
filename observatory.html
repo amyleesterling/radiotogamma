@@ -1033,7 +1033,7 @@ function layoutHud() {
   ['a', 'b'].forEach((m, i) => {
     const el = M.laneEls[i], on = S.layer === 'wave';
     el.hidden = !on; if (!on) return;
-    const p = px(-RIB_L / 2, (m === 'a' ? 0.75 : 1.4) + 0.42, 0, vp);
+    const p = px(-RIB_L / 2, (m === 'a' ? 0.75 : 1.4) + 0.62, 0, vp);
     el.textContent = m.toUpperCase() + ' · ' + nameOf(m); el.style.left = (p.x + el.offsetWidth / 2 + 4) + 'px'; el.style.top = p.y + 'px';
   });
   // layer labels
