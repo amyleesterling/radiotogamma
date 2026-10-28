@@ -33,8 +33,17 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
 .invite { margin-top: 16px; display: grid; gap: 8px; }
 .invite p { margin: 0; font-size: 15px; color: rgb(var(--ink) / .86); }
 
+/* the two waves, side by side: speed and tightness keyed to each probe's
+   log position, the real ratio stated under them */
+.wavelanes { position: relative; height: 150px; margin-top: 12px; border-radius: 10px; border: 1px solid rgb(var(--line) / .14); overflow: hidden; background: rgb(var(--void) / .5); }
+.wavelanes canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lane-tag { position: absolute; left: 10px; font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 3px; color: rgb(var(--void)); z-index: 1; }
+.lane-tag.a { top: 10px; background: rgb(126 224 255); }
+.lane-tag.b { bottom: 10px; background: rgb(255 196 90); }
+#laneNote { margin-top: 6px; }
+
 /* the visible band, opened out: a true-colour strip with its own probe */
-.visstrip { position: relative; height: 54px; border-radius: 8px; margin-top: 14px; overflow: visible; cursor: crosshair; }
+.visstrip { position: relative; height: 64px; touch-action: none; border-radius: 8px; margin-top: 14px; overflow: visible; cursor: crosshair; }
 .visstrip canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 8px; }
 .visstrip .probe { --p: 255 255 255; }
 .visstrip .probe::before { box-shadow: 0 0 10px #fff, 0 0 2px #000; }
@@ -45,7 +54,7 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
 
 /* the apple bench */
 #vpApple { height: clamp(320px, 52vh, 480px); }
-.applebar { position: relative; height: 46px; border-radius: 8px; margin-top: 10px; cursor: crosshair; }
+.applebar { position: relative; height: 56px; touch-action: none; border-radius: 8px; margin-top: 10px; cursor: crosshair; }
 .applebar canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 8px; opacity: .85; }
 .applebar .probe { --p: 255 255 255; }
 .applebar .probe .cap { background: #fff; color: #000; }
@@ -98,6 +107,12 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
       <div class="vp-note right">Drag a probe · click the beam · arrow keys step a tenth of a decade</div>
       <div class="fallback">A bar from 10 kHz to 100 EHz with two probes, A on FM radio at 100 MHz and B on a green laser at 564 THz. The readouts below are live without the 3D view.</div>
     </div>
+
+    <div class="wavelanes" aria-hidden="true">
+      <span class="lane-tag a">A</span><span class="lane-tag b">B</span>
+      <canvas id="waveLanes"></canvas>
+    </div>
+    <p class="caveat" id="laneNote"></p>
 
     <div class="readouts">
       <div class="readout a" data-holo-tap><p class="k">Probe A</p><p class="v" id="valA"></p><p class="d" id="metaA"></p></div>
@@ -280,7 +295,8 @@ function dragStrip(host, handle, onPos, onEnd) {
     handle.addEventListener('pointerup', up, { once: true }); handle.addEventListener('pointercancel', up, { once: true });
   };
   handle.addEventListener('pointerdown', start);
-  host.addEventListener('pointerdown', e => { if (e.target === handle || handle.contains(e.target)) return; onPos(pos(e)); if (onEnd) onEnd(); });
+  // a press anywhere on the strip takes the handle there and keeps dragging it
+  host.addEventListener('pointerdown', e => { if (e.target === handle || handle.contains(e.target)) return; start(e); });
 }
 
 /* ======================================================================
@@ -309,9 +325,9 @@ ship.viewport(beamEl, {
     const { scene, camera } = vp;
     beam.vp = vp;
     const ribbon = spectrumRibbon({ length: L, width: 1.4, intensity: 1.1, soft: 1.1 });
-    ribbon.rotation.x = -Math.PI / 2; scene.add(ribbon);
+    ribbon.rotation.x = -Math.PI / 2; scene.add(ribbon); beam.ribbon = ribbon;
     const halo = spectrumRibbon({ length: L, width: 5, intensity: 0.14, soft: 0.6 });
-    halo.rotation.x = -Math.PI / 2; halo.position.y = -0.02; scene.add(halo);
+    halo.rotation.x = -Math.PI / 2; halo.position.y = -0.02; scene.add(halo); beam.halo = halo;
     // a floor the beam lies on: a faint grid of decades
     const grid = new THREE.Group();
     const gm = new THREE.LineBasicMaterial({ color: 0x8fb8e8, transparent: true, opacity: 0.12 });
@@ -322,19 +338,20 @@ ship.viewport(beamEl, {
     grid.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-L / 2, -0.03, 2.2), new THREE.Vector3(L / 2, -0.03, 2.2)]), gm));
     grid.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-L / 2, -0.03, -2.2), new THREE.Vector3(L / 2, -0.03, -2.2)]), gm));
     scene.add(grid);
-    // decade labels below the beam, every other decade
+    // decade labels below the beam, every other decade, and band names above;
+    // all kept at a readable pixel size every frame whatever the camera does
+    beam.labels = [];
     for (let d = F0; d <= F1; d += 2) {
       const l = label(P.fmtFreq(Math.pow(10, d), true).replace('.00', '').replace('.0 ', ' '), { size: 20, color: '#8ea3bd' });
-      l.userData.fit(0.32); l.position.set(xOf(Math.pow(10, d)), 0.02, 1.75); scene.add(l);
+      l.position.set(xOf(Math.pow(10, d)), 0.02, 1.75); scene.add(l); beam.labels.push([l, 13]);
     }
-    // band names above
     for (const b of P.BANDS) {
       if (b.id === 'visible') continue;
       const l = label(b.short, { size: 22, color: '#dfe9f7', tracking: 5, weight: 500 });
-      l.userData.fit(0.34); l.position.set(xOf(Math.sqrt(b.lo * b.hi)), 0.1, -1.55); scene.add(l);
+      l.position.set(xOf(Math.sqrt(b.lo * b.hi)), 0.1, -1.55); scene.add(l); beam.labels.push([l, 14]);
     }
     const vl = label('VISIBLE', { size: 22, color: '#ffffff', tracking: 5, weight: 500 });
-    vl.userData.fit(0.34); vl.position.set(xOf(Math.sqrt(VIS_LO * VIS_HI)), 0.55, -1.55); scene.add(vl);
+    vl.position.set(xOf(Math.sqrt(VIS_LO * VIS_HI)), 0.55, -1.55); scene.add(vl); beam.labels.push([vl, 14]);
     // landmarks as small lights on the beam
     const lmGeo = new THREE.BufferGeometry();
     const pts = [], cols = [];
@@ -378,6 +395,8 @@ ship.viewport(beamEl, {
     // straight down and the beam runs top to bottom, radio at the top
     const fov = vp.camera.fov * Math.PI / 180, half = L / 2 + 1.6;
     beam.vertical = vp.camera.aspect < 1.05;
+    // seen from above on a phone the ribbon is a thread; let it be a road
+    if (beam.ribbon) { beam.ribbon.scale.y = beam.vertical ? 2.4 : 1; beam.halo.scale.y = beam.vertical ? 1.6 : 1; }
     if (beam.vertical) {
       const d = Math.max(8, half / Math.tan(fov / 2));
       vp.camera.up.set(-1, 0, 0);
@@ -411,6 +430,7 @@ ship.viewport(beamEl, {
       // the probe's colour is its own light
       const c = colorOf(f); pr.orb.material.color.copy(c).lerp(new THREE.Color(pr.hex), 0.35);
     }
+    for (const [l, px] of beam.labels) ship.fitLabel(vp, l, px * (beam.vertical ? 1.15 : 1));
     const xa = beam.A.x, xb = beam.B.x;
     beam.thread.position.x = (xa + xb) / 2; beam.thread.scale.x = Math.max(0.01, Math.abs(xb - xa));
     // DOM probes follow the orbs
@@ -432,6 +452,46 @@ ship.viewport(beamEl, {
     render();
   },
 });
+
+/* ---- the wave lanes: A over B, the old instrument's heart ---------------
+   A literal scale is unwatchable at either end, so each lane's speed and
+   cycle count follow the probe's log position (visualHz, cyclesAt); past a
+   point the wave cannot be drawn and becomes a smear with bright rails,
+   which is the arcsine density of a sinusoid and the honest picture. */
+const laneCv = document.getElementById('waveLanes'), laneCtx = laneCv.getContext('2d');
+let laneW = 0, laneH = 0, laneDpr = 1;
+function sizeLanes() {
+  const r = laneCv.getBoundingClientRect(); laneDpr = Math.min(2, devicePixelRatio || 1);
+  laneCv.width = Math.round(r.width * laneDpr); laneCv.height = Math.round(r.height * laneDpr); laneW = r.width; laneH = r.height;
+}
+new ResizeObserver(sizeLanes).observe(laneCv); sizeLanes();
+const RES_LO = 3.2, RES_HI = 7, SMEAR = [0, .08, .2, .35, .5, .65, .8, .92, 1];
+function smear(mid, amp, rgb, alpha) {
+  const g = laneCtx.createLinearGradient(0, mid - amp, 0, mid + amp);
+  for (const p of SMEAR) { const y = (p - 0.5) * 2, d = 1 / Math.sqrt(Math.max(0.02, 1 - y * y)); g.addColorStop(p, 'rgba(' + rgb + ',' + Math.min(1, alpha * d * 0.42).toFixed(3) + ')'); }
+  laneCtx.fillStyle = g; laneCtx.fillRect(0, mid - amp, laneW, amp * 2);
+}
+function drawLane(y0, h, rgb, f, t) {
+  const amp = h * 0.34, mid = y0 + h / 2, cyc = cyclesAt(f), hz = visualHz(f);
+  const res = clamp((laneW / cyc - RES_LO) / (RES_HI - RES_LO), 0, 1);
+  if (res < 0.999) smear(mid, amp, rgb, 1 - res * 0.75);
+  if (res <= 0.01) return;
+  const step = Math.max(0.3, Math.min(2, laneW / (cyc * 26)));
+  laneCtx.beginPath();
+  for (let px = 0; px <= laneW; px += step) { const y = mid - Math.sin((px / laneW) * cyc * TAU - t * hz * TAU) * amp; px === 0 ? laneCtx.moveTo(px, y) : laneCtx.lineTo(px, y); }
+  laneCtx.strokeStyle = 'rgba(' + rgb + ',' + res.toFixed(3) + ')'; laneCtx.lineWidth = 2; laneCtx.stroke();
+}
+const laneStart = performance.now();
+(function laneFrame(now) {
+  requestAnimationFrame(laneFrame);
+  if (!laneW || document.hidden) return;
+  const t = ship.motion ? (now - laneStart) / 1000 : 0;
+  laneCtx.setTransform(laneDpr, 0, 0, laneDpr, 0, 0); laneCtx.clearRect(0, 0, laneW, laneH);
+  laneCtx.strokeStyle = 'rgba(196,228,255,.1)'; laneCtx.lineWidth = 1; laneCtx.beginPath(); laneCtx.moveTo(0, laneH / 2); laneCtx.lineTo(laneW, laneH / 2); laneCtx.stroke();
+  drawLane(0, laneH / 2, '126,224,255', fA, t);
+  drawLane(laneH / 2, laneH / 2, '255,196,90', fB, t);
+})(laneStart);
+
 const nearer = f => Math.abs(Math.log10(f / fA)) < Math.abs(Math.log10(f / fB));
 // a probe released within a few pixels of a landmark settles onto it
 function snap(f) {
@@ -485,7 +545,9 @@ function render() {
     ' The beam below runs from 10 kHz to 100 EHz, a ten-quadrillion-fold range, end to end. Grab a probe.';
   aria(probeA, fA, F0, F1); aria(probeB, fB, F0, F1);
   const vA = visualHz(fA), vB = visualHz(fB);
-  document.getElementById('waveNote').textContent = 'Waves on screen: A ' + vA.toFixed(2) + '/s, B ' + vB.toFixed(2) + '/s, ' + (Math.max(vA, vB) / Math.min(vA, vB)).toFixed(1) + 'x apart. Really ' + r + 'x apart.';
+  const laneLine = 'Waves on screen: A ' + vA.toFixed(2) + '/s, B ' + vB.toFixed(2) + '/s, ' + (Math.max(vA, vB) / Math.min(vA, vB)).toFixed(1) + 'x apart. Really ' + r + 'x apart.';
+  document.getElementById('waveNote').textContent = laneLine;
+  document.getElementById('laneNote').textContent = laneLine + ' Speed and tightness follow each probe along the beam, not the real ratio: at the top of the beam a wave is a smear no screen can resolve, which is the honest picture.';
   for (const b of document.querySelectorAll('#presets .chip')) b.setAttribute('aria-pressed', String(+b.dataset.hz === fA || +b.dataset.hz === fB));
   // where B sits decides which doorway opens
   const inVis = fB >= VIS_LO && fB <= VIS_HI;
@@ -675,26 +737,32 @@ ship.viewport(document.getElementById('vpApple'), {
   setup(vp) {
     apple.vp = vp;
     const { scene, camera } = vp;
-    camera.position.set(0.4, 1.6, 6.2); camera.lookAt(0, 0.7, 0);
-    scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x1a0e08, 0.9));
-    const key = new THREE.DirectionalLight(0xfff2dd, 1.3); key.position.set(3, 5, 4); scene.add(key);
+    camera.position.set(0.4, 1.5, 5.6); camera.lookAt(0, 0.9, 0);
+    scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x1a0e08, 0.7));
+    const key = new THREE.DirectionalLight(0xfff2dd, 1.6); key.position.set(3, 5, 4); scene.add(key);
+    const rim = new THREE.DirectionalLight(0x7ee0ff, 0.9); rim.position.set(-4, 2, -3); scene.add(rim);
     apple.light = new THREE.PointLight(0xffffff, 0, 8, 1.6); apple.light.position.set(0, 2.6, 0.3); scene.add(apple.light);
-    // the apple: a lathe of a real-ish profile, a stem, a leaf
-    const prof = [];
-    for (let i = 0; i <= 24; i++) {
-      const a = i / 24 * Math.PI;                      // 0 at the top, pi at the bottom
-      const r = Math.sin(a) * (0.72 + 0.08 * Math.sin(a * 2)) * (1 - 0.06 * Math.cos(a * 3));
-      const y = Math.cos(a) * 0.66 - 0.12 * Math.cos(a) * Math.cos(a);
-      prof.push(new THREE.Vector2(Math.max(0.001, r), y));
+    // the apple: a sphere pushed into shape, a dimple at the stem and a
+    // smaller one underneath, five soft lobes round the waist. Built from a
+    // sphere rather than a lathe so the winding is never in question
+    const ag = new THREE.SphereGeometry(0.74, 64, 48), spos = ag.attributes.position;
+    for (let i = 0; i < spos.count; i++) {
+      const x = spos.getX(i), y = spos.getY(i), z = spos.getZ(i);
+      const r = Math.hypot(x, z), ang = Math.atan2(z, x), yn = y / 0.74;
+      const top = Math.exp(-Math.pow((yn - 1) / 0.42, 2)) * 0.32;          // the stem dimple
+      const bottom = Math.exp(-Math.pow((yn + 1) / 0.3, 2)) * 0.12;        // the calyx dimple
+      const lobes = 1 + 0.025 * Math.cos(ang * 5) * (1 - yn * yn);
+      const squash = 0.92 + 0.08 * yn;                                      // shoulders wider than the base
+      spos.setXYZ(i, x * lobes * squash, y * (1 - top - bottom), z * lobes * squash);
     }
-    prof.reverse();                                    // bottom to top, so the lathe winds outward
-    apple.mat = new THREE.MeshStandardMaterial({ color: 0xd33b3b, roughness: 0.42, metalness: 0.02, emissive: 0x000000 });
-    apple.mesh = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), apple.mat);
+    ag.computeVertexNormals();
+    apple.mat = new THREE.MeshStandardMaterial({ color: 0xc8302c, roughness: 0.32, metalness: 0.04, emissive: 0x000000, side: THREE.DoubleSide });
+    apple.mesh = new THREE.Mesh(ag, apple.mat);
     apple.mesh.position.y = 0.72; scene.add(apple.mesh);
     const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.42, 8), new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.9 }));
-    stem.position.set(0.03, 1.5, 0); stem.rotation.z = -0.12; apple.mesh.add(stem); stem.position.y = 0.78;
+    stem.position.set(0.03, 0.72, 0); stem.rotation.z = -0.12; apple.mesh.add(stem);
     const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.7 }));
-    leaf.scale.set(1, 0.25, 0.5); leaf.position.set(0.2, 0.86, 0.05); leaf.rotation.z = -0.5; apple.mesh.add(leaf);
+    leaf.scale.set(1, 0.25, 0.5); leaf.position.set(0.22, 0.8, 0.05); leaf.rotation.z = -0.5; apple.mesh.add(leaf);
     apple.leaf = leaf; apple.stem = stem;
     // the plate it sits on
     const plate = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.05, 48), new THREE.MeshStandardMaterial({ color: 0x0c1220, roughness: 0.35, metalness: 0.4 }));
@@ -704,9 +772,9 @@ ship.viewport(document.getElementById('vpApple'), {
     // the emitter and its beam, a cone of light down onto the apple
     const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.18, 24), new THREE.MeshStandardMaterial({ color: 0x1a2436, roughness: 0.3, metalness: 0.7 }));
     emitter.position.y = 3.4; scene.add(emitter);
-    apple.cone = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.95, 2.6, 32, 1, true),
+    apple.cone = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 1.1, 3.3, 32, 1, true),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    apple.cone.position.y = 2.0; scene.add(apple.cone);
+    apple.cone.position.y = 1.7; scene.add(apple.cone);
     apple.coneGlow = glowSprite(0xffffff, 1.2, 0.6); apple.coneGlow.position.y = 3.3; scene.add(apple.coneGlow);
     // photons: a shower of points inside the cone
     const NP = 900, pp = new Float32Array(NP * 3), ps = new Float32Array(NP);
@@ -747,16 +815,16 @@ ship.viewport(document.getElementById('vpApple'), {
     const c = colorOf(fApple);
     apple.cone.material.color.lerp(c, k); apple.coneGlow.material.color.lerp(c, k); apple.light.color.lerp(c, k);
     const pw = clamp((Math.log10(applePow) + 6) / 12, 0, 1);
-    apple.cone.material.opacity += ((0.05 + 0.3 * pw) - apple.cone.material.opacity) * k;
+    apple.cone.material.opacity += ((0.03 + 0.16 * pw) - apple.cone.material.opacity) * k;
     apple.light.intensity += ((0.4 + 6 * pw) - apple.light.intensity) * k;
     apple.photons.material.uniforms.uT.value = t; apple.photons.material.uniforms.uC.value.copy(c);
     // how many photons to show: the real count spans 1e9 to 1e30 a second; the shower shows a few, for a few
     const phots = P.photonsPerSecond(applePow, fApple);
-    apple.photons.material.uniforms.uN.value += (clamp((Math.log10(phots) - 8) / 22, 0.03, 1) - apple.photons.material.uniforms.uN.value) * k;
+    apple.photons.material.uniforms.uN.value += (clamp((Math.log10(phots) - 8) / 22, 0.03, 1) * 0.55 - apple.photons.material.uniforms.uN.value) * k;
     apple.photons.material.uniforms.uSpeed.value = 0.6 + 1.6 * P.posOf(fApple);
     // the apple itself chases its stage
     const S = apple.stage;
-    const want = { plain: [0xd33b3b, 0x000000, 1, 0.42], warm: [0xd84a3a, 0x3a1206, 1, 0.42], warm2: [0xdd5a36, 0x6a2208, 1, 0.42],
+    const want = { plain: [0xc8302c, 0x000000, 1, 0.32], warm: [0xd04030, 0x3a1206, 1, 0.34], warm2: [0xd85030, 0x6a2208, 1, 0.36],
       cook: [0xa5502e, 0x3a1a08, 1, 0.6], char: [0x15100c, 0x1a0802, 1, 0.95], ion: [0x8fd8ff, 0x1c3a55, 0.28, 0.1], gone: [0xd33b3b, 0x000000, 0, 0.42] }[S];
     const col = new THREE.Color(want[0]), em = new THREE.Color(want[1]);
     apple.mat.color.lerp(col, k); apple.mat.emissive.lerp(em, k);
@@ -865,14 +933,15 @@ ship.viewport(glowEl, {
     const { scene } = vp;
     const ribbon = spectrumRibbon({ length: L, width: 1.0, intensity: 0.9, soft: 1.2 });
     ribbon.rotation.x = -Math.PI / 2; scene.add(ribbon);
+    glow.labels = [];
     for (let d = F0; d <= F1; d += 2) {
       const l = label(P.fmtFreq(Math.pow(10, d), true).replace('.00', '').replace('.0 ', ' '), { size: 20, color: '#8ea3bd' });
-      l.userData.fit(0.3); l.position.set(xOf(Math.pow(10, d)), 0.02, 1.3); scene.add(l);
+      l.position.set(xOf(Math.pow(10, d)), 0.02, 1.3); scene.add(l); glow.labels.push([l, 12]);
     }
     for (const b of P.BANDS) {
       if (b.id === 'visible') continue;
       const l = label(b.short, { size: 20, color: '#dfe9f7', tracking: 5, weight: 500 });
-      l.userData.fit(0.28); l.position.set(xOf(Math.sqrt(b.lo * b.hi)), 0.05, -1.1); scene.add(l);
+      l.position.set(xOf(Math.sqrt(b.lo * b.hi)), 0.05, -1.1); scene.add(l); glow.labels.push([l, 13]);
     }
     // the Planck curve as a luminous surface over the beam: a strip whose top
     // edge follows planckRel, filled down to the ribbon
@@ -914,6 +983,7 @@ ship.viewport(glowEl, {
     const { dt, camera } = vp;
     const k = 1 - Math.exp(-dt * 8);
     const fp = P.wienPeakFreq(T);
+    for (const [l, px] of glow.labels) ship.fitLabel(vp, l, px);
     glow.x += (clamp(xOf(fp), -L / 2 - 0.5, L / 2 + 0.5) - glow.x) * k;
     glow.body.position.x = glow.rim.position.x = glow.halo.position.x = glow.halo2.position.x = glow.pillar.position.x = glow.x;
     const rgb = P.bbRGB(T), lit = rgb[0] + rgb[1] + rgb[2] > 30;

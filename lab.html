@@ -221,6 +221,9 @@
   import * as film from './lab/film.js';
   import * as holo from './lab/holo.js';
   ship.mount({ deck: 'lab' });
+  // six benches of shaders is a lot of GPU for a phone, so each one builds
+  // itself the first time it scrolls into view rather than all at once
+  ship.lazy = true;
 
   const demonstrated = {};
   const benches = [['vpPrism', prism], ['vpCd', cd], ['vpHose', hose], ['vpSky', sky], ['vpFilm', film], ['vpHolo', holo]];

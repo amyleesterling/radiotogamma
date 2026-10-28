@@ -172,16 +172,34 @@ p.note { font-size: 13px; color: rgb(var(--dim)); line-height: 1.6; max-width: 7
 }
 .vp-note.right { left: auto; right: 14px; text-align: right; }
 .vp-note { max-width: 60%; line-height: 1.4; }
-@media (max-width: 640px) { .vp-note.right { display: none; } .vp-note { max-width: 90%; } }
+@media (max-width: 640px) { .vp-note.right { display: none; } .vp-note { max-width: 90%; font-size: 11.5px; letter-spacing: .08em; } .readout .k, .dial .dial-k, .tag, .vhud .label { font-size: 11.5px; } .probe .cap { font-size: 12px; padding: 4px 8px; } .caveat, p.note { font-size: 14px; } }
 body.no-webgl .viewport .fallback { display: grid; }
 .viewport .fallback {
   display: none; position: absolute; inset: 0; place-items: center; z-index: 1; padding: 24px; text-align: center;
   font-size: 13px; color: rgb(var(--dim));
 }
 
+/* the focus button and the full-screen state */
+.vp-focus {
+  position: absolute; right: 10px; top: 10px; z-index: 5; width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgb(var(--line) / .25); background: rgb(4 8 16 / .6); color: rgb(var(--ink) / .85); font-size: 16px; line-height: 1;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.vp-focus .close { display: none; }
+.viewport.is-full .vp-focus .close { display: inline; }
+.viewport.is-full .vp-focus .open { display: none; }
+.viewport.is-full {
+  position: fixed; inset: 0; z-index: 40; height: auto !important; width: auto; border-radius: 0; border: 0;
+  background: rgb(var(--void)); touch-action: none;
+}
+.viewport.is-full .vp-focus { top: calc(10px + env(safe-area-inset-top)); right: calc(14px + env(safe-area-inset-right)); width: 44px; height: 44px; }
+body.vp-lock { overflow: hidden; }
+body.vp-lock .deckbar, body.vp-lock .decknav { visibility: hidden; }
+@media (hover: hover) and (pointer: fine) { .vp-focus { opacity: 0; transition: opacity .3s; } .viewport:hover .vp-focus, .viewport:focus-within .vp-focus, .viewport.is-full .vp-focus { opacity: 1; } }
+
 /* ---- probes: the draggable markers on an instrument ---------------------- */
 .probe {
-  position: absolute; top: 0; bottom: 0; width: 28px; transform: translateX(-50%); cursor: grab; z-index: 4;
+  position: absolute; top: 0; bottom: 0; width: 44px; transform: translateX(-50%); cursor: grab; z-index: 4;
   touch-action: none; -webkit-tap-highlight-color: transparent;
 }
 .probe:active { cursor: grabbing; }

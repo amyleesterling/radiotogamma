@@ -150,7 +150,10 @@ function createShip() {
   const ship = {
     THREE, P, renderer: null, canvas: null, viewports: [], deck: null,
     get motion() { return !(motionQuery && motionQuery.matches); },
-    pixelRatio: Math.min(2, (typeof devicePixelRatio === 'number' ? devicePixelRatio : 1)),
+    // a phone's 3x panel is a full-screen canvas nine times the pixels of a
+    // laptop's; capping it at 1.5 keeps the shaders affordable there
+    pixelRatio: Math.min(typeof innerWidth === 'number' && innerWidth < 760 ? 1.5 : 2, (typeof devicePixelRatio === 'number' ? devicePixelRatio : 1)),
+    lazy: false,            // a deck may set this before building viewports: setup runs on first sight
     time: 0, scrollY: 0, pointer: { x: 0, y: 0 },
     hull: null,
   };
@@ -204,6 +207,17 @@ function createShip() {
       document.body.classList.add('no-webgl');
       ship.renderer = null;
     }
+    // a context lost under memory pressure (a phone with six benches) goes
+    // dark without a word unless the page says so; every viewport shows its
+    // fallback text and a way back
+    canvas.addEventListener('webglcontextlost', e => {
+      e.preventDefault();
+      document.body.classList.add('no-webgl', 'gl-lost');
+      for (const vp of ship.viewports) {
+        const fb = vp.el.querySelector('.fallback');
+        if (fb && !fb.querySelector('.gl-reload')) fb.insertAdjacentHTML('beforeend', '<br><button type="button" class="chip gl-reload" onclick="location.reload()">The window went dark on this device. Reload the deck</button>');
+      }
+    });
 
     // entrances for anything that asks for one
     const seen = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-in'); seen.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
@@ -298,7 +312,20 @@ function createShip() {
     };
     new ResizeObserver(measure).observe(el);
     measure();
-    if (def.setup) def.setup(vp);
+    vp.ready = false;
+    vp.boot = () => { if (vp.ready) return; vp.ready = true; try { if (def.setup) def.setup(vp); } catch (err) { console.error('viewport setup failed', el.id, err); const fb = el.querySelector('.fallback'); if (fb) { fb.style.display = 'grid'; fb.textContent += ' (' + (err && err.message || err) + ')'; } vp.broken = true; } };
+    const lazy = def.lazy !== undefined ? def.lazy : ship.lazy;
+    if (!lazy) vp.boot();
+    // focus mode: on a touch screen a drag inside an instrument fights the
+    // page's own scroll, so an instrument can take the whole screen and lock
+    // the page behind it until it is closed
+    if (def.focus !== false) {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'vp-focus'; btn.setAttribute('aria-label', 'Open this instrument full screen');
+      btn.innerHTML = '<span class="open">\u2922</span><span class="close">\u2715</span>';
+      el.appendChild(btn);
+      btn.addEventListener('click', () => ship.focus(el.classList.contains('is-full') ? null : vp));
+    }
     // pointer helpers: ndc inside this box, and a ray from its camera
     vp.pick = ev => {
       const r = el.getBoundingClientRect();
@@ -312,6 +339,37 @@ function createShip() {
     }
     return vp;
   };
+
+  /* focus mode: one viewport pinned over the page, the page locked */
+  ship.focused = null;
+  ship.focus = function (vp) {
+    if (ship.focused && ship.focused !== vp) ship.focus(null);
+    if (ship.focused && !vp) {
+      const el = ship.focused.el;
+      el.classList.remove('is-full'); document.body.classList.remove('vp-lock');
+      window.scrollTo(0, ship.focused.scrollBack || 0);
+      ship.focused = null; el.querySelector('.vp-focus').focus();
+      return;
+    }
+    if (!vp) return;
+    vp.scrollBack = scrollY;
+    vp.el.classList.add('is-full'); document.body.classList.add('vp-lock');
+    ship.focused = vp; vp.visible = true; vp.needs = true;
+  };
+  addEventListener('keydown', e => { if (e.key === 'Escape' && ship.focused) ship.focus(null); });
+
+  /* the world size that paints as `px` pixels tall at a point, so a label
+     can stay readable whatever the camera distance (sprites do not scale
+     with the box on their own, and sixteen decades on a phone put the camera
+     far away) */
+  const _v = new THREE.Vector3();
+  ship.worldPerPixel = function (vp, point) {
+    const cam = vp.camera;
+    if (cam.isOrthographicCamera) return (cam.top - cam.bottom) / cam.zoom / vp.size.h;
+    const dist = _v.copy(point).sub(cam.position).length();
+    return 2 * dist * Math.tan(cam.fov * Math.PI / 360) / vp.size.h;
+  };
+  ship.fitLabel = function (vp, sprite, px) { sprite.userData.fit(ship.worldPerPixel(vp, sprite.position) * px); };
 
   /* a translucent dimmer drawn under every instrument, so a viewport reads as
      a darker pane of the hull rather than the open sky (the DOM box itself is
@@ -363,7 +421,9 @@ function createShip() {
     // each visible instrument, scissored into its own box
     r.setScissorTest(true);
     for (const vp of ship.viewports) {
-      if (!vp.visible) continue;
+      if (!vp.visible || vp.broken) continue;
+      if (!vp.ready) vp.boot();
+      if (ship.focused && ship.focused !== vp) continue;
       const rect = vp.el.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > Hh || rect.right < 0 || rect.left > W) continue;
       const left = rect.left, bottom = Hh - rect.bottom, w = rect.width, h = rect.height;
