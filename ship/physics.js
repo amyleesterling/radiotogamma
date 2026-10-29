@@ -186,3 +186,84 @@ const RTG = {
 };
 if (typeof window !== 'undefined') window.RTG = RTG;
 export default RTG;
+
+/* ---- gamma rays against the background light -----------------------------
+   Two photons can become an electron and a positron if, head on, their
+   energies multiply to at least (m_e c^2)^2: Breit and Wheeler, 1934. The
+   universe is full of low-energy photons (the cosmic microwave background,
+   and the fainter infrared and optical glow of every star and dust cloud),
+   so a gamma ray crossing it has a mean free path set by that cross section
+   folded over the background spectrum and over angles. Gould and Schreder
+   (1967) did this for the CMB; the minimum mean free path near 2 PeV is
+   about 7 to 10 kpc, and the integral below reproduces it.
+
+   The backgrounds are modelled as blackbodies, the CMB exactly (2.725 K,
+   dilution 1) and the starlight and dust glow of the local universe as two
+   dilute blackbodies set to the published intensities: about 24 nW m^-2
+   sr^-1 near 1 um, 25 nW m^-2 sr^-1 near 100 um, and about 4 nW m^-2 sr^-1
+   in the 10 um valley between them (Franceschini et al. 2008; Hauser and
+   Dwek 2001). Those two are a sketch of the real spectrum
+   and give mean free paths of the right order, not a measurement. */
+export const M_E_EV = 510998.95;                      // electron rest energy, eV (CODATA 2018)
+export const SIGMA_T = 6.6524587e-29;                 // Thomson cross section, m^2
+export const PARSEC = 3.0856776e16;                   // m
+
+/* the Breit-Wheeler cross section for two photons whose centre-of-mass
+   energy squared is s (eV^2); zero below threshold */
+export function sigmaGammaGamma(s) {
+  const m2 = M_E_EV * M_E_EV;
+  if (s <= 4 * m2) return 0;
+  const b = Math.sqrt(1 - 4 * m2 / s);
+  return (3 / 16) * SIGMA_T * (1 - b * b) * ((3 - Math.pow(b, 4)) * Math.log((1 + b) / (1 - b)) - 2 * b * (2 - b * b));
+}
+/* photons per cubic metre per eV of a blackbody at T, times a dilution w */
+export function planckNumberDensity(epsEV, T, w = 1) {
+  const x = epsEV * EV / (K_B * T);
+  if (x > 200) return 0;
+  const epsJ = epsEV * EV;
+  const n = 8 * Math.PI * epsJ * epsJ / (H * H * H * C * C * C) / Math.expm1(x);   // per m^3 per J
+  return w * n * EV;                                                                 // per m^3 per eV
+}
+/* a dilute blackbody from a sky intensity I (W m^-2 sr^-1): dilution w = u / a T^4 */
+export function dilutionFor(I, T) {
+  const u = 4 * Math.PI * I / C;
+  const a = 8 * Math.pow(Math.PI, 5) * Math.pow(K_B, 4) / (15 * Math.pow(H * C, 3));
+  return u / (a * Math.pow(T, 4));
+}
+export const BACKGROUNDS = [
+  { id: 'cmb',   name: 'cosmic microwave background', T: 2.725, w: 1,                          rgb: [74, 200, 224] },
+  { id: 'dust',  name: 'infrared glow of dust',        T: 30,    w: dilutionFor(25e-9, 30),     rgb: [214, 96, 64] },
+  { id: 'warm',  name: 'mid-infrared glow of warm dust', T: 300,  w: dilutionFor(4e-9, 300),     rgb: [230, 140, 90] },
+  { id: 'stars', name: 'starlight',                    T: 3000,  w: dilutionFor(24e-9, 3000),   rgb: [255, 236, 200] },
+];
+/* the inverse mean free path, per metre, of a gamma ray of energy E (eV)
+   against one background: integrate over the background photon energy and
+   over the angle between the two photons, isotropic background */
+export function invMeanFreePath(E, bg, nE = 72, nMu = 36) {
+  const m2 = M_E_EV * M_E_EV;
+  const kT = K_B * bg.T / EV;
+  // background photons from the threshold (head on) up to where the Planck tail is gone
+  const epsMin = Math.max(m2 / E, kT * 1e-3), epsMax = kT * 40;
+  if (epsMin >= epsMax) return 0;
+  const lnLo = Math.log(epsMin), lnHi = Math.log(epsMax), dln = (lnHi - lnLo) / nE;
+  let total = 0;
+  for (let i = 0; i < nE; i++) {
+    const eps = Math.exp(lnLo + (i + 0.5) * dln);
+    const n = planckNumberDensity(eps, bg.T, bg.w);
+    if (!n) continue;
+    // angle: s = 2 E eps (1 - mu), weight (1 - mu) / 2 for the relative velocity
+    let ang = 0;
+    const dmu = 2 / nMu;
+    for (let j = 0; j < nMu; j++) {
+      const mu = -1 + (j + 0.5) * dmu;
+      const s = 2 * E * eps * (1 - mu);
+      ang += sigmaGammaGamma(s) * (1 - mu) / 2 * dmu;
+    }
+    total += n * eps * dln * ang;        // n(eps) d eps with d eps = eps d ln eps
+  }
+  return total;
+}
+export function meanFreePath(E, backgrounds = BACKGROUNDS) {
+  let inv = 0; for (const bg of backgrounds) inv += invMeanFreePath(E, bg);
+  return inv > 0 ? 1 / inv : Infinity;
+}

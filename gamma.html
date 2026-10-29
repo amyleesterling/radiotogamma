@@ -176,8 +176,8 @@
       <div class="stage-head">
         <div class="tag">Stage 02 · break it</div>
         <h2>Dial a photon <em>past the roof.</em></h2>
-        <p class="lede">The ladder stops at 3 PeV because the data do. Physics does not. Push one photon's energy up the dial,
-          past every rung ever measured, and the ship will say, honestly, what happens to it on the way.</p>
+        <p class="lede">The ladder stops at 3 PeV because the data do. Physics does not. Drag the dial to push one photon's energy up,
+          past every rung ever measured: the panel under it says what that photon can do, and what the universe does to it, at every step.</p>
       </div>
 
       <div class="viewport" id="vpBreak">
@@ -191,17 +191,52 @@
                aria-label="Photon energy, log scale, 100 keV to the Planck energy" aria-valuetext="1.00 MeV">
       </div>
 
-      <div class="readouts">
-        <div class="readout"><p class="k">Energy</p><p class="v" id="bE"></p><p class="d" id="bEm"></p></div>
-        <div class="readout"><p class="k">Frequency</p><p class="v" id="bF"></p><p class="d">oscillations per second</p></div>
-        <div class="readout"><p class="k">Wavelength</p><p class="v" id="bL"></p><p class="d" id="bLm"></p></div>
-      </div>
-
       <div class="holopanel glass verdict" id="verdict" aria-live="polite">
         <p class="state" id="vState"></p>
         <p id="vText"></p>
         <p class="src" id="vSrc"></p>
       </div>
+
+      <div class="readouts">
+        <div class="readout"><p class="k">Energy</p><p class="v" id="bE"></p><p class="d" id="bEm"></p></div>
+        <div class="readout"><p class="k">Frequency</p><p class="v" id="bF"></p><p class="d">oscillations per second</p></div>
+        <div class="readout"><p class="k">Wavelength</p><p class="v" id="bL"></p><p class="d" id="bLm"></p></div>
+      </div>
+    </section>
+
+    <section class="stage" id="fog">
+      <div class="stage-head">
+        <div class="tag">Stage 03 · the fog</div>
+        <h2>Why the high sky <em>goes dark</em></h2>
+        <p class="lede">Space is not empty of light. Every cubic centimetre holds about 411 photons of the cosmic microwave background, plus a fainter mist of starlight and the infrared glow of dust. Two photons can collide and become an electron and a positron, if their energies multiplied together reach the square of an electron's rest energy. So the higher a gamma ray's energy, the feebler the photon that can kill it: a 100 GeV gamma ray dies on visible starlight, a 1 TeV one on the infrared, a PeV one on the microwave background itself. Send photons from a source and watch how many arrive.</p>
+      </div>
+
+      <div class="viewport" id="vpFog" style="height: clamp(320px, 50vh, 460px)">
+        <div class="vhud">
+          <div class="label" id="fogSrcLabel" style="left: 9%; top: 14px">source</div>
+          <div class="label" style="right: 5%; top: 14px; transform: none">here</div>
+        </div>
+        <div class="vp-note" id="fogNote">A sketch: the mist is drawn thick, the trip is drawn short; the odds of each collision are the real ones.</div>
+        <div class="fallback">Gamma rays cross a mist of background photons from a distant source to Earth; above threshold, some collide and become electron-positron pairs. The readouts below give the real mean free path and survival.</div>
+      </div>
+
+      <div class="dial">
+        <div class="dial-k"><span>Gamma ray energy</span><b id="fogELine"></b></div>
+        <input class="beam" type="range" id="fogE" min="10" max="17" step="0.01" value="15" aria-label="Gamma ray energy, log scale, 10 GeV to 100 PeV">
+      </div>
+      <div class="dial">
+        <div class="dial-k"><span>Distance to the source</span><b id="fogDLine"></b></div>
+        <input class="beam" type="range" id="fogD" min="0" max="7" step="0.01" value="3.3" aria-label="Distance to the source, log scale, one kiloparsec to ten gigaparsecs">
+      </div>
+      <div class="chips" id="fogPresets" aria-label="Sources"></div>
+
+      <div class="readouts">
+        <div class="readout"><p class="k">Mean free path</p><p class="v" id="fogMfp"></p><p class="d" id="fogMfpM"></p></div>
+        <div class="readout"><p class="k">Arrive</p><p class="v" id="fogSurv"></p><p class="d" id="fogSurvM"></p></div>
+        <div class="readout"><p class="k">The killer</p><p class="v" id="fogKill"></p><p class="d" id="fogKillM"></p></div>
+      </div>
+      <div class="holopanel glass verdict" id="fogVerdict" aria-live="polite"><p class="state" id="fogState"></p><p id="fogText"></p></div>
+      <p class="note">What "annihilate" means here: the gamma ray meets a background photon and the two vanish, leaving an electron and a positron, light turned into matter. The cross section is Breit and Wheeler's (1934), integrated over the background's Planck spectrum and over angles. The microwave background is exact at 2.725 K; the starlight and dust glow are two dilute blackbodies set to the published sky brightness, a sketch of the real spectrum that gives mean free paths of the right order (Franceschini et al. 2008). Energies are taken as seen here; the stretching of light over billions of years is left out. Gould and Schréder (1967) found the shortest mean free path, about 7 to 10 kpc, near 2 PeV; the kernel reproduces 7 kpc.</p>
     </section>
 
     <section class="stage" id="why">
@@ -367,13 +402,33 @@ lift.addEventListener('keydown', ev => {
 });
 
 const $ = id => document.getElementById(id);
+/* ---- what one photon's energy is like, in things you have held ----------
+   A readout in electron rest energies is exact and means nothing to a
+   visitor, so each energy is also said in a thing from the world. Every
+   anchor is derived: a green photon at 532 nm is 2.33 eV; a dental x-ray
+   photon is about 60 keV; a proton's mass-energy is 938 MeV; a 1 mg grain of
+   sand gains E = m g h, so 1 TeV lifts it 1.6 cm; a 2.7 g ping-pong ball at
+   2.5 PeV moves at 0.54 m/s; a 145 g baseball at 3.2e20 eV at 26.6 m/s;
+   petrol holds 34.2 MJ a litre, so the Planck energy is 57 litres. */
+const GREEN = 2.3305, DENTAL = 6e4, PROTON = 9.38272e8;
+function relatable(e) {
+  const J = e * P.EV;
+  const n = v => v >= 1e6 ? P.sci(v) : human(v);
+  if (e < 1e3) return n(e / GREEN) + '× the energy of one green photon; a chemical bond costs about 3 to 4 eV';
+  if (e < 1e7) return n(e / GREEN) + ' green photons in one' + (e >= 1.2e4 ? ', ' + n(e / DENTAL) + '× a dental x-ray photon' : '');
+  if (e < 1e12) return n(e / DENTAL) + '× a dental x-ray photon' + (e >= 1.88e9 ? '; enough mass-energy to make a proton and an antiproton from nothing' : e >= PROTON ? '; the mass-energy of a whole proton' : '');
+  if (e < 1e16) { const h = J / (1e-6 * 9.80665); return 'the energy a 1 mg grain of sand gains falling ' + (h < 1 ? human(h * 100) + ' cm' : human(h) + ' m'); }
+  if (e < 1e19) return 'a 2.7 g ping-pong ball moving at ' + human(Math.sqrt(2 * J / 0.0027)) + ' m/s';
+  if (e < 1e23) return 'a 145 g baseball thrown at ' + human(Math.sqrt(2 * J / 0.145)) + ' m/s' + (e > 2e20 && e < 5e20 ? ', a fastball' : '');
+  const L = J / 34.2e6; return 'the chemical energy in ' + (L < 1 ? human(L * 1000) + ' mL' : human(L) + ' litres') + ' of petrol';
+}
+
 function readout() {
   const f = fOf(truth), lam = lamOf(truth);
   const eText = fmtE(truth), eP = fmtE(truth, true);
   $('rE').innerHTML = eText;
   const er = truth / ME;
-  $('rEm').textContent = spell(eP) + 'one photon, ' + (er < 1.5 && er > 0.67 ? 'about an electron’s rest energy'
-    : er >= 1 ? human(er) + '× an electron’s rest energy' : '1/' + human(1 / er) + ' of an electron’s rest energy');
+  $('rEm').innerHTML = spell(eP) + 'one photon: ' + relatable(truth) + (er < 1.5 && er > 0.67 ? '. This is also exactly an electron’s rest energy' : '');
   $('rF').innerHTML = fmtF(f);
   $('rFm').textContent = spell(fmtF(f, true)) + 'oscillations per second';
   $('rL').innerHTML = fmtL(lam);
@@ -668,7 +723,7 @@ function breakReadout() {
   $('bkE').innerHTML = fmtEB(e); dial.setAttribute('aria-valuetext', eP + ', ' + fmtF(f, true));
   $('bE').innerHTML = fmtEB(e);
   const J = e * P.EV;
-  $('bEm').innerHTML = (e < 1e18 ? spell(eP) : '') + 'one photon, ' + P.sci(J) + ' <span class="u">J</span>';
+  $('bEm').innerHTML = (e < 1e18 ? spell(eP) : '') + 'one photon, ' + P.sci(J) + ' <span class="u">J</span>: ' + relatable(e);
   $('bF').innerHTML = fmtF(f);
   $('bL').innerHTML = fmtL(lam);
   const lp = lam / 1.616255e-35;   // the Planck length, CODATA 2018
@@ -736,6 +791,147 @@ ship.viewport(document.getElementById('vpBreak'), {
     brk.photon.position.y = brk.g.position.y; brk.photon2.position.y = brk.g.position.y;
   },
 });
+
+
+/* ---- stage 03: the fog ------------------------------------------------------ */
+const fog = { E: 1e15, d: 2000 * P.PARSEC, pool: [], pairs: [], sent: 0, arrived: 0, died: 0, lambda: 1 };
+const FOG_W = 12;                                             // scene units from source to Earth
+const fogE = $('fogE'), fogD = $('fogD');
+const fmtDist = m => { const pc = m / P.PARSEC; return pc < 1e3 ? human(pc) + ' pc' : pc < 1e6 ? human(pc / 1e3) + ' kpc' : pc < 1e9 ? human(pc / 1e6) + ' Mpc' : human(pc / 1e9) + ' Gpc'; };
+const fmtLy = m => { const ly = m / 9.4607e15; return ly < 1e6 ? human(ly) + ' light years' : ly < 1e9 ? human(ly / 1e6) + ' million light years' : human(ly / 1e9) + ' billion light years'; };
+const FOG_SRC = [
+  ['Crab Nebula', 2000, 'a pulsar wind in our galaxy, 2 kpc'], ['Galactic centre', 8200, '8.2 kpc'], ['Andromeda', 780e3, 'the nearest big galaxy, 0.78 Mpc'],
+  ['M87', 16.4e6, 'the Virgo cluster, 16 Mpc'], ['Markarian 421', 130e6, 'a blazar at z = 0.031, about 130 Mpc'], ['3C 279', 1.6e9, 'a blazar at z = 0.54, light-travel distance about 1.6 Gpc'],
+];
+const fogPresets = $('fogPresets');
+for (const [n, pc, why] of FOG_SRC) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = n; b.title = why;
+  b.addEventListener('click', () => { fog.d = pc * P.PARSEC; fogD.value = P.log10(pc / 1e3); fog.src = n; fogReadout(); });
+  fogPresets.appendChild(b);
+}
+function fogReadout() {
+  const E = fog.E, d = fog.d;
+  const parts = P.BACKGROUNDS.map(bg => [bg, P.invMeanFreePath(E, bg)]);
+  const inv = parts.reduce((a, [, v]) => a + v, 0);
+  const lam = inv > 0 ? 1 / inv : Infinity; fog.lambda = lam;
+  const surv = Math.exp(-d / lam);
+  $('fogELine').innerHTML = fmtEB(E);
+  $('fogDLine').innerHTML = fmtDist(d) + (fog.src ? ' · ' + fog.src : '') + ' · ' + fmtLy(d);
+  $('fogMfp').innerHTML = isFinite(lam) ? fmtDist(lam) : '∞';
+  $('fogMfpM').textContent = isFinite(lam) ? 'the average distance before this photon meets a partner it can pair with: ' + fmtLy(lam) : 'nothing in the background light can pair with a photon this low; it flies forever';
+  $('fogSurv').innerHTML = surv > 0.995 ? 'all' : surv >= 0.01 ? Math.round(surv * 100) + ' <span class="u">of 100</span>' : surv > 1e-9 ? '1 <span class="u">in ' + human(1 / surv) + '</span>' : 'none';
+  $('fogSurvM').textContent = 'survival exp(−d / λ) over ' + fmtDist(d) + (surv < 1e-9 ? ': the sky at this energy is dark beyond ' + fmtDist(lam * 20) : '');
+  const [kbg, kinv] = parts.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const eps = P.M_E_EV * P.M_E_EV / E;                       // the feeblest partner that can do it, head on
+  const lamEps = P.C / (eps / P.EV_PER_HZ);
+  $('fogKill').innerHTML = kinv > 0 ? kbg.name.replace('cosmic microwave background', 'the microwave background') : 'nothing';
+  $('fogKillM').innerHTML = 'head on, any photon above ' + P.fmtEnergy(eps / P.EV_PER_HZ) + ' (' + P.fmtWave(eps / P.EV_PER_HZ) + ', ' + P.bandOf(eps / P.EV_PER_HZ).name + ') can turn this gamma ray into matter';
+  const S = $('fogState'), T = $('fogText');
+  if (!isFinite(lam) || lam > 1e4 * 3.0857e22) { S.textContent = 'The universe is transparent here'; T.textContent = 'Below about 100 GeV nothing in the background light is energetic enough to pair with this photon except the rarest tail of starlight. Gamma rays at this energy cross the observable universe untouched, which is why Fermi sees blazars at the edge of it.'; }
+  else if (kbg.id === 'stars' || kbg.id === 'warm') { S.textContent = 'Starlight is the fog'; T.textContent = 'This gamma ray can pair with visible and near-infrared starlight. Over a few hundred megaparsecs the odds add up: the farther the blazar, the more its TeV spectrum is cut off. Measuring that cut-off is how the total light of all the stars that ever shone has been weighed.'; }
+  else if (kbg.id === 'dust') { S.textContent = 'The dust glow is the fog'; T.textContent = 'At tens of TeV the partner is the far-infrared glow of warm dust across the universe. The mean free path falls to tens of megaparsecs: only the local universe is left in view.'; }
+  else { S.textContent = 'The microwave background itself is the wall'; T.textContent = 'Past 412 TeV the ordinary photons of the cosmic microwave background, 411 in every cubic centimetre, can each turn this gamma ray into an electron and a positron. Near 2 PeV the mean free path is about seven kiloparsecs, less than the distance to the galactic centre. The PeV sky is a map of our own neighbourhood, and nothing beyond the Milky Way can ever be seen at this energy.'; }
+  if (fog.vp) fog.vp.invalidate();
+}
+fogE.addEventListener('input', () => { fog.E = Math.pow(10, +fogE.value); fogReadout(); });
+fogD.addEventListener('input', () => { fog.d = Math.pow(10, +fogD.value) * 1e3 * P.PARSEC; fog.src = null; fogReadout(); });
+
+ship.viewport($('vpFog'), {
+  fov: 30,
+  setup(vp) {
+    fog.vp = vp;
+    const { scene, camera } = vp;
+    camera.position.set(0, 2.2, 13); camera.lookAt(0, 0, 0);
+    // the mist: motes of each background, coloured by what they are, drawn thick on purpose
+    const N = 900, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), sz = new Float32Array(N);
+    const share = [0.62, 0.2, 0.08, 0.1];                      // cmb, dust, warm, stars
+    for (let i = 0; i < N; i++) {
+      const r = Math.random(); let k = 0, acc = 0; for (let j = 0; j < share.length; j++) { acc += share[j]; if (r < acc) { k = j; break; } }
+      const bg = P.BACKGROUNDS[k], c = bg.rgb;
+      pos[i * 3] = (Math.random() - 0.5) * (FOG_W + 2); pos[i * 3 + 1] = (Math.random() - 0.5) * 4.5; pos[i * 3 + 2] = (Math.random() - 0.5) * 4;
+      col[i * 3] = c[0] / 255; col[i * 3 + 1] = c[1] / 255; col[i * 3 + 2] = c[2] / 255; sz[i] = 0.6 + Math.random() * (k === 3 ? 1.6 : 0.8);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('size', new THREE.BufferAttribute(sz, 1));
+    fog.mist = new THREE.Points(g, new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true,
+      uniforms: { uT: { value: 0 }, uPR: { value: ship.pixelRatio } },
+      vertexShader: `attribute float size; varying vec3 vC; varying float vA; uniform float uT, uPR;
+        void main(){ vec3 p = position; p.y += sin(uT * 0.3 + position.x * 1.7) * 0.08; p.x += sin(uT * 0.2 + position.z * 2.0) * 0.08;
+        vA = 0.6 + 0.3 * sin(uT * 1.3 + position.x * 5.0); vC = color;
+        vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = size * uPR * 120.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `varying vec3 vC; varying float vA; void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; float a = smoothstep(1.0, 0.0, r) * vA; gl_FragColor = vec4(vC * a, a); }`,
+    }));
+    scene.add(fog.mist);
+    // the source and the Earth
+    fog.srcGlow = glowSprite(0xffd9a0, 2.4, 0.9); fog.srcGlow.position.set(-FOG_W / 2 - 0.6, 0, 0); scene.add(fog.srcGlow);
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(0.22, 24, 16), new THREE.MeshBasicMaterial({ color: 0x4f9cff }));
+    earth.position.set(FOG_W / 2 + 0.4, 0, 0); scene.add(earth);
+    const eg = glowSprite(0x7ec8ff, 0.9, 0.6); eg.position.copy(earth.position); scene.add(eg);
+    // a pool of gamma rays, and a pool of pairs they can turn into
+    for (let i = 0; i < 28; i++) {
+      const sp = glowSprite(0xe278b4, 0.42, 1); sp.visible = false; sp.userData = { live: false, x: 0, y: 0, z: 0, v: 0 }; scene.add(sp);
+      const trail = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.05), new THREE.MeshBasicMaterial({ color: 0xe278b4, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      trail.visible = false; scene.add(trail); sp.userData.trail = trail;
+      fog.pool.push(sp);
+    }
+    for (let i = 0; i < 14; i++) {
+      const mk = hex => { const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(30 * 3), 3)); const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 0.9 })); l.visible = false; scene.add(l); return l; };
+      const flash = glowSprite(0xffffff, 1.2, 0); scene.add(flash);
+      fog.pairs.push({ e: mk(0x7ee0ff), p: mk(0xff7bd0), flash, t: 1e9, x: 0, y: 0, z: 0 });
+    }
+    fog.lbl = label('', { size: 18, color: '#ffd9a0' }); fog.lbl.position.set(-FOG_W / 2 - 0.6, 1.0, 0); scene.add(fog.lbl);
+  },
+  frame(vp) {
+    const { t, dt } = vp;
+    if (!ship.motion && !vp.needs) return;
+    fog.mist.material.uniforms.uT.value = t;
+    fog.srcGlow.material.opacity = 0.75 + 0.2 * Math.sin(t * 2.1);
+    // launch: a steady stream, four a second
+    fog.launchAcc = (fog.launchAcc || 0) + dt * 4;
+    while (fog.launchAcc >= 1) {
+      fog.launchAcc -= 1;
+      const sp = fog.pool.find(s => !s.userData.live);
+      if (sp) { Object.assign(sp.userData, { live: true, x: -FOG_W / 2, y: (Math.random() - 0.5) * 2.2, z: (Math.random() - 0.5) * 1.6, v: 4.5 }); sp.visible = true; sp.userData.trail.visible = true; fog.sent++; }
+    }
+    // the trip is FOG_W units for a real distance d, so the odds of dying in a
+    // step of length ds are 1 - exp(-ds * d / FOG_W / lambda): the real odds
+    const perUnit = isFinite(fog.lambda) ? (fog.d / FOG_W) / fog.lambda : 0;
+    for (const sp of fog.pool) {
+      const u = sp.userData; if (!u.live) continue;
+      const ds = u.v * dt; u.x += ds;
+      sp.position.set(u.x, u.y, u.z);
+      u.trail.position.set(u.x - 0.6, u.y, u.z);
+      if (u.x >= FOG_W / 2 + 0.2) { u.live = false; sp.visible = false; u.trail.visible = false; fog.arrived++; continue; }
+      if (Math.random() < 1 - Math.exp(-ds * perUnit)) {
+        u.live = false; sp.visible = false; u.trail.visible = false; fog.died++;
+        const pr = fog.pairs.reduce((a, b) => (b.t > a.t ? b : a));
+        pr.t = 0; pr.x = u.x; pr.y = u.y; pr.z = u.z; pr.e.visible = pr.p.visible = true;
+        pr.flash.position.set(u.x, u.y, u.z);
+        // a pair curls apart in the galaxy's field: two spirals, opposite charges
+        for (const [line, sgn] of [[pr.e, 1], [pr.p, -1]]) {
+          const a = line.geometry.attributes.position;
+          for (let i = 0; i < 30; i++) { const s = i / 29, ang = s * 7 * sgn, rad = 0.08 + s * 0.5; a.setXYZ(i, u.x + s * 1.6 + Math.cos(ang) * rad * 0.3, u.y + Math.sin(ang) * rad * sgn, u.z + Math.cos(ang) * rad * 0.5); }
+          a.needsUpdate = true;
+        }
+      }
+    }
+    for (const pr of fog.pairs) {
+      if (pr.t > 3) { pr.e.visible = pr.p.visible = false; pr.flash.material.opacity = 0; continue; }
+      pr.t += dt;
+      const fade = Math.max(0, 1 - pr.t / 2.2);
+      pr.e.material.opacity = pr.p.material.opacity = fade;
+      pr.flash.material.opacity = Math.max(0, 1 - pr.t * 4); pr.flash.scale.setScalar(1.2 + pr.t * 3);
+    }
+    // the tally on screen
+    if (!fog.tallyAt || t - fog.tallyAt > 0.5) {
+      fog.tallyAt = t;
+      const done = fog.arrived + fog.died;
+      $('fogNote').textContent = (done ? 'Sent ' + done + ', arrived ' + fog.arrived + ', became matter ' + fog.died + '. ' : '') + 'A sketch: the mist is drawn thick and the trip short; the odds of each collision are the real ones.';
+    }
+  },
+});
+fogReadout();
 
 /* ---- first readouts --------------------------------------------------------- */
 setTruth(LM[1].e, LM[1]);
