@@ -116,7 +116,7 @@
         <h1>The top floor is <em>35 octaves</em> tall.</h1>
         <p class="lede"><b>Gamma ray is not a band with two edges. It is the open-ended top of the spectrum:</b>
           everything above the x-rays, however high. From its doorstep near 100 keV to the most energetic photon ever caught,
-          the gamma "band" spans more than ten orders of magnitude, wider than any other named band and about as wide as
+          the observed gamma range spans more than ten orders of magnitude, wider than any other named band and about as wide as
           radio, microwave and infrared put together. The ship has laid it out as a ladder. Climb.</p>
       </div>
 
@@ -182,7 +182,7 @@
 
       <div class="viewport" id="vpBreak">
         <div class="vp-note">100 keV to the Planck energy · 23 decades · lit means measured</div>
-        <div class="fallback">A horizontal ruler from 100 keV to the Planck energy; the first eleven decades are lit, the remaining twelve are dark, and a glowing photon slides along it as you move the dial below.</div>
+        <div class="fallback">A horizontal ruler from 100 keV to the Planck energy; the region through the 3.7 PeV frontier is lit; higher energies remain dark, and a glowing photon slides along it as you move the dial below.</div>
       </div>
 
       <div class="dial">
@@ -746,9 +746,9 @@ ship.viewport(document.getElementById('vpBreak'), {
     const { scene } = vp;
     const g = new THREE.Group(); scene.add(g); brk.g = g;
     const X = e => (P.log10(e) - BLOG0) / (BLOG1 - BLOG0);
-    const lit = X(Math.pow(10, LOG1)), rec = X(RECORD);
+    const lit = X(RECORD), rec = lit; // measured photons stop below the ladder roof
     const b = makeBatch();
-    b.add(lit / 2, 0, 0, lit, 0.09, ACC, 1.3);                                   // the measured ruler
+    b.add(lit / 2, 0, 0, lit, 0.09, ACC, 1.3);                                   // measured range ends at the frontier
     b.add((1 + lit) / 2, 0, 0, 1 - lit, 0.05, new THREE.Color(0.35, 0.3, 0.45), 0.6); // the extrapolation
     b.add(rec, 0, 0.01, 0.006, 0.26, WARM, 1.2);                                  // the record, warm
     for (const ev of EVENTS) {
