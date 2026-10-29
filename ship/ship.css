@@ -77,7 +77,10 @@ body.no-webgl .hull { display: none; }
 .deckbar .brand {
   display: flex; align-items: center; gap: 12px; text-decoration: none; color: rgb(var(--ink)); min-width: 0;
 }
-.deckbar .brand img { width: 26px; height: 26px; flex: none; filter: drop-shadow(0 0 8px rgb(var(--deck) / .5)); }
+.deckbar .brand img { position: relative; z-index: 1; width: 26px; height: 26px; flex: none; }
+/* the glow sits behind the icon, not over it */
+.deckbar .brand .ico { position: relative; flex: none; width: 26px; height: 26px; }
+.deckbar .brand .ico::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; background: radial-gradient(circle, rgb(var(--deck) / .35), transparent 70%); z-index: 0; }
 .deckbar .brand .name { font-family: var(--mono); font-size: 13px; letter-spacing: .22em; text-transform: uppercase; white-space: nowrap; }
 .deckbar .brand .sub { display: block; font-size: 9.5px; letter-spacing: .26em; color: rgb(var(--dim)); margin-top: 2px; white-space: nowrap; }
 .decknav {
@@ -172,7 +175,11 @@ p.note { font-size: 13px; color: rgb(var(--dim)); line-height: 1.6; max-width: 7
 }
 .vp-note.right { left: auto; right: 14px; text-align: right; }
 .vp-note { max-width: 60%; line-height: 1.4; }
-@media (max-width: 640px) { .vp-note.right { display: none; } .vp-note { max-width: 90%; font-size: 11.5px; letter-spacing: .08em; } .readout .k, .dial .dial-k, .tag, .vhud .label { font-size: 11.5px; } .probe .cap { font-size: 12px; padding: 4px 8px; } .caveat, p.note { font-size: 14px; } }
+@media (max-width: 640px) {
+  .chips.rail { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; margin-left: calc(-1 * var(--gutter)); margin-right: calc(-1 * var(--gutter)); padding-left: var(--gutter); padding-right: var(--gutter); scrollbar-width: none; }
+  .chips.rail::-webkit-scrollbar { display: none; }
+  .chips.rail .chip { flex: none; }
+  .vp-note.right { display: none; } .vp-note { max-width: 90%; font-size: 11.5px; letter-spacing: .08em; } .readout .k, .dial .dial-k, .tag, .vhud .label { font-size: 11.5px; } .probe .cap { font-size: 12px; padding: 4px 8px; } .caveat, p.note { font-size: 14px; } }
 body.no-webgl .viewport .fallback { display: grid; }
 .viewport .fallback {
   display: none; position: absolute; inset: 0; place-items: center; z-index: 1; padding: 24px; text-align: center;
@@ -190,9 +197,13 @@ body.no-webgl .viewport .fallback { display: grid; }
 .viewport.is-full .vp-focus .open { display: none; }
 .viewport.is-full {
   position: fixed; inset: 0; z-index: 40; height: auto !important; width: auto; border-radius: 0; border: 0;
-  background: rgb(var(--void)); touch-action: none;
+  background: transparent;            /* the render is behind the DOM; an opaque box here would hide it */
+  touch-action: none; visibility: visible;
 }
 .viewport.is-full .vp-focus { top: calc(10px + env(safe-area-inset-top)); right: calc(14px + env(safe-area-inset-right)); width: 44px; height: 44px; }
+/* everything else on the deck steps out of sight while one instrument has
+   the screen, so the page behind cannot show through the transparent box */
+body.vp-lock .deck { visibility: hidden; }
 body.vp-lock { overflow: hidden; }
 body.vp-lock .deckbar, body.vp-lock .decknav { visibility: hidden; }
 @media (hover: hover) and (pointer: fine) { .vp-focus { opacity: 0; transition: opacity .3s; } .viewport:hover .vp-focus, .viewport:focus-within .vp-focus, .viewport.is-full .vp-focus { opacity: 1; } }

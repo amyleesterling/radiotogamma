@@ -169,7 +169,7 @@ function createShip() {
     bar.className = 'deckbar';
     bar.innerHTML =
       `<a class="brand" href="index.html" aria-label="Radio to Gamma, bridge">
-         <img src="favicon.png" alt="" width="26" height="26">
+         <span class="ico"><img src="favicon.png" alt="" width="26" height="26"></span>
          <span><span class="name">${title || 'Radio to Gamma'}</span><span class="sub">${sub || ('Survey vessel · deck ' + d.k + ' · ' + d.name)}</span></span>
        </a>
        <button class="share" type="button" id="shareBtn" data-holo-tap>Share</button>`;
@@ -324,7 +324,10 @@ function createShip() {
       btn.type = 'button'; btn.className = 'vp-focus'; btn.setAttribute('aria-label', 'Open this instrument full screen');
       btn.innerHTML = '<span class="open">\u2922</span><span class="close">\u2715</span>';
       el.appendChild(btn);
-      btn.addEventListener('click', () => ship.focus(el.classList.contains('is-full') ? null : vp));
+      // a bench that captures the pointer on pointerdown would swallow the
+      // click on this button, so the press never reaches the bench
+      btn.addEventListener('pointerdown', e => e.stopPropagation());
+      btn.addEventListener('click', e => { e.stopPropagation(); ship.focus(el.classList.contains('is-full') ? null : vp); });
     }
     // pointer helpers: ndc inside this box, and a ray from its camera
     vp.pick = ev => {
@@ -343,15 +346,14 @@ function createShip() {
   /* focus mode: one viewport pinned over the page, the page locked */
   ship.focused = null;
   ship.focus = function (vp) {
-    if (ship.focused && ship.focused !== vp) ship.focus(null);
-    if (ship.focused && !vp) {
-      const el = ship.focused.el;
-      el.classList.remove('is-full'); document.body.classList.remove('vp-lock');
-      window.scrollTo(0, ship.focused.scrollBack || 0);
-      ship.focused = null; el.querySelector('.vp-focus').focus();
-      return;
+    const open = ship.focused;
+    if (open) {
+      open.el.classList.remove('is-full'); document.body.classList.remove('vp-lock');
+      ship.focused = null;
+      window.scrollTo(0, open.scrollBack || 0);
+      const b = open.el.querySelector('.vp-focus'); if (b && !vp) b.focus();
     }
-    if (!vp) return;
+    if (!vp || vp === open) return;
     vp.scrollBack = scrollY;
     vp.el.classList.add('is-full'); document.body.classList.add('vp-lock');
     ship.focused = vp; vp.visible = true; vp.needs = true;
@@ -369,7 +371,14 @@ function createShip() {
     const dist = _v.copy(point).sub(cam.position).length();
     return 2 * dist * Math.tan(cam.fov * Math.PI / 360) / vp.size.h;
   };
-  ship.fitLabel = function (vp, sprite, px) { sprite.userData.fit(ship.worldPerPixel(vp, sprite.position) * px); };
+  ship.fitLabel = function (vp, sprite, px) { sprite.userData.px = px; sprite.userData.fit(ship.worldPerPixel(vp, sprite.position) * px); };
+  /* every label on every deck is refitted each frame to its pixel height
+     (userData.px, default 12, half again on a phone), so no instrument can
+     ship a label that is legible on a laptop and a speck on a phone */
+  ship.fitLabels = function (vp) {
+    const bump = vp.size.w < 640 ? 1.5 : 1;
+    vp.scene.traverse(o => { if (o.isSprite && o.userData.fit) o.userData.fit(ship.worldPerPixel(vp, o.position) * (o.userData.px || 12) * bump); });
+  };
 
   /* a translucent dimmer drawn under every instrument, so a viewport reads as
      a darker pane of the hull rather than the open sky (the DOM box itself is
@@ -430,6 +439,7 @@ function createShip() {
       r.setViewport(left, bottom, w, h); r.setScissor(left, bottom, w, h);
       if (vp.def.dim !== false) r.render(dimScene, dimCam);
       if (vp.def.frame) vp.def.frame(Object.assign(vp, { t, dt }));
+      ship.fitLabels(vp);
       r.render(vp.scene, vp.camera);
       vp.needs = false;
     }

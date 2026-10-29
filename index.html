@@ -30,8 +30,18 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
 .readout.b { --p: 255 196 90; }
 .readout.r { --p: 178 216 248; }
 .readout .v.ratio { font-size: clamp(26px, 3vw, 36px); }
+.readout.flash { animation: flash 1.1s ease-out; }
+@keyframes flash { 0% { box-shadow: 0 0 0 2px rgb(var(--p)), 0 0 30px rgb(var(--p) / .6); } 100% { box-shadow: none; } }
 .invite { margin-top: 16px; display: grid; gap: 8px; }
 .invite p { margin: 0; font-size: 15px; color: rgb(var(--ink) / .86); }
+
+/* the rainbow doorway pinned over the visible sliver of the beam */
+.rainbow { position: absolute; transform: translate(-50%, -100%); display: grid; justify-items: center; gap: 3px; background: none; border: 0; cursor: pointer; padding: 6px; z-index: 5; }
+.rainbow .arc { width: 34px; height: 17px; border-radius: 34px 34px 0 0; background: linear-gradient(90deg, #ff2d2d, #ffd400, #7bff2d, #00e5ff, #2b5cff, #7a2bff); -webkit-mask: radial-gradient(circle at 50% 100%, transparent 7px, #000 8px); mask: radial-gradient(circle at 50% 100%, transparent 7px, #000 8px); filter: drop-shadow(0 0 6px rgb(255 255 255 / .5)); }
+.rainbow .t { font-family: var(--mono); font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase; color: rgb(var(--ink) / .85); }
+.rainbow:hover .arc, .rainbow:focus-visible .arc { filter: drop-shadow(0 0 10px #fff); }
+#vpBeam.is-vertical .rainbow { transform: translate(0, -50%); }
+.scale-note { margin-top: 14px; }
 
 /* the two waves, side by side: speed and tightness keyed to each probe's
    log position, the real ratio stated under them */
@@ -102,12 +112,14 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
       <div class="vhud">
         <div class="probe" id="probeA" tabindex="0" role="slider" aria-label="Probe A frequency"><span class="cap">A<small id="capA"></small></span></div>
         <div class="probe" id="probeB" tabindex="0" role="slider" aria-label="Probe B frequency"><span class="cap">B<small id="capB"></small></span></div>
+        <button class="rainbow" id="rainbowFlag" type="button" aria-label="Open the visible spectrum" title="Open the visible spectrum"><span class="arc" aria-hidden="true"></span><span class="t">open</span></button>
       </div>
       <div class="vp-note" id="waveNote"></div>
       <div class="vp-note right">Drag a probe · click the beam · arrow keys step a tenth of a decade</div>
       <div class="fallback">A bar from 10 kHz to 100 EHz with two probes, A on FM radio at 100 MHz and B on a green laser at 564 THz. The readouts below are live without the 3D view.</div>
     </div>
 
+    <p class="note scale-note">How to read the beam: every step along it multiplies the frequency by ten, so it spans ten quadrillion in sixteen steps. The second number at each step is the wavelength, how long one ripple is: at the radio end a wave is the length of a city, in the middle it is the width of a hair, at the top it is smaller than an atomic nucleus. The objects floating over the beam sit where a wave is their size. The beam stops at 100 EHz for drawing's sake; gamma rays carry on for ten more steps, which is what the Gamma Attic is for.</p>
     <div class="wavelanes" aria-hidden="true">
       <span class="lane-tag a">A</span><span class="lane-tag b">B</span>
       <canvas id="waveLanes"></canvas>
@@ -119,7 +131,8 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
       <div class="readout b" data-holo-tap><p class="k">Probe B</p><p class="v" id="valB"></p><p class="d" id="metaB"></p></div>
       <div class="readout r" data-holo-tap><p class="k">Higher by</p><p class="v ratio" id="valR"></p><p class="d" id="metaR"></p></div>
     </div>
-    <div class="chips" id="presets" aria-label="Landmarks"></div>
+    <p class="caveat" id="chipHint">Tap a landmark to put a probe on it; the nearer probe moves.</p>
+    <div class="chips rail" id="presets" aria-label="Landmarks"></div>
 
     <div class="invite" id="invite" hidden>
       <p id="inviteHook"></p>
@@ -131,8 +144,8 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
   <section class="stage" id="visible" aria-labelledby="h1">
     <div class="stage-head">
       <div class="tag">Stage 01 · the sliver you can see</div>
-      <h2 id="h1">Visible light, <em>opened out</em></h2>
-      <p class="lede">On the beam above, everything an eye can see is one thin line, a single octave in fifty-three. The ship opens it out here. White light goes into the glass; the band comes out, one colour per frequency, no seams.</p>
+      <h2 id="h1"><em>Visible light</em></h2>
+      <p class="lede">On the beam above, everything an eye can see is one thin line. Here it is stretched to full width. White light goes into the glass and fans out, one colour per frequency, no seams. Drag <b>B</b> along the strip below to pick a colour and see its wavelength; the prism marks where that colour lands.</p>
     </div>
     <div id="vpPrism" aria-label="A prism splitting white light into the visible spectrum">
       <div class="vp-note">Dispersion from a real glass: BK7, Cauchy fit · angles exaggerated 3x so the fan is visible</div>
@@ -341,9 +354,28 @@ ship.viewport(beamEl, {
     // decade labels below the beam, every other decade, and band names above;
     // all kept at a readable pixel size every frame whatever the camera does
     beam.labels = [];
+    const tidy = t => t.replace('.00', '').replace('.0 ', ' ');
     for (let d = F0; d <= F1; d += 2) {
-      const l = label(P.fmtFreq(Math.pow(10, d), true).replace('.00', '').replace('.0 ', ' '), { size: 20, color: '#8ea3bd' });
-      l.position.set(xOf(Math.pow(10, d)), 0.02, 1.75); scene.add(l); beam.labels.push([l, 13]);
+      const f = Math.pow(10, d);
+      const l = label(tidy(P.fmtFreq(f, true)), { size: 20, color: '#c9d8ea' });
+      l.position.set(xOf(f), 0.02, 1.7); scene.add(l); beam.labels.push([l, 13]);
+      const w = label(tidy(P.fmtWave(f, true)), { size: 20, color: '#7f93ad' });
+      w.position.set(xOf(f), 0.02, 2.25); scene.add(w); beam.labels.push([w, 12]);
+    }
+    const onward = label('GAMMA GOES ON \u2197', { size: 20, color: '#e278b4', tracking: 4 });
+    onward.position.set(L / 2 + 0.9, 0.1, 0.6); scene.add(onward); beam.labels.push([onward, 12]);
+    // things the size of a wave, floating where the wave is their size
+    const texLoader = new THREE.TextureLoader();
+    beam.things = [];
+    for (const o of (window.SPECTRUM_DATA.SCALE_OBJECTS || [])) {
+      const f = C / o.size; if (f < 1e4 || f > 1e20) continue;
+      const tex = texLoader.load(o.img); tex.colorSpace = THREE.SRGBColorSpace;
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.95 }));
+      sp.position.set(xOf(f), 1.05, -2.4); sp.scale.set(0.7, 0.7, 1); scene.add(sp);
+      const SHORT = { city: 'city', person: 'person', apple: 'apple', finger: 'finger', sand: 'sand grain', cell: 'cell', bacterium: 'bacterium', virus: 'virus', dna: 'DNA', atom: 'atom', nucleus: 'nucleus' };
+      const nm = label(SHORT[o.id] || o.name, { size: 18, color: '#b9c8dc' });
+      nm.position.set(xOf(f), 0.5, -2.4); scene.add(nm); beam.labels.push([nm, 12]);
+      beam.things.push(sp);
     }
     for (const b of P.BANDS) {
       if (b.id === 'visible') continue;
@@ -374,6 +406,7 @@ ship.viewport(beamEl, {
       const wave = new THREE.Line(wg, new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 0.9 }));
       scene.add(wave);
       const band = new THREE.Mesh(new THREE.PlaneGeometry(L, 1), new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      band.visible = false;                            // the lanes canvas below carries the smear
       scene.add(band);
       return { g, orb, pillar, wave, pos, N, band, x: 0, hex };
     };
@@ -430,12 +463,17 @@ ship.viewport(beamEl, {
       // the probe's colour is its own light
       const c = colorOf(f); pr.orb.material.color.copy(c).lerp(new THREE.Color(pr.hex), 0.35);
     }
-    for (const [l, px] of beam.labels) ship.fitLabel(vp, l, px * (beam.vertical ? 1.15 : 1));
+    const bump = vp.size.w < 640 ? 1.5 : 1;
+    for (const [l, px] of beam.labels) ship.fitLabel(vp, l, px * bump);
+    for (const sp of beam.things) { const u = ship.worldPerPixel(vp, sp.position) * 46 * bump; sp.scale.set(u, u, 1); }
     const xa = beam.A.x, xb = beam.B.x;
     beam.thread.position.x = (xa + xb) / 2; beam.thread.scale.x = Math.max(0.01, Math.abs(xb - xa));
     // DOM probes follow the orbs
     const r = beamEl.getBoundingClientRect();
     beamEl.classList.toggle('is-vertical', !!beam.vertical);
+    { const v = new THREE.Vector3(xOf(Math.sqrt(VIS_LO * VIS_HI)), 0.1, -1.0).project(camera), rf = document.getElementById('rainbowFlag');
+      if (beam.vertical) { rf.style.top = ((1 - v.y) / 2 * 100) + '%'; rf.style.left = ((v.x + 1) / 2 * 100 + 6) + '%'; }
+      else { rf.style.left = ((v.x + 1) / 2 * 100) + '%'; rf.style.top = ((1 - v.y) / 2 * 100) + '%'; } }
     for (const [pr, el] of [[beam.A, probeA], [beam.B, probeB]]) {
       const v = new THREE.Vector3(pr.x, 0, 0).project(camera);
       if (beam.vertical) { el.style.top = ((1 - v.y) / 2 * 100) + '%'; el.style.left = '50%'; }
@@ -513,6 +551,13 @@ function dragProbe(el, set) {
     el.addEventListener('pointerup', up, { once: true }); el.addEventListener('pointercancel', up, { once: true });
   });
 }
+// any rainbow doorway opens the visible spectrum for real: B jumps into the
+// band (green centre) and the page goes to the strip where its wavelength shows
+function openVisible() {
+  fB = Math.sqrt(VIS_LO * VIS_HI); render();
+  document.getElementById('visible').scrollIntoView({ behavior: ship.motion ? 'smooth' : 'auto', block: 'start' });
+}
+document.getElementById('rainbowFlag').addEventListener('click', openVisible);
 dragProbe(probeA, (f, done) => { fA = done ? snap(f) : f; });
 dragProbe(probeB, (f, done) => { fB = done ? snap(f) : f; });
 keys(probeA, () => fA, f => { fA = clamp(f, 1e4, 1e20); render(); });
@@ -567,7 +612,13 @@ const presets = document.getElementById('presets');
 for (const lm of [...LANDMARKS].sort((a, b) => a.hz - b.hz)) {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.hz = lm.hz;
   b.innerHTML = '<span class="b">' + P.bandOf(lm.hz).short + '</span>' + lm.name;
-  b.addEventListener('click', () => { if (nearer(lm.hz)) fA = lm.hz; else fB = lm.hz; render(); });
+  b.addEventListener('click', () => {
+    const toA = nearer(lm.hz); if (toA) fA = lm.hz; else fB = lm.hz; render();
+    // on a phone the readouts are off screen, so say what happened right here
+    document.getElementById('chipHint').innerHTML = (toA ? 'Probe <b>A</b>' : 'Probe <b>B</b>') + ' is on <b>' + lm.name + '</b>: ' + P.fmtFreq(lm.hz) + ', ' + P.fmtWave(lm.hz) + ' per wave, ' + P.bandOf(lm.hz).name + '.';
+    const ro = document.querySelector(toA ? '.readout.a' : '.readout.b'); ro.classList.remove('flash'); void ro.offsetWidth; ro.classList.add('flash');
+    const r = beamEl.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) document.querySelector('.readouts').scrollIntoView({ behavior: ship.motion ? 'smooth' : 'auto', block: 'center' });
+  });
   presets.appendChild(b);
 }
 
