@@ -53,7 +53,16 @@
     display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
     padding: 3px 9px; border-radius: 3px; color: rgb(var(--p)); border: 1px solid rgb(var(--p) / .5); background: rgb(var(--p) / .07); }
   body[data-deck="senses"] .mode-a .modetag { border-style: dashed; }
-  body[data-deck="senses"] .card .readouts { margin-top: 0; }
+  body[data-deck="senses"] .card .readouts { margin-top: 10px; }
+  body[data-deck="senses"] .compare { position: relative; margin: 6px 0 4px; }
+  body[data-deck="senses"] .compare canvas { display: block; width: 100%; height: 54px; border-radius: 8px; }
+  body[data-deck="senses"] .cmp-k { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--dim)); margin-top: 5px; }
+  body[data-deck="senses"] .cmp-k .vis { color: #fff; }
+  body[data-deck="senses"] .plain { font-size: 16px; line-height: 1.6; margin: 12px 0 0; color: rgb(var(--ink) / .9); }
+  body[data-deck="senses"] .plain b { color: rgb(var(--deck)); }
+  body[data-deck="senses"] details.numbers { margin-top: 12px; }
+  body[data-deck="senses"] details.numbers summary { cursor: pointer; font-family: var(--mono); font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; color: rgb(var(--dim)); }
+  body[data-deck="senses"] .also { font-size: 14px; color: rgb(var(--dim)); margin: 10px 0 0; }
   body[data-deck="senses"] .card .readout .v { font-size: clamp(17px, 1.9vw, 22px); }
   body[data-deck="senses"] .card .sentence { margin: 16px 0 0; font-size: 15px; line-height: 1.6; color: rgb(var(--ink) / .86); max-width: 76ch; }
   body[data-deck="senses"] .card .sentence b { color: rgb(var(--p)); font-weight: 600; }
@@ -111,7 +120,7 @@
     <section class="stage" id="menagerie">
       <div class="stage-head">
         <div class="tag">Stage 01 · the menagerie</div>
-        <h1>Every animal is issued <em>a different slice.</em></h1>
+        <h1>Every animal sees <em>a different light.</em></h1>
         <p class="lede">The beam runs the length of the deck. Each creature hovers over the part of it that reaches its senses, and that part is drawn on the beam in the light's own colours. Tap one, or pick it from the roster, and the ship flies you over.</p>
       </div>
       <div class="lede-split">
@@ -136,12 +145,19 @@
 
       <div class="holopanel glass card mode-v" id="card" aria-live="polite">
         <div class="card-head"><span class="modetag" id="cardTag"></span><h3 id="cardName"></h3></div>
-        <div class="readouts">
-          <div class="readout"><p class="k">Wavelength</p><p class="v" id="rdWave"></p><p class="d">short edge to long edge</p></div>
-          <div class="readout"><p class="k">Frequency</p><p class="v" id="rdFreq"></p><p class="d">long edge to short edge</p></div>
-          <div class="readout"><p class="k">Photon energy</p><p class="v" id="rdEnergy"></p><p class="d">what one photon carries, low to high</p></div>
-          <div class="readout"><p class="k">Width</p><p class="v" id="rdOct"></p><p class="d" id="rdOctD"></p></div>
+        <div class="compare">
+          <canvas id="cmpStrip" aria-hidden="true"></canvas>
+          <div class="cmp-k"><span>radio</span><span>microwave</span><span>infrared</span><span class="vis">you</span><span>ultraviolet</span></div>
         </div>
+        <p class="plain" id="cardPlain"></p>
+        <details class="numbers"><summary>The numbers</summary>
+          <div class="readouts">
+            <div class="readout"><p class="k">Wavelength</p><p class="v" id="rdWave"></p><p class="d">short edge to long edge</p></div>
+            <div class="readout"><p class="k">Frequency</p><p class="v" id="rdFreq"></p><p class="d">long edge to short edge</p></div>
+            <div class="readout"><p class="k">Photon energy</p><p class="v" id="rdEnergy"></p><p class="d">what one photon carries, low to high</p></div>
+            <div class="readout"><p class="k">Width</p><p class="v" id="rdOct"></p><p class="d" id="rdOctD"></p></div>
+          </div>
+        </details>
         <p class="sentence" id="cardText"></p>
       </div>
     </section>
@@ -235,7 +251,7 @@
 <script src="spectrum-data.js"></script>
 <script src="vendor/scifi-ui/data-readout.js"></script>
 <script type="module">
-import { ship, THREE, spectrumRibbon, label, glowSprite, colorOf } from './ship/ship.js';
+import { ship, THREE, spectrumRibbon, spectrumTexture, label, glowSprite, colorOf } from './ship/ship.js';
 import * as P from './ship/physics.js';
 import * as Z from './senses/zoo.js';
 
@@ -318,15 +334,77 @@ listeners.push((z, reveal) => {
   document.getElementById('rdEnergy').textContent = z.band.energy;
   document.getElementById('rdOct').innerHTML = fmtOct(z.band.octaves) + ' <span class="u">octaves</span>';
   document.getElementById('rdOctD').innerHTML = `${P.num(z.band.decades)} decades, of the beam's ${fmtOct(BEAM_OCT)} octaves`;
-  document.getElementById('cardText').innerHTML = z.d;
-  // on a phone the roster pushes the card below the fold, so a tap on a
-  // creature updated a card the reader could not see; scroll only when it is
-  // off screen, and never on first paint
+  document.getElementById('cardText').innerHTML = z.d + alsoNote(z);
+  paintCompare(z);
+  document.getElementById('cardPlain').innerHTML = plainWords(z);
+  // a tap on a creature should show the creature: bring the instrument into
+  // view, where the camera is already flying to it, rather than the card
   if (reveal) {
-    const r = card.getBoundingClientRect();
-    if (r.top < 0 || r.bottom > innerHeight) card.scrollIntoView({ behavior: ship.motion ? 'smooth' : 'auto', block: 'nearest' });
+    const r = vpZoo.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > innerHeight) vpZoo.scrollIntoView({ behavior: ship.motion ? 'smooth' : 'auto', block: 'start' });
   }
 });
+
+/* ---- what the numbers mean, in words ----------------------------------- */
+/* a creature's band drawn on a strip of the spectrum from 100 GHz to 10 PHz,
+   with the band your own eye sees outlined on it, so "where" and "how much
+   of mine" are answered by looking */
+const CMP_LO = 1e11, CMP_HI = 1e16;
+const cmpX = f => (P.log10(f) - P.log10(CMP_LO)) / (P.log10(CMP_HI) - P.log10(CMP_LO));
+function paintCompare(z) {
+  const cv = document.getElementById('cmpStrip'), ctx = cv.getContext('2d');
+  const W = cv.width = 1200, H = cv.height = 80;
+  const tex = spectrumTexture().image.data, TW = spectrumTexture().image.width;
+  for (let x = 0; x < W; x++) {
+    const f = Math.pow(10, P.log10(CMP_LO) + x / (W - 1) * P.log10(CMP_HI / CMP_LO));
+    let c;
+    if (f >= P.VIS_LO && f <= P.VIS_HI) c = P.lambdaRGB(P.C / f * 1e9);
+    else { const i = Math.round(P.posOf(f) * (TW - 1)) * 4; c = [tex[i], tex[i + 1], tex[i + 2]]; }
+    const inBand = f >= z.lo && f <= z.hi;
+    const k = inBand ? 1 : 0.22;
+    ctx.fillStyle = `rgb(${c[0] * k | 0},${c[1] * k | 0},${c[2] * k | 0})`; ctx.fillRect(x, 0, 1, H);
+  }
+  // the creature's band, lit and boxed; your eye's band outlined in white
+  const x0 = cmpX(Math.max(z.lo, CMP_LO)) * W, x1 = cmpX(Math.min(z.hi, CMP_HI)) * W;
+  ctx.strokeStyle = 'rgb(' + MODES[z.m].rgb.split(' ').join(',') + ')'; ctx.lineWidth = 4; ctx.strokeRect(x0 + 2, 2, Math.max(4, x1 - x0 - 4), H - 4);
+  const v0 = cmpX(P.VIS_LO) * W, v1 = cmpX(P.VIS_HI) * W;
+  ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.strokeRect(v0, 6, v1 - v0, H - 12); ctx.setLineDash([]);
+  if (z.lo < CMP_LO) { ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = '600 22px ui-monospace, Menlo, monospace'; ctx.fillText('\u2190 continues', 10, H / 2 + 8); }
+}
+const SCALE = (window.SPECTRUM_DATA.SCALE_OBJECTS || []).slice().sort((a, b) => b.size - a.size);
+function likeWhat(m) {
+  // the nearest thing in the scale ladder, by ratio
+  let best = null, bd = Infinity;
+  for (const o of SCALE) { const d = Math.abs(P.log10(m / o.size)); if (d < bd) { bd = d; best = o; } }
+  const r = m / best.size;
+  const word = r > 3 ? 'several times the width of ' : r > 1.4 ? 'a bit wider than ' : r > 0.7 ? 'about the width of ' : r > 0.3 ? 'a bit smaller than ' : 'a fraction of ';
+  return word + best.name.replace(/^an? /, 'a' + (/^an /.test(best.name) ? 'n ' : ' '));
+}
+const HAIR = 70e-6;
+function plainWords(z) {
+  const lam0 = P.C / z.hi, lam1 = P.C / z.lo;            // shortest and longest wave
+  const band0 = P.bandOf(z.lo), band1 = P.bandOf(z.hi * (1 - 1e-9));   // the top edge belongs to this band, not the next
+  const where = band0 === band1 ? 'the ' + band0.name : 'from the ' + band0.name + ' into the ' + band1.name;
+  // overlap with your eye, as a share of your eye's band in log frequency
+  const lo = Math.max(z.lo, P.VIS_LO), hi = Math.min(z.hi, P.VIS_HI);
+  const share = hi > lo ? P.decades(lo, hi) / P.decades(P.VIS_LO, P.VIS_HI) : 0;
+  const beyondUV = z.hi > P.VIS_HI, beyondIR = z.lo < P.VIS_LO;
+  let eye;
+  if (z.id === 'human') eye = 'This is the band everything else on this deck is measured against: one octave, from deep red to violet.';
+  else if (share === 0) eye = 'None of it is light you can see: ' + (z.lo < P.VIS_LO ? 'it lies entirely below red, in the warmth' : 'it lies entirely beyond violet') + '.';
+  else eye = 'It covers ' + Math.round(share * 100) + '% of what your eye sees' + (beyondUV ? ', and reaches on past violet into the ultraviolet' : '') + (beyondIR ? ', and reaches below red into the infrared' : '') + '.';
+  const hairRatio = lam1 / HAIR;
+  const wave = 'One wave of this light is ' + (hairRatio > 0.5 && hairRatio < 2 ? 'about the width of a human hair' : hairRatio >= 2 ? P.num(hairRatio) + ' hairs wide' : '1/' + Math.round(1 / hairRatio) + ' of a hair\u2019s width, ' + likeWhat(lam1)) + '.';
+  const oct = z.band.octaves;
+  const width = oct > 0.9 && oct < 1.1 ? 'one octave wide, like C to the next C on a piano' : oct < 1 ? 'about ' + Math.round(oct * 12) + ' piano keys wide, less than an octave' : P.num(oct) + ' octaves wide, ' + Math.round(oct) + ' Cs apart on a piano';
+  return 'This sense reaches <b>' + where + '</b>. ' + eye + ' ' + wave + ' The band is ' + width + '.';
+}
+function alsoNote(z) {
+  if (z.m === 'h' && z.id === 'skin') return '<p class="also">Your eye is the first card on this deck; this is the second channel you were issued, and it works with the eyes shut.</p>';
+  if (z.m === 'h') return '<p class="also">One sense of several: a ' + z.name.toLowerCase().replace(/ \(.*\)/, '') + ' also has ordinary eyes and sees in the visible. This card is only its heat sense, an extra channel on top of sight.</p>';
+  if (z.m === 'a') return '';
+  return '';
+}
 
 /* ---- instrument 1: the menagerie ---------------------------------------- */
 const vpZoo = document.getElementById('vpZoo');
@@ -430,6 +508,17 @@ zooVP = ship.viewport(vpZoo, {
   pointer(ev, vp) {
     const el = vp.el;
     // a press that starts on a HUD control is that control's press
+    // two fingers: pinch to zoom the camera in and out along its own line of sight
+    el.__touches = el.__touches || new Map();
+    if (ev.type === 'pointerdown' && ev.pointerType === 'touch') el.__touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    else if (ev.type === 'pointermove' && el.__touches.has(ev.pointerId)) el.__touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    else if ((ev.type === 'pointerup' || ev.type === 'pointercancel') && el.__touches.has(ev.pointerId)) { el.__touches.delete(ev.pointerId); el.__pinch = null; }
+    if (el.__touches.size === 2) {
+      const [a, b] = [...el.__touches.values()], dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (!el.__pinch) el.__pinch = { dist, d: cam.goal.d };
+      else { cam.mode = 'free'; cam.goal.d = Math.min(40, Math.max(2.5, el.__pinch.d * el.__pinch.dist / Math.max(20, dist))); }
+      el.__drag = null; return;
+    }
     if (ev.type === 'pointerdown') { if (ev.target.closest('button')) return; el.__drag = { x: ev.clientX, y: ev.clientY, moved: false, cam: cam.now.x, id: ev.pointerId }; return; }
     const d = el.__drag;
     if (!d) return;
@@ -452,6 +541,8 @@ zooVP = ship.viewport(vpZoo, {
     el.__drag = null;
   },
 });
+// a trackpad pinch arrives as a ctrl wheel; a plain wheel still scrolls the page
+vpZoo.addEventListener('wheel', ev => { if (!ev.ctrlKey && !ev.metaKey) return; ev.preventDefault(); cam.mode = 'free'; cam.goal.d = Math.min(40, Math.max(2.5, cam.goal.d * Math.exp(ev.deltaY * 0.0015))); }, { passive: false });
 camZoo.addEventListener('click', () => aim('zoo', zooVP.camera));
 camAll.addEventListener('click', () => aim('all', zooVP.camera));
 listeners.push((z, reveal, fly) => { if (fly) aim('creature', zooVP.camera); });
