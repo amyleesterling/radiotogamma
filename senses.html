@@ -103,10 +103,32 @@
   body[data-deck="senses"] .wing-xray .glass { background: repeating-linear-gradient(45deg, rgb(226 120 180 / .03) 0 8px, rgb(226 120 180 / .07) 8px 10px), linear-gradient(158deg, rgb(15 18 24 / .96), rgb(6 10 18 / .98)); }
   @media (max-width: 560px) {
     body[data-deck="senses"] .vhud .cam { top: auto; bottom: 56px; }
+    body[data-deck="senses"] .wing .vhud .cam { right: 14px; bottom: 60px; flex-wrap: wrap; justify-content: flex-end; }
     body[data-deck="senses"] .vp-note.right { display: none; }
     body[data-deck="senses"] .legend { grid-template-columns: repeat(2, 1fr); }
     body[data-deck="senses"] .legend .readout .d { font-size: 11.5px; }
   }
+  /* the two wings carry their own accent on everything in them, chips, dials and readouts included */
+  body[data-deck="senses"] .wing-field { --deck: var(--field); --p: var(--field); }
+  body[data-deck="senses"] .wing-polar { --deck: var(--polar); --p: var(--polar); }
+  body[data-deck="senses"] .wing .chip.creature .glyph { color: rgb(var(--deck)); border-color: rgb(var(--deck) / .6); border-style: solid; font-size: 16px; }
+  body[data-deck="senses"] .wing .vhud .picked { --p: var(--deck); }
+  body[data-deck="senses"] .wing .vhud .cam { right: 56px; }
+  body[data-deck="senses"] .vhud .sunlabel { color: rgb(255 244 214); text-shadow: 0 0 4px rgb(0 0 0), 0 0 10px rgb(0 0 0 / .9); pointer-events: none; transition: opacity .3s; }
+  body[data-deck="senses"] .wing .be-controls { margin-top: 14px; align-items: flex-start; }
+  body[data-deck="senses"] .vhud .cam .chip:disabled { opacity: .35; cursor: default; }
+  /* the hand-held polarizer: a disc over the sky whose brightness is what gets through */
+  body[data-deck="senses"] .polarizer {
+    position: absolute; left: 40%; top: 40%; width: 68px; height: 68px; margin: -34px 0 0 -34px; border-radius: 50%;
+    border: 1.5px solid rgb(255 255 255 / .85); cursor: grab; touch-action: none; z-index: 4; -webkit-tap-highlight-color: transparent;
+    background: radial-gradient(circle, rgb(235 242 255 / var(--tx, .5)) 0 62%, rgb(235 242 255 / calc(var(--tx, .5) * .6)) 100%);
+    box-shadow: 0 0 0 3px rgb(var(--void) / .35), 0 0 18px rgb(var(--polar) / .35); }
+  body[data-deck="senses"] .polarizer::after {
+    content: "filter"; position: absolute; left: 50%; top: 100%; transform: translate(-50%, 6px);
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: rgb(var(--ink) / .8); white-space: nowrap; }
+  body[data-deck="senses"] .polarizer .axis { position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; margin-top: -1px; background: rgb(var(--polar)); box-shadow: 0 0 6px rgb(var(--polar)); transform: rotate(var(--axis, 0deg)); border-radius: 1px; }
+  body[data-deck="senses"] .polarizer:active { cursor: grabbing; }
+  body[data-deck="senses"] .polarizer.is-off { border-style: dashed; }
   body[data-deck="senses"] .lede-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 22px; max-width: 900px; }
   body[data-deck="senses"] .lede-split .glass { padding: 16px 18px; }
   body[data-deck="senses"] .lede-split .glass p { font-size: 14px; }
@@ -194,16 +216,35 @@
       <div class="stage-head">
         <div class="tag">Stage 03 · fields</div>
         <h2>Electromagnetic senses <em>with no wavelength.</em></h2>
-        <p class="lede">Static and slowly changing electric or magnetic fields are electromagnetic, certainly, but they are not propagating light, so they have no place on a wavelength ruler. Assigning a shark a wavelength range would be physics wearing a counterfeit mustache. These senses get their own wing.</p>
+        <p class="lede">Every living body leaks current into the water around it, and the static field that makes is electromagnetic but not light: no wavelength, no place on the ruler. Some animals read it straight off the water. Here a dogfish hunts a plaice by the field of the plaice's own body. Drag either of them, bury the plaice in the sand, and watch what the sand cannot hide.</p>
       </div>
-      <div class="grid-3">
-        <div class="holopanel glass"><img class="fcicon" src="senses/shark.png" alt="Great white shark" loading="lazy"><h3>Shark &amp; ray</h3>
-          <p>Ampullae of Lorenzini read the faint electric fields leaking from every living body: nerve and muscle activity betrayed through seawater. Weakly electric fish go further: they emit their own field and read how nearby objects distort it, an electric flashlight for the dark.</p></div>
-        <div class="holopanel glass"><img class="fcicon" src="senses/platypus.png" alt="Platypus" loading="lazy"><h3>Platypus</h3>
-          <p>The bill is packed with electroreceptors. Hunting with eyes, ears and nostrils closed, a platypus finds prey underwater by the electric fields of their muscle twitches, cross-referenced with touch to judge distance.</p></div>
-        <div class="holopanel glass"><img class="fcicon" src="senses/tern.png" alt="Arctic tern in flight" loading="lazy"><h3>Migratory bird</h3>
-          <p>Songbirds crossing continents read Earth's magnetic field for compass direction, and likely parts of their map. The leading suspect is a quantum effect: magnetically sensitive radical pairs in cryptochrome proteins of the eye, which would make the compass something a bird <em>sees</em>.</p></div>
+      <div class="chips" id="fieldChips" role="group" aria-label="Electric sense">
+        <button class="chip creature" type="button" data-mode="shark" aria-pressed="true" data-holo-tap><img src="senses/shark.png" alt="" loading="lazy"><span>Shark &amp; ray</span></button>
+        <button class="chip creature" type="button" data-mode="platypus" aria-pressed="false" data-holo-tap><img src="senses/platypus.png" alt="" loading="lazy"><span>Platypus</span></button>
+        <button class="chip creature" type="button" data-mode="knife" aria-pressed="false" data-holo-tap><span class="glyph" aria-hidden="true">~</span><span>Weakly electric fish</span></button>
       </div>
+      <div class="viewport" id="vpField" style="height: clamp(340px, 56vh, 560px); margin-top: 16px" aria-label="A hunter and its prey on a dark sea floor, the prey's electric field drawn as lines in the water">
+        <div class="vhud">
+          <div class="picked" id="fieldPicked"></div>
+          <div class="cam" role="group" aria-label="Scene"><button class="chip" type="button" id="buryBtn" aria-pressed="false" data-holo-tap>Bury the plaice</button></div>
+        </div>
+        <div class="vp-note" id="fieldNote"></div>
+        <div class="vp-note right">Drag the hunter or the prey · drag the water to turn</div>
+        <div class="fallback">A dogfish approaching a plaice on the sand. The plaice's body is a current dipole, 0.2 µA·m in seawater, and its field lines loop head to tail through the water; the pores on the shark's snout glow with the field strength there. The readouts below carry the numbers for a snout 15 cm away.</div>
+      </div>
+      <div class="dial" id="fieldDistWrap">
+        <div class="dial-k"><span>Snout to prey</span><b id="fieldDistV">15 cm</b></div>
+        <input type="range" class="beam" id="fieldDist" min="2" max="60" value="15" step="1" aria-label="Distance from the hunter's snout to the prey, in centimetres">
+      </div>
+      <div class="readouts">
+        <div class="readout" id="fdF"><p class="k">Field at the snout</p><p class="v"></p><p class="d"></p></div>
+        <div class="readout" id="fdD"><p class="k">Reach</p><p class="v"></p><p class="d"></p></div>
+        <div class="readout" id="fdP"><p class="k">Prey dipole</p><p class="v"></p><p class="d"></p></div>
+        <div class="readout" id="fdR"><p class="k">Range at threshold</p><p class="v"></p><p class="d"></p></div>
+      </div>
+      <p class="sight" id="fieldText"></p>
+      <p class="note">How the ship computes it. A living body in water is a current source, and far from it the field is a current dipole's: E = (1/4πσ)[3(p·r̂)r̂ − p]/r³, with p the current dipole moment in A·m and σ the water's conductivity, 5 S/m for seawater and 0.02 S/m (200 µS/cm) for a typical stream. The ship uses the finite form, a source and a sink a few centimetres apart, which is the dipole at range and stays finite at the body. The plaice is Kalmijn's own: in 1971 he replaced the fish with two electrodes 5 cm apart carrying 4 µA dc, a moment of 0.2 µA·m, and the dogfish attacked the electrodes as they had attacked the fish. On the axis that gives 25 µV/cm at 2 cm, 0.9 µV/cm at 5 cm, 72 nV/cm at 10 cm and 20 nV/cm at 15 cm, the distance from which his dogfish found a buried plaice, so the 5 nV/cm threshold he measured later (Kalmijn 1982) is crossed on the axis at 23.5 cm and off the flank, where the field is half as strong, at 18.4 cm. The lines are drawn brighter where the field is stronger on the hunter's own scale, and fade out where it drops below threshold. The shrimp's moment, 0.4 µA·m, is a chosen value picked so the platypus's 50 µV/cm threshold (Scheich et al. 1986) falls about 9 cm off the shrimp; no measured shrimp field was found. The knifefish's spheres are the textbook sphere in a uniform field: a perfect conductor adds an induced dipole that gathers the lines, a perfect insulator adds half that and reversed, and the spheres do not see each other. Field lines are integrated along E from a small sphere round the source and stop at the sink, the floor or a sphere; the water is treated as a uniform conductor with no floor, although sand conducts less than seawater and would bend the lines. The receptor glow is drawn by decades from threshold to a saturation the ship chose, not a measured response curve. The pulse is drawn too: a plaice's field is dc with small ac on top (Kalmijn 1971), a shrimp's twitches are brief, and the knifefish's discharge sits near a kilohertz.</p>
+      <p class="note">The migratory bird belongs on this wing as well. Songbirds crossing continents read Earth's magnetic field for compass direction, and likely parts of their map; the leading suspect is a quantum effect, magnetically sensitive radical pairs in cryptochrome proteins of the eye, which would make the compass something a bird sees. The ship has no instrument for it yet.</p>
     </section>
 
     <!-- ============ stage 04: polarization ============ -->
@@ -211,18 +252,48 @@
       <div class="stage-head">
         <div class="tag">Stage 04 · the polarization wing</div>
         <h2>A second property <em>of the same photons.</em></h2>
-        <p class="lede">Light is a wave in the electric field, and that field swings <em>across</em> the direction of travel: up-and-down, side-to-side, or any angle between. That angle is polarization, and nothing in a human eye registers it. The sky is full of it all the same. Air scatters sunlight most strongly at right angles to the sun (the same 1/λ⁴ scattering that makes it blue), and light scattered through a right angle comes out almost fully polarized, so a great ring of polarized sky runs 90° from the sun all day. Some eyes read that ring as a compass; some read polarization the way yours reads colour.</p>
+        <p class="lede">Light is a wave in the electric field, and that field swings across the direction of travel: up and down, side to side, or any angle between. That angle is polarization, and nothing in a human eye registers it. The sky is full of it all the same: air scatters sunlight most strongly at right angles to the sun, and light scattered through a right angle comes out almost fully polarized, so a great ring of polarized sky runs 90° from the sun all day. Drag the sun and watch the ring swing. Then borrow a bee's eye.</p>
       </div>
-      <div class="grid-2">
-        <div class="holopanel glass"><img class="fcicon" src="senses/cuttlefish.png" alt="Cuttlefish" loading="lazy"><h3>Cuttlefish</h3>
-          <p>Colour-blind, and yet it sees a channel you cannot: cuttlefish tell polarization angles apart to about <b>1°</b>, the finest polarization vision measured in any animal. Transparent prey that vanish in plain light stand out in polarization contrast, and the skin can flash polarized patterns invisible to most of the reef.</p></div>
-        <div class="holopanel glass"><img class="fcicon" src="senses/dungbeetle.png" alt="Dung beetle" loading="lazy"><h3>Dung beetle</h3>
-          <p>Rolls its ball in a dead-straight line away from the pile by reading the polarization pattern of the sky through a special strip along the top of each eye. The first animal shown to steer by <b>polarized moonlight</b>, a million times fainter than the day sky; on moonless nights it switches to the glow of the Milky Way.</p></div>
-        <div class="holopanel glass"><img class="fcicon" src="senses/shrimp.png" alt="Mantis shrimp" loading="lazy"><h3>Mantis shrimp</h3>
-          <p>Reads linear polarization like the cuttlefish, and then goes one further: the only animal known to detect <b>circular</b> polarization, light whose field corkscrews as it travels. It uses the channel for private signalling, and its eye has been copied into camera filters.</p></div>
-        <div class="holopanel glass"><img class="fcicon" src="senses/bee.png" alt="Honeybee" loading="lazy"><h3>Honeybee &amp; desert ant</h3>
-          <p>Karl von Frisch found in 1949 that bees steer by the sky's polarization when the sun is hidden; a patch of blue sky is enough. Desert ants of the genus <em>Cataglyphis</em> run the same compass to walk hundreds of metres out over featureless sand and straight back to a centimetre-wide nest hole.</p></div>
+      <div class="viewport" id="vpSky" style="height: clamp(360px, 58vh, 580px)" aria-label="The sky as a dome, with the sun on it and the polarization pattern drawn as short bars">
+        <div class="vhud">
+          <div class="picked" id="skyPicked"></div>
+          <div class="cam" role="group" aria-label="View">
+            <button class="chip" type="button" id="skyPattern" aria-pressed="true" aria-label="The polarization pattern, as bars" data-holo-tap>Bars</button>
+            <button class="chip" type="button" id="skyBee" aria-pressed="false" aria-label="What the bee sees" data-holo-tap>Bee's eye</button>
+            <button class="chip" type="button" id="skyYou" aria-pressed="false" aria-label="What you see" data-holo-tap>Your eye</button>
+            <button class="chip" type="button" id="skyMoon" aria-pressed="false" aria-label="Moonlit sky" data-holo-tap>Moon</button>
+          </div>
+          <div class="label sunlabel" id="sunLabel" aria-hidden="true">sun · drag me</div>
+          <div class="polarizer" id="polarizer" tabindex="0" role="img" aria-label="A hand-held polarizing filter held over the sky. Drag it, or move it with the arrow keys; set its axis with the filter slider below."><span class="axis" aria-hidden="true"></span></div>
+        </div>
+        <div class="vp-note">Single scattering · bar length: degree · bar tilt: e-vector · a globe seen from outside</div>
+        <div class="vp-note right">Drag the sun · drag the filter · drag the ground to turn</div>
+        <div class="fallback">A dome of sky with the sun 32° up. Short bars cover the dome, longest and brightest along a great ring 90° from the sun, each tilted along the light's electric vector. A bee's view paints the same ring in false colour. The readouts below carry the numbers.</div>
       </div>
+      <div class="be-controls">
+        <div class="dial" style="flex: 1 1 220px; margin-top: 0">
+          <div class="dial-k"><span>Sun elevation</span><b id="sunElevV">32°</b></div>
+          <input type="range" class="beam" id="sunElev" min="2" max="90" value="32" step="1" aria-label="Sun elevation above the horizon, in degrees">
+        </div>
+        <div class="dial" style="flex: 1 1 220px; margin-top: 0">
+          <div class="dial-k"><span>Filter axis</span><b id="polAxisV">0°</b></div>
+          <input type="range" class="beam" id="polAxis" min="0" max="180" value="0" step="1" aria-label="Polarizer axis, degrees from horizontal on the screen">
+        </div>
+      </div>
+      <div class="readouts">
+        <div class="readout" id="skSun"><p class="k">Sun elevation</p><p class="v"></p><p class="d"></p></div>
+        <div class="readout" id="skZen"><p class="k">Degree at the zenith</p><p class="v"></p><p class="d"></p></div>
+        <div class="readout" id="skTx"><p class="k">Through the filter</p><p class="v"></p><p class="d"></p></div>
+        <div class="readout" id="skEv"><p class="k">Under the filter</p><p class="v"></p><p class="d"></p></div>
+      </div>
+      <div class="chips" id="skyChips" role="group" aria-label="Polarization vision">
+        <button class="chip creature" type="button" data-creature="bee" aria-pressed="true" data-holo-tap><img src="senses/bee.png" alt="" loading="lazy"><span>Honeybee &amp; desert ant</span></button>
+        <button class="chip creature" type="button" data-creature="cuttlefish" aria-pressed="false" data-holo-tap><img src="senses/cuttlefish.png" alt="" loading="lazy"><span>Cuttlefish</span></button>
+        <button class="chip creature" type="button" data-creature="beetle" aria-pressed="false" data-holo-tap><img src="senses/dungbeetle.png" alt="" loading="lazy"><span>Dung beetle</span></button>
+        <button class="chip creature" type="button" data-creature="mantis" aria-pressed="false" data-holo-tap><img src="senses/shrimp.png" alt="" loading="lazy"><span>Mantis shrimp</span></button>
+      </div>
+      <p class="sight" id="skyText"></p>
+      <p class="note">How the ship computes it. Sunlight is unpolarized. An air molecule scattering it (the 1/λ⁴ bench on deck 03) polarizes the scattered light to a degree sin²θ / (1 + cos²θ) for scattering angle θ, with the electric vector perpendicular to the plane holding the sun, the patch of sky and you. That is single Rayleigh scattering, and it is all the dome computes, pixel by pixel. At θ = 90° the ideal degree is 100%; the real clear sky peaks near 75 to 80% (Coulson 1988), and multiple scattering adds neutral points near the sun and the antisun that the ideal has no room for. The bars are drawn with length and brightness by degree and tilt by e-vector. The bee's view is a convention: hue for the e-vector's angle from the local meridian, saturation and brightness for degree; nobody knows what a bee's polarization channel feels like. The filter obeys Malus' law for the polarized fraction, I = I₀ cos²φ, and passes half of the unpolarized rest; its angles are measured on your screen. The dome is a globe seen from outside, so the pattern on it is the sky's pattern mirrored, as any globe is. The moonlit sky carries the same pattern at a few hundred thousandth of the brightness; the stars and the Milky Way are not drawn.</p>
       <div class="hatches">
         <a class="hatch" href="lab.html#sky" data-holo-tap><span class="k">Deck 03 · Light Lab</span><span class="t">The scattering that polarizes the sky</span><span class="d">The 1/λ⁴ bench, where the blue comes from</span></a>
       </div>
@@ -254,6 +325,8 @@
 import { ship, THREE, spectrumRibbon, spectrumTexture, label, glowSprite, colorOf } from './ship/ship.js';
 import * as P from './ship/physics.js';
 import * as Z from './senses/zoo.js';
+import { mountFields } from './senses/fields-vp.js';
+import { mountPolar } from './senses/polar-vp.js';
 
 ship.mount({ deck: 'senses' });
 
@@ -664,6 +737,10 @@ ship.viewport(document.getElementById('vpBe'), {
 beDay.addEventListener('click', () => { sun = 1; beDay.setAttribute('aria-pressed', 'true'); beNight.setAttribute('aria-pressed', 'false'); renderSight(); });
 beNight.addEventListener('click', () => { sun = 0; beDay.setAttribute('aria-pressed', 'false'); beNight.setAttribute('aria-pressed', 'true'); renderSight(); });
 listeners.push(() => renderSight());
+
+/* ---- instruments 3 and 4: the field wing and the polarization wing ------- */
+mountFields({ vp: 'vpField', picked: 'fieldPicked', note: 'fieldNote', bury: 'buryBtn', dist: 'fieldDist', distV: 'fieldDistV', distWrap: 'fieldDistWrap', chips: 'fieldChips', text: 'fieldText', rdF: 'fdF', rdD: 'fdD', rdP: 'fdP', rdR: 'fdR' });
+mountPolar({ vp: 'vpSky', picked: 'skyPicked', sunLabel: 'sunLabel', pattern: 'skyPattern', you: 'skyYou', bee: 'skyBee', moon: 'skyMoon', disc: 'polarizer', axis: 'polAxis', axisV: 'polAxisV', elev: 'sunElev', elevV: 'sunElevV', chips: 'skyChips', text: 'skyText', rdSun: 'skSun', rdZen: 'skZen', rdTx: 'skTx', rdEv: 'skEv' });
 
 /* ---- first light ------------------------------------------------------- */
 select(0, { fly: false });
