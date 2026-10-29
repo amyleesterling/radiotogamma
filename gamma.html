@@ -127,23 +127,23 @@
         </div>
         <div class="octrow">
           <span class="lbl">the attic alone</span>
-          <div class="octbar gam" style="width: 65%"><i>100 keV to 2.5 PeV · 34.5 octaves</i></div>
+          <div class="octbar gam" style="width: 66%"><i>100 keV to 3.7 PeV · 35.1 octaves</i></div>
         </div>
       </div>
 
       <div class="viewport" id="vpClimb">
         <div class="vhud">
           <div class="hint" id="climbHint"><span class="long">drag to climb · scroll inside the box · </span><span class="short">drag the lift · </span>tap a rung</div>
-          <div class="roof">roof · 3 PeV</div>
+          <div class="roof">roof · 10 PeV</div>
           <div class="floor">floor · 100 keV</div>
           <div class="lift" id="lift" role="slider" tabindex="0" aria-label="Photon energy on the gamma ladder"
-               aria-orientation="vertical" aria-valuemin="19.383" aria-valuemax="29.861" aria-valuenow="20.092" aria-valuetext="511 keV">
+               aria-orientation="vertical" aria-valuemin="19.383" aria-valuemax="30.383" aria-valuenow="20.092" aria-valuetext="511 keV">
             <div class="thumb"></div>
             <div class="cap" id="liftCap">511 keV</div>
           </div>
         </div>
-        <div class="vp-note">log scale · 10.5 decades in one box</div>
-        <div class="fallback">A vertical ladder of light from 100 keV at the floor to 3 PeV at the roof, with a glowing rung at each landmark and the three photographs hung at their rungs. The readouts below still work: use the lift control or the chips.</div>
+        <div class="vp-note">log scale · 11 decades in one box</div>
+        <div class="fallback">A vertical ladder of light from 100 keV at the floor to 10 PeV at the roof, with a glowing rung at each landmark and the three photographs hung at their rungs. The readouts below still work: use the lift control or the chips.</div>
       </div>
 
       <div class="chips" id="chips" role="group" aria-label="Landmarks on the ladder"></div>
@@ -176,13 +176,13 @@
       <div class="stage-head">
         <div class="tag">Stage 02 · break it</div>
         <h2>Dial a photon <em>past the roof.</em></h2>
-        <p class="lede">The ladder stops at 3 PeV because the data do. Physics does not. Drag the dial to push one photon's energy up,
+        <p class="lede">The ladder reaches 10 PeV, above the highest-energy photons reported so far. Physics does not stop there. Drag the dial to push one photon's energy up,
           past every rung ever measured: the panel under it says what that photon can do, and what the universe does to it, at every step.</p>
       </div>
 
       <div class="viewport" id="vpBreak">
         <div class="vp-note">100 keV to the Planck energy · 23 decades · lit means measured</div>
-        <div class="fallback">A horizontal ruler from 100 keV to the Planck energy; the first ten decades are lit, the remaining thirteen are dark, and a glowing photon slides along it as you move the dial below.</div>
+        <div class="fallback">A horizontal ruler from 100 keV to the Planck energy; the first eleven decades are lit, the remaining twelve are dark, and a glowing photon slides along it as you move the dial below.</div>
       </div>
 
       <div class="dial">
@@ -250,7 +250,7 @@
             unvisited: allowed by the physics, unreached by the sources, and hidden by the sky.</p>
           <p>One PeV photon carries about 1.6 × 10<sup>-4</sup> joules: the kinetic energy of a ping-pong ball rolling
             across a table at a third of a metre per second, packed into a single quantum of light. And the attic does
-            not stop at the record: between 2.5 PeV and the Planck energy lie almost thirteen more orders of magnitude
+            not stop at the record: between 3.7 PeV and the Planck energy lie about twelve and a half more orders of magnitude
             in which no photon has ever been seen.</p>
         </div>
         <div class="holopanel glass rise">
@@ -297,7 +297,7 @@ const PAIR = 2 * ME;                          // 1.0220 MeV, the pair production
 const CMB_EPS = 2.701 * 8.617333262e-5 * 2.725;  // 6.34e-4 eV, the mean CMB photon
 const CMB_TH = ME * ME / CMB_EPS;             // 4.12e14 eV, head-on pair threshold on a mean CMB photon
 const PLANCK_EV = 1.220890e28;                // the Planck energy in eV (CODATA 2018, 1.220890e19 GeV)
-const RECORD = 2.5e15;                        // LHAASO, Cygnus bubble, Science Bulletin, 26 Feb 2024
+const RECORD = 3.7e15;                        // LHAASO, Cygnus X-3, National Science Review (2026); approximate reported high-energy photon
 const fOf = e => P.freqOfEV(e), lamOf = e => P.C / fOf(e);
 
 /* ---- the rungs --------------------------------------------------------------
@@ -345,14 +345,17 @@ const LM = [
   { e: 1.4e15, kind: 'source', name: 'LHAASO, 1.4 PeV', short: 'LHAASO, 2021',
     why: 'The first photon above a petaelectronvolt from a known source, caught in 2021 from within the Milky Way, near the Cygnus region. One quantum of light carrying 2.2 × 10⁻⁴ joules.',
     src: 'LHAASO Collaboration, Nature 594, 33 (2021). 1.4 × 10¹⁵ eV × 1.602 × 10⁻¹⁹ J/eV = 2.24 × 10⁻⁴ J.' },
-  { e: RECORD, kind: 'source', name: 'The record: 2.5 PeV', short: 'the record',
-    why: 'The most energetic photon ever recorded, from a bubble of ultra-high-energy light around the Cygnus OB2 star cluster, caught by LHAASO and reported in 2024. Its 4.0 × 10⁻⁴ joules is a 2.7 g ping-pong ball rolling at half a metre per second, in a single quantum. The ladder ends a little above here, because nothing has been seen beyond it.',
+  { e: 2.5e15, kind: 'source', name: 'Cygnus bubble: 2.5 PeV (2024)', short: '2024 record',
+    why: 'A landmark 2.5 PeV photon reported in 2024 from the Cygnus OB2 superbubble. Its 4.0 × 10⁻⁴ joules is the energy of a 2.7 g ping-pong ball rolling at about half a metre per second, in a single quantum. A later Cygnus X-3 result pushed the observed frontier higher.',
     src: 'LHAASO Collaboration, Science Bulletin, 26 February 2024. 2.5 × 10¹⁵ eV = 4.01 × 10⁻⁴ J; v = sqrt(2E / 0.0027 kg) = 0.55 m/s.' },
+  { e: RECORD, kind: 'source', name: 'Cygnus X-3: ~3.7 PeV (2026)', short: '2026 frontier',
+    why: 'LHAASO reported variable gamma-ray emission from the compact binary Cygnus X-3, including photons at approximately 3.7 PeV. Unlike a static nebula, this source brightens and fades over time. One such photon carries roughly 5.9 × 10⁻⁴ joules: the kinetic energy of a 2.7 g ping-pong ball moving at about 0.66 m/s.',
+    src: 'LHAASO Collaboration, National Science Review (22 July 2026), doi:10.1093/nsr/nwag435. Observed photons up to about 3.7 PeV; the intrinsic spectral energy distribution is corrected for gamma-gamma absorption. https://doi.org/10.1093/nsr/nwag435' },
 ];
 const FERMI = { lo: 20e6, hi: 300e9 };
 
 /* ---- the truth ---------------------------------------------------------- */
-const LOG0 = 5, LOG1 = P.log10(3e15);          // the ruler, 100 keV to 3 PeV, in log10 eV
+const LOG0 = 5, LOG1 = P.log10(1e16);          // the ruler, 100 keV to 10 PeV, in log10 eV
 let truth = LM[1].e;                            // the photon on the ladder, in eV
 let sel = LM[1];                                // the rung it sits on, or null
 const UPD = 3;                                  // ladder units per decade: the compression the vp-note admits to
@@ -682,7 +685,7 @@ const brk = { x: 0, xDisp: 0 };
 const EVENTS = [
   { e: PAIR, short: '1.022 MeV', row: 0 },
   { e: CMB_TH, short: '412 TeV', row: 1 },
-  { e: RECORD, short: '2.5 PeV', row: 0 },
+  { e: RECORD, short: '3.7 PeV', row: 0 },
   { e: 3.2e20, short: '320 EeV', row: 1 },
   { e: PLANCK_EV, short: 'Planck', row: 0 },
 ];
@@ -704,12 +707,12 @@ function verdict(e) {
     R.textContent = 'EBL absorption measured in Fermi LAT blazar spectra: Ackermann et al., Science 338, 1190 (2012).';
   } else if (e <= RECORD) {
     S.textContent = 'The CMB itself can stop it';
-    T.textContent = 'Past 412 TeV a mean photon of the cosmic microwave background, 0.63 meV, has enough centre-of-mass energy to turn this photon into an electron-positron pair head-on. There are 411 of those photons in every cubic centimetre of the universe. Around 1 to 2 PeV the mean free path falls to about ten thousand light years: everything outside our galaxy is gone, and the PeV sky is a map of our own neighbourhood. This is still inside the data: LHAASO has caught photons here.';
+    T.textContent = 'Past 412 TeV a mean photon of the cosmic microwave background, 0.63 meV, has enough centre-of-mass energy to turn this photon into an electron-positron pair head-on. There are 411 of those photons in every cubic centimetre of the universe. Around 1 to 2 PeV the mean free path falls to tens of thousands of light-years: everything outside our galaxy is gone, and the PeV sky is a map of our own neighbourhood. This is still inside the data: LHAASO has caught photons here.';
     R.textContent = 'Threshold (m c²)² / ε, ε = 2.70 kT at 2.725 K. Gould and Schréder, Phys. Rev. 155, 1404 (1967); minimum mean free path about 7 to 10 kpc near 2 PeV.';
   } else if (e < 3.2e20) {
     S.textContent = 'Past every photon ever recorded'; S.classList.add('hot');
-    T.textContent = 'No photon above 2.5 PeV has ever been recorded. The ship is extrapolating: the arithmetic of E = hf still holds, the CMB still lies in wait, and a photon this energetic from even the nearest galaxy could not reach us. Cosmic rays, which are nuclei and not light, do reach these energies: ground arrays have looked for photons among them and set only upper limits.';
-    R.textContent = 'Record: LHAASO Collaboration, Science Bulletin, 26 February 2024. Photon limits above 10¹⁸ eV: Pierre Auger Observatory.';
+    T.textContent = 'No photon above the approximately 3.7 PeV Cygnus X-3 events has been confirmed here. The ship is extrapolating: the arithmetic of E = hf still holds, the CMB still lies in wait, and a photon this energetic from even the nearest galaxy could not reach us. Cosmic rays, which are nuclei and not light, do reach these energies: ground arrays have looked for photons among them and set only upper limits.';
+    R.textContent = 'High-energy frontier: LHAASO Collaboration, National Science Review (2026), doi:10.1093/nsr/nwag435. Photon limits above 10¹⁸ eV: Pierre Auger Observatory.';
   } else if (e < PLANCK_EV * 0.97) {   // the dial's last step lands a hair under the exact value
     S.textContent = 'Beyond the most energetic particle'; S.classList.add('hot');
     T.textContent = 'At 3.2 × 10²⁰ eV sits the Oh-My-God particle, a cosmic ray caught over Utah in 1991 and still the most energetic particle ever recorded: about 51 joules, a baseball’s worth of kinetic energy in one nucleus. It was almost certainly a proton, not a photon. Above it the ship has no detections of anything at all, only the equation.';
