@@ -385,7 +385,13 @@ function createShip() {
      transparent: anything painted there would sit on top of the render) */
   const dimScene = new THREE.Scene();
   const dimCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  dimScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: 0x02040a, transparent: true, opacity: 0.62, depthTest: false, depthWrite: false })));
+  // the dimmer also forces the pane's alpha to 1: additive light drawn over a
+  // transparent canvas composites as grey slabs on iOS, and every glow would
+  // carry one. Colour blends as usual; alpha is set to one
+  const dimMat = new THREE.MeshBasicMaterial({ color: 0x02040a, transparent: true, opacity: 0.62, depthTest: false, depthWrite: false });
+  dimMat.blending = THREE.CustomBlending; dimMat.blendSrc = THREE.SrcAlphaFactor; dimMat.blendDst = THREE.OneMinusSrcAlphaFactor;
+  dimMat.blendSrcAlpha = THREE.OneFactor; dimMat.blendDstAlpha = THREE.OneFactor; dimMat.blendEquationAlpha = THREE.AddEquation;
+  dimScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), dimMat));
 
   /* ---- the loop ---- */
   let last = 0, W = 1, Hh = 1;

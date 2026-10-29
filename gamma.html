@@ -409,7 +409,7 @@ const $ = id => document.getElementById(id);
    photon is about 60 keV; a proton's mass-energy is 938 MeV; a 1 mg grain of
    sand gains E = m g h, so 1 TeV lifts it 1.6 cm; a 2.7 g ping-pong ball at
    2.5 PeV moves at 0.54 m/s; a 145 g baseball at 3.2e20 eV at 26.6 m/s;
-   petrol holds 34.2 MJ a litre, so the Planck energy is 57 litres. */
+   gasoline holds 34.2 MJ a litre, so the Planck energy is 15 US gallons, a car's tank. */
 const GREEN = 2.3305, DENTAL = 6e4, PROTON = 9.38272e8;
 function relatable(e) {
   const J = e * P.EV;
@@ -420,7 +420,10 @@ function relatable(e) {
   if (e < 1e16) { const h = J / (1e-6 * 9.80665); return 'the energy a 1 mg grain of sand gains falling ' + (h < 1 ? human(h * 100) + ' cm' : human(h) + ' m'); }
   if (e < 1e19) return 'a 2.7 g ping-pong ball moving at ' + human(Math.sqrt(2 * J / 0.0027)) + ' m/s';
   if (e < 1e23) return 'a 145 g baseball thrown at ' + human(Math.sqrt(2 * J / 0.145)) + ' m/s' + (e > 2e20 && e < 5e20 ? ', a fastball' : '');
-  const L = J / 34.2e6; return 'the chemical energy in ' + (L < 1 ? human(L * 1000) + ' mL' : human(L) + ' litres') + ' of petrol';
+  // gasoline holds about 34.2 MJ a litre, 129 MJ a US gallon; a teaspoon is 4.93 mL, a cup 236.6 mL
+  const L = J / 34.2e6;
+  const amt = L < 0.2366 ? human(L / 0.00493) + ' teaspoon' + (L / 0.00493 < 1.5 ? '' : 's') : L < 3.785 ? human(L / 0.2366) + ' cup' + (L / 0.2366 < 1.5 ? '' : 's') : human(L / 3.785) + ' gallon' + (L / 3.785 < 1.5 ? '' : 's');
+  return 'the chemical energy in ' + amt + ' of gasoline';
 }
 
 function readout() {

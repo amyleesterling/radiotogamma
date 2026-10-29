@@ -84,6 +84,14 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
 .glowline b { font-family: var(--mono); font-weight: 500; font-size: 18px; }
 
 .wind p { font-size: 15.5px; }
+/* the HUD readout inside the glow instrument */
+.hudread { position: absolute; left: 14px; top: 14px; display: grid; gap: 4px; max-width: 60%; padding: 10px 12px; border-radius: 8px; background: rgb(4 8 16 / .55); border: 1px solid rgb(var(--line) / .18); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); pointer-events: none; }
+.hudread b { font-family: var(--mono); font-size: clamp(20px, 3vw, 30px); font-weight: 500; color: rgb(var(--ink)); letter-spacing: .02em; }
+.hudread span { font-size: 12.5px; line-height: 1.45; color: rgb(var(--ink) / .8); }
+#vpGlow.is-vertical .probe { top: 0; bottom: auto; left: 50%; width: 100%; height: 28px; transform: translate(-50%, -50%); }
+#vpGlow.is-vertical .probe::before { left: 0; right: 0; top: 50%; bottom: auto; width: auto; height: 1px; transform: translateY(-50%); }
+#vpGlow.is-vertical .probe .cap { left: auto; right: 10px; top: 50%; transform: translateY(-50%); }
+#vpGlow.is-vertical .hudread { max-width: 46%; }
 /* the vertical beam: a probe becomes a horizontal line across the box */
 #vpBeam.is-vertical .probe { top: 0; bottom: auto; left: 50%; width: 100%; height: 28px; transform: translate(-50%, -50%); }
 #vpBeam.is-vertical .probe::before { left: 0; right: 0; top: 50%; bottom: auto; width: auto; height: 1px; transform: translateY(-50%); }
@@ -210,11 +218,14 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
   <section class="stage" id="glow" aria-labelledby="h3">
     <div class="stage-head">
       <div class="tag">Stage 03 · everything warm glows</div>
-      <h2 id="h3">Dial three is <em>temperature</em></h2>
-      <p class="lede">Every object above absolute zero radiates across this whole beam, and one number decides where the glow peaks. The body floats over the frequency it peaks at. Below the Draper point, 798 K, it glows and you cannot see it.</p>
+      <h2 id="h3">You're glowing, <em>darling</em></h2>
+      <p class="lede">Everything warmer than absolute zero gives off light. Hotter means brighter, and it means the glow peaks higher up the beam: you glow in the infrared, a stove coil in red, the Sun right in the middle of what your eyes can see. Even dry ice glows. Slide the temperature and watch the body climb the beam; the ship compares every glow to your own.</p>
     </div>
     <div id="vpGlow" aria-label="A glowing body over the spectrum, with its Planck curve">
-      <div class="vhud"><div class="probe" id="probeGlow" tabindex="0" role="slider" aria-label="Peak of the glow"><span class="cap">peak</span></div></div>
+      <div class="vhud">
+        <div class="probe" id="probeGlow" tabindex="0" role="slider" aria-label="Peak of the glow"><span class="cap">peak</span></div>
+        <div class="hudread" id="glowHud"><b id="hudT"></b><span id="hudLine"></span></div>
+      </div>
       <div class="vp-note">Planck's law per unit wavelength, scaled to its own peak</div>
       <div class="fallback">A glowing sphere sits over the spectrum at the frequency where its Planck curve peaks; the curve itself is drawn across the beam.</div>
     </div>
@@ -222,13 +233,14 @@ body[data-deck="bridge"] .hero { padding-top: clamp(28px, 5vh, 56px); }
       <div class="dial-k"><span>Temperature · 1 mK to 10 billion K</span><b id="glowLine"></b></div>
       <input type="range" class="beam" id="glowT" min="0" max="1000" value="500" aria-label="Temperature, from one millikelvin to ten billion kelvin">
     </div>
+    <div class="chips rail" id="glowPresets" aria-label="Temperature presets"></div>
+    <p class="glowline" id="glowNote"></p>
+    <p class="glowline" id="glowYou"></p>
     <div class="readouts">
       <div class="readout" data-holo-tap><p class="k">Peak of the glow</p><p class="v" id="glowPeak"></p><p class="d" id="glowPeakMeta"></p></div>
       <div class="readout" data-holo-tap><p class="k">Radiated, per square metre</p><p class="v" id="glowPow"></p><p class="d" id="glowPowMeta"></p></div>
     </div>
-    <p class="glowline" id="glowNote"></p>
-    <div class="chips" id="glowPresets" aria-label="Temperature presets"></div>
-    <p class="note">Planck's law, drawn per unit wavelength and scaled to its own peak; the marker sits at Wien's λ<sub>max</sub> = 2.898 mm·K ÷ T. Counted per unit frequency instead, the peak lands 1.76× lower, which is why the cosmic microwave background is quoted both at 1.06 mm and at 160 GHz: the same glow, sliced two ways. Radiated power is Stefan-Boltzmann, σT⁴, for a perfect emitter.</p>
+    <p class="note">Planck's law, drawn per unit wavelength and scaled to its own peak; the marker sits at Wien's λ<sub>max</sub> = 2.898 mm·K ÷ T. Counted per unit frequency instead, the peak lands 1.76× lower, which is why the cosmic microwave background is quoted both at 1.06 mm and at 160 GHz: the same glow, sliced two ways. Radiated power is Stefan-Boltzmann, σT⁴, for a perfect emitter. "You" is skin at 310 K, 523 W from every square metre, peaking at 9.3 µm.</p>
   </section>
 
   <!-- ====================== stage 04 · the wind ====================== -->
@@ -662,53 +674,101 @@ ship.viewport(document.getElementById('vpPrism'), {
   setup(vp) {
     prism.vp = vp;
     const { scene, camera } = vp;
-    camera.position.set(0, 1.2, 9); camera.lookAt(0, 0.2, 0);
-    // the glass: a triangular prism
-    const shape = new THREE.Shape(); shape.moveTo(-0.9, -0.8); shape.lineTo(0.9, -0.8); shape.lineTo(0, 0.76); shape.closePath();
-    const glass = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 1.2, bevelEnabled: false }),
-      new THREE.MeshPhysicalMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false }));
-    glass.position.set(0, 0, -0.6); scene.add(glass);
-    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(glass.geometry), new THREE.LineBasicMaterial({ color: 0xcfe6ff, transparent: true, opacity: 0.6 }));
+    camera.position.set(0.2, 1.6, 9.2); camera.lookAt(0.8, -0.7, 0);
+    // the glass: a real triangular prism, turned a little so two faces show,
+    // lit by the lab's studio HDRI when it loads so it reads as glass
+    // the block is turned 20 degrees clockwise so a horizontal beam meets the
+    // first face at 50 degrees, near minimum deviation for BK7; square on it
+    // would skim out of the far face or reflect inside
+    const rot = -20 * Math.PI / 180, piv = new THREE.Vector2(0, -0.25);
+    const turn = (x, y) => new THREE.Vector2(x, y).sub(piv).rotateAround(new THREE.Vector2(0, 0), rot).add(piv);
+    const A = turn(-0.95, -0.8), B = turn(0.95, -0.8), Cc = turn(0, 0.85);
+    const shape = new THREE.Shape(); shape.moveTo(A.x, A.y); shape.lineTo(B.x, B.y); shape.lineTo(Cc.x, Cc.y); shape.closePath();
+    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x9fd4ff, transparent: true, opacity: 0.16, roughness: 0.04, metalness: 0, reflectivity: 1, clearcoat: 1, clearcoatRoughness: 0.03, side: THREE.DoubleSide, depthWrite: false });
+    const glass = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 1.6, bevelEnabled: false }), glassMat);
+    glass.position.z = -0.8; scene.add(glass);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(glass.geometry), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 }));
     edges.position.copy(glass.position); scene.add(edges);
-    scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x101828, 1.2));
-    const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(3, 4, 5); scene.add(key);
-    // white beam in
-    const inBeam = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    inBeam.position.set(-2.7, -0.55 + 0.75, 0); inBeam.rotation.z = -0.22; scene.add(inBeam);
-    const inGlow = new THREE.Mesh(new THREE.PlaneGeometry(4, 0.5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    inGlow.position.copy(inBeam.position); inGlow.rotation.copy(inBeam.rotation); scene.add(inGlow);
-    // the fan out: forty rays, each its true colour, each bent by its own index
+    prism.group = new THREE.Group(); prism.group.add(glass, edges); scene.add(prism.group);
+    prism.group.rotation.y = 0.2;
+    scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x101828, 0.6));
+    const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(3, 4, 5); scene.add(key);
+    import('./vendor/three/HDRLoader.js').then(({ HDRLoader }) => {
+      new HDRLoader().load('env/studio_small_03_1k.hdr', tex => {
+        tex.mapping = THREE.EquirectangularReflectionMapping; glassMat.envMap = tex; glassMat.envMapIntensity = 1.2; glassMat.needsUpdate = true; vp.invalidate();
+      }, undefined, () => {});
+    }).catch(() => {});
+    // a floor so the prism sits somewhere
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 8), new THREE.MeshStandardMaterial({ color: 0x0a1120, roughness: 0.6, metalness: 0.2 }));
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -2.6; scene.add(floor);
+
+    // the optics, traced for real in the prism's own plane: Snell at the
+    // entry face and again at the exit face, BK7 by Cauchy for every colour
+    const refract = (u, n, eta) => {                       // u in, n outward normal of the surface being entered, eta = n1/n2
+      const cosi = -u.dot(n), k = 1 - eta * eta * (1 - cosi * cosi);
+      if (k < 0) return null;
+      return u.clone().multiplyScalar(eta).add(n.clone().multiplyScalar(eta * cosi - Math.sqrt(k)));
+    };
+    const hitSeg = (p, u, P0, P1) => {                     // ray p + t u against segment P0 P1, t > 0.001
+      const d = P1.clone().sub(P0), den = u.x * d.y - u.y * d.x; if (Math.abs(den) < 1e-9) return null;
+      const w = P0.clone().sub(p), t = (w.x * d.y - w.y * d.x) / den, sgm = (w.x * u.y - w.y * u.x) / den;
+      return t > 0.001 && sgm >= 0 && sgm <= 1 ? p.clone().add(u.clone().multiplyScalar(t)) : null;
+    };
+    const outward = (P0, P1) => { const d = P1.clone().sub(P0); const nrm = new THREE.Vector2(d.y, -d.x).normalize(); const mid = P0.clone().add(P1).multiplyScalar(0.5); return nrm.dot(mid.clone().sub(new THREE.Vector2(0, -0.25))) > 0 ? nrm : nrm.negate(); };
+    const faces = [[A, Cc], [Cc, B], [B, A]];
+    const entryFace = faces[0], nIn = outward(A, Cc);
+    const u0 = new THREE.Vector2(1, 0);
+    const src = new THREE.Vector2(-4.4, A.clone().lerp(Cc, 0.48).y);
+    const entry = hitSeg(src, u0, A, Cc);
+    prism.trace = nm => {
+      const n = nBK7(nm);
+      const uIn = refract(u0, nIn, 1 / n); if (!uIn) return null;
+      for (const [P0, P1] of faces) {
+        if (P0 === A && P1 === Cc) continue;
+        const ex = hitSeg(entry, uIn, P0, P1); if (!ex) continue;
+        const nOut = outward(P0, P1);
+        const uOut = refract(uIn, nOut.clone().negate(), n);   // leaving glass: the surface normal faces into the glass
+        return uOut ? { entry, exit: ex, uIn, uOut } : null;
+      }
+      return null;
+    };
+    const mean = prism.trace(560);
+    const strip = (len, w, color, opacity) => new THREE.Mesh(new THREE.PlaneGeometry(len, w), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    const place = (m, from, to, z = 0) => { const dx = to.x - from.x, dy = to.y - from.y; m.position.set((from.x + to.x) / 2, (from.y + to.y) / 2, z); m.rotation.z = Math.atan2(dy, dx); m.scale.x = Math.hypot(dx, dy) / m.geometry.parameters.width; };
+    // in: a white beam to the entry point, with a bright spot where it lands
+    const inBeam = strip(1, 0.09, 0xffffff, 0.95); place(inBeam, src, mean.entry, 0.02); prism.group.add(inBeam);
+    const inSoft = strip(1, 0.32, 0xffffff, 0.14); place(inSoft, src, mean.entry, 0.0); prism.group.add(inSoft);
+    const spot = glowSprite(0xffffff, 0.5, 0.9); spot.position.set(mean.entry.x, mean.entry.y, 0.05); prism.group.add(spot);
+    // inside: the bent beam, already starting to fan
+    const inner = strip(1, 0.08, 0xffffff, 0.8); place(inner, mean.entry, mean.exit, 0.02); prism.group.add(inner);
+    // out: the fan, each ray its true colour, bent by its own index, the spread
+    // exaggerated 3x about the mean so the eye can see it
     prism.rays = [];
-    const NR = 44, exag = 3;
-    const base = prismExit(560);
+    const NR = 44, exag = 3, meanAng = Math.atan2(mean.uOut.y, mean.uOut.x);
     for (let i = 0; i < NR; i++) {
-      const nm = 380 + (750 - 380) * i / (NR - 1);
-      const ex = prismExit(nm);
-      const ang = -0.1 - (ex - base) * exag;          // exaggerated so the eye can see the spread
-      const c = colorOfRGB(P.lambdaRGB(nm));
-      const ray = new THREE.Mesh(new THREE.PlaneGeometry(5, 0.11), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-      ray.position.set(0.55 + 2.5 * Math.cos(ang), 0.1 + 2.5 * Math.sin(ang), 0); ray.rotation.z = ang;
-      ray.userData = { nm, ang, base: 0.55 };
-      scene.add(ray); prism.rays.push(ray);
+      const nm = 380 + (750 - 380) * i / (NR - 1), tr = prism.trace(nm); if (!tr) continue;
+      const ang = meanAng + (Math.atan2(tr.uOut.y, tr.uOut.x) - meanAng) * exag;
+      const end = new THREE.Vector2(tr.exit.x + Math.cos(ang) * 6, tr.exit.y + Math.sin(ang) * 6);
+      const ray = strip(1, 0.12, colorOfRGB(P.lambdaRGB(nm)), 0.6); place(ray, tr.exit, end, 0.01 + i * 0.0005);
+      ray.userData = { nm, ang, exit: tr.exit }; prism.group.add(ray); prism.rays.push(ray);
     }
-    prism.mark = glowSprite(0xffffff, 0.6, 0); scene.add(prism.mark);
-    prism.lbl = label('', { size: 20 }); prism.lbl.visible = false; scene.add(prism.lbl);
+    prism.mark = glowSprite(0xffffff, 0.6, 0); prism.group.add(prism.mark);
   },
   frame(vp) {
     const { t, dt } = vp;
     const k = 1 - Math.exp(-dt * 10);
     for (const ray of prism.rays) {
       const near = prism.target != null && Math.abs(ray.userData.nm - prism.target) < 12;
-      const want = near ? 1.0 : 0.5;
-      ray.material.opacity += (want - ray.material.opacity) * k;
+      ray.material.opacity += ((near ? 1.0 : 0.55) - ray.material.opacity) * k;
     }
-    if (prism.target != null) {
-      const ex = prismExit(prism.target), base = prismExit(560);
-      const ang = -0.1 - (ex - base) * 3;
-      prism.mark.position.set(0.55 + 4.6 * Math.cos(ang), 0.1 + 4.6 * Math.sin(ang), 0.05);
+    if (prism.target != null && prism.rays.length) {
+      const ray = prism.rays.reduce((a, b) => Math.abs(b.userData.nm - prism.target) < Math.abs(a.userData.nm - prism.target) ? b : a);
+      const { ang, exit } = ray.userData;
+      prism.mark.position.set(exit.x + Math.cos(ang) * 4.8, exit.y + Math.sin(ang) * 4.8, 0.06);
       prism.mark.material.opacity += (0.9 - prism.mark.material.opacity) * k;
       prism.mark.material.color.copy(colorOfRGB(P.lambdaRGB(prism.target)));
     } else prism.mark.material.opacity += (0 - prism.mark.material.opacity) * k;
+    if (ship.motion) prism.group.rotation.y = 0.2 + Math.sin(t * 0.25) * 0.05;
   },
 });
 
@@ -1027,8 +1087,18 @@ ship.viewport(glowEl, {
   },
   resize(vp) {
     const half = L / 2 + 1.6, fov = vp.camera.fov * Math.PI / 180;
-    const d = Math.max(9.5, half / (Math.tan(fov / 2) * vp.camera.aspect));
-    vp.camera.position.set(0, d * 0.5, d * 0.9); vp.camera.lookAt(0, 0.9, 0);
+    glow.vertical = vp.camera.aspect < 1.05;
+    // on a phone the camera looks straight down and the beam runs top to
+    // bottom; the curve lies flat beside it so its height reads sideways
+    const rot = glow.vertical ? -Math.PI / 2 : 0;
+    if (glow.curve) { glow.curve.rotation.x = rot; glow.line.rotation.x = rot; }
+    if (glow.vertical) {
+      const d = Math.max(8, half / Math.tan(fov / 2));
+      vp.camera.up.set(-1, 0, 0); vp.camera.position.set(0, d, 0.001); vp.camera.lookAt(0, 0, 0);
+    } else {
+      const d = Math.max(9.5, half / (Math.tan(fov / 2) * vp.camera.aspect));
+      vp.camera.up.set(0, 1, 0); vp.camera.position.set(0, d * 0.5, d * 0.9); vp.camera.lookAt(0, 0.9, 0);
+    }
   },
   frame(vp) {
     const { dt, camera } = vp;
@@ -1058,8 +1128,10 @@ ship.viewport(glowEl, {
     const cc = lit ? col : ember;
     glow.curve.material.uniforms.uC.value.lerp(cc, k); glow.line.material.color.lerp(cc, k);
     // the DOM probe follows the peak
+    glowEl.classList.toggle('is-vertical', !!glow.vertical);
     const v = new THREE.Vector3(glow.x, 0, 0).project(camera);
-    probeGlow.style.left = ((v.x + 1) / 2 * 100) + '%';
+    if (glow.vertical) { probeGlow.style.top = ((1 - v.y) / 2 * 100) + '%'; probeGlow.style.left = '50%'; }
+    else { probeGlow.style.left = ((v.x + 1) / 2 * 100) + '%'; probeGlow.style.top = ''; }
     probeGlow.style.display = (fp >= 1e4 && fp <= 1e20) ? '' : 'none';
   },
   pointer(ev, vp) {
@@ -1089,6 +1161,14 @@ function glowRender() {
   const rword = v => v >= 1e18 ? P.sci(v) : P.ratioWord(v);
   document.getElementById('glowPowMeta').innerHTML = sunRatio >= 0.5 ? rword(sunRatio) + '× the Sun’s surface' : '1/' + rword(1 / sunRatio) + ' of the Sun’s surface';
   document.getElementById('glowNote').innerHTML = seeNote(T, band.name) + (presetWhy ? ' <span class="caveat">' + presetName + ': ' + presetWhy + '</span>' : '');
+  // against your own glow: skin at 310 K, 523 W/m^2, peaking at 9.35 um
+  const youP = P.stefanBoltzmann(310), youF = P.wienPeakFreq(310), rp = Pw / youP, rf = f / youF;
+  const powWord = rp > 1.5 ? P.ratioWord(rp) + '× brighter than your skin' : rp < 0.67 ? '1/' + P.ratioWord(1 / rp) + ' of your skin\u2019s glow' : 'about as bright as your skin';
+  const peakWord = rf > 1.5 ? 'peaking ' + P.ratioWord(rf) + '× higher up the beam than you do' : rf < 0.67 ? 'peaking ' + P.ratioWord(1 / rf) + '× lower down the beam than you do' : 'peaking about where you do';
+  const you = (presetName === 'You') ? 'This is you: 523 watts from every square metre of skin, all of it infrared, which is why a thermal camera sees you in the dark.' : 'Compared to you: ' + powWord + ', ' + peakWord + '.';
+  document.getElementById('glowYou').innerHTML = you;
+  document.getElementById('hudT').innerHTML = P.fmtTemp(T) + (presetName ? ' · ' + presetName : '');
+  document.getElementById('hudLine').innerHTML = 'peaks at ' + P.fmtWave(f) + ', ' + band.name + ' · ' + (T < 700 ? 'invisible' : T < 1000 ? 'faint red' : T < 4000 ? 'red to yellow' : T < 7500 ? 'white' : 'blue-white') + '<br>' + powWord;
   for (const b of document.querySelectorAll('#glowPresets .chip')) b.setAttribute('aria-pressed', String(b.textContent === presetName));
   if (glow.vp) glow.vp.invalidate();
 }
@@ -1097,7 +1177,12 @@ glowSlider.addEventListener('input', () => setT(sliderT(+glowSlider.value)));
 const glowPresets = document.getElementById('glowPresets');
 for (const [n, t, why] of GLOW_PRESETS) {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = n;
-  b.addEventListener('click', () => setT(t, n, why)); glowPresets.appendChild(b);
+  b.addEventListener('click', () => {
+    setT(t, n, why);
+    const r = glowEl.getBoundingClientRect();
+    if (r.bottom < 120 || r.top > innerHeight - 120) glowEl.scrollIntoView({ behavior: ship.motion ? 'smooth' : 'auto', block: 'start' });
+  });
+  glowPresets.appendChild(b);
 }
 
 /* ---- go ---- */
